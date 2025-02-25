@@ -39,15 +39,23 @@ export async function GET(
     const content = businessPlan.content as Record<string, any> || {}
     const executiveSummary = content.executiveSummary || null
     const visionData = content.vision || null
+    const productsData = content.products || null
+    const marketsData = content.markets || null
+    const distributionData = content.distribution || null
 
     // Format the response to match the expected structure
     const formattedPlan = {
       ...businessPlan,
       executiveSummary,
-      visionData
+      visionData,
+      productsData,
+      marketsData,
+      distributionData
     }
 
     console.log('Sending business plan with vision data:', visionData);
+    console.log('Sending business plan with markets data:', marketsData);
+    console.log('Sending business plan with distribution data:', distributionData);
     return NextResponse.json(formattedPlan)
   } catch (error) {
     console.error('Error fetching business plan:', error)
@@ -80,12 +88,18 @@ export async function PUT(
     const content = businessPlan.content as Record<string, any> || {}
     const executiveSummary = content.executiveSummary || null
     const visionData = content.vision || null
+    const productsData = content.products || null
+    const marketsData = content.markets || null
+    const distributionData = content.distribution || null
 
     // Format the response to match the expected structure
     const formattedPlan = {
       ...businessPlan,
       executiveSummary,
-      visionData
+      visionData,
+      productsData,
+      marketsData,
+      distributionData
     }
 
     return NextResponse.json(formattedPlan)

@@ -67,11 +67,14 @@ export async function PUT(
       }
     })
 
-    // Return the executive summary and vision data in the response
+    // Return the executive summary and all related data in the response
     return NextResponse.json({
       id: updatedPlan.id,
       ...currentContent.executiveSummary,
-      visionData: currentContent.vision || null
+      visionData: currentContent.vision || null,
+      productsData: currentContent.products || null,
+      marketsData: currentContent.markets || null,
+      distributionData: currentContent.distribution || null
     })
   } catch (error) {
     console.error('Error updating executive summary:', error)

@@ -26,7 +26,7 @@ export async function GET() {
 // Create a new conversation
 export async function POST(request: Request) {
   try {
-    const { title, messages } = await request.json()
+    const { title, messages, threadId } = await request.json()
     
     if (!title || !messages || !Array.isArray(messages)) {
       return NextResponse.json(
@@ -65,6 +65,7 @@ export async function POST(request: Request) {
         data: {
           title,
           userId: tempUser.id,
+          threadId,
           messages: {
             create: messages.map((msg: { content: string; role: string }) => ({
               content: msg.content,

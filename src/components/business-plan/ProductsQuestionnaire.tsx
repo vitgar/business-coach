@@ -3,54 +3,69 @@ import { toast } from 'react-toastify'
 import { HelpCircle, Send } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 
+/**
+ * Props for the ProductsQuestionnaire component
+ * @param businessPlanId - The ID of the business plan
+ * @param onComplete - Callback function to handle the completed products text
+ */
 interface Props {
   businessPlanId: string
-  onComplete: (visionText: string) => void
+  onComplete: (productsText: string) => void
 }
 
+/**
+ * Interface for chat messages
+ */
 interface Message {
   role: 'assistant' | 'user' | 'system'
   content: string
 }
 
-interface VisionData {
-  longTermVision?: string;
-  yearOneGoals?: string[];
-  yearThreeGoals?: string[];
-  yearFiveGoals?: string[];
-  alignmentExplanation?: string;
+/**
+ * Interface for structured products data
+ */
+interface ProductsData {
+  productDescription?: string;
+  uniqueSellingPoints?: string[];
+  competitiveAdvantages?: string[];
+  pricingStrategy?: string;
+  futureProductPlans?: string;
 }
 
-// Questions focused strictly on vision and goals
-const VISION_QUESTIONS = [
-  "What is your core business vision? Describe the long-term impact and change you want to create with your business.",
-  "What specific, measurable goals do you want to achieve in your first year of operation? (Focus on metrics like revenue, customers, market share, etc.)",
-  "Looking ahead to three years, what quantifiable goals do you aim to achieve? How will you measure this growth?",
-  "What are your five-year goals? What specific metrics and milestones will indicate success?",
-  "How do these progressive goals align with and support your overall business strategy?"
+// Questions focused on products and services
+const PRODUCTS_QUESTIONS = [
+  "What products or services will your business offer? Please provide a detailed description.",
+  "What are the unique selling points of your products or services?",
+  "How are your offerings different from competitors? What competitive advantages do you have?",
+  "What is your pricing strategy for these products or services?",
+  "Do you have plans for future product development or service expansion?"
 ]
 
+// Initial message to start the conversation
 const INITIAL_MESSAGE: Message = { 
   role: 'assistant', 
-  content: "Let's focus on your business vision and goals. A clear vision will guide your business's direction, while specific goals will mark the path to achieve it. First, what is your core business vision - the fundamental change or impact you want your business to create?" 
+  content: "Let's focus on your products and services. A clear description of what you offer is essential for your business plan. What products or services will your business offer? Please provide a detailed description." 
 }
 
-// System message to keep responses focused on vision and goals
+// System message to keep responses focused on products and services
 const FOCUS_REMINDER: Message = {
   role: 'system',
-  content: "Do not respond with long multiple steps answers, guide the user step by step asking one question at a time and wait for the answer. If the user asks for help, expresses uncertainty, or requests examples, provide 2-3 concrete examples that are specific and measurable. After providing examples, always ask if they want to use one of the examples directly or modify their current vision/goals with ideas from the examples. Keep the conversation focused on vision and goals. If the user starts discussing implementation, marketing, or other topics, gently guide them back to defining their vision and specific, measurable goals for years 1, 3, and 5."
+  content: "Do not respond with long multiple steps answers, guide the user step by step asking one question at a time and wait for the answer. If the user asks for help, expresses uncertainty, or requests examples, provide 2-3 concrete examples that are specific and detailed. After providing examples, always ask if they want to use one of the examples directly or modify their current description with ideas from the examples. Keep the conversation focused on products and services. If the user starts discussing other topics, gently guide them back to defining their products/services, unique selling points, competitive advantages, pricing strategy, and future product plans."
 }
 
-export default function VisionQuestionnaire({ businessPlanId, onComplete }: Props) {
+/**
+ * ProductsQuestionnaire component for gathering information about products and services
+ */
+export default function ProductsQuestionnaire({ businessPlanId, onComplete }: Props) {
   const [messages, setMessages] = useState<Message[]>([INITIAL_MESSAGE])
   const [input, setInput] = useState('')
-  const [visionData, setVisionData] = useState<VisionData>({})
+  const [productsData, setProductsData] = useState<ProductsData>({})
   const [isLoading, setIsLoading] = useState(false)
   const chatContainerRef = useRef<HTMLDivElement>(null)
 
-  // Fetch existing vision data when component mounts
+  // Fetch existing products data when component mounts
   useEffect(() => {
-    const fetchVisionData = async () => {
+    const fetchProductsData = async () => {
       try {
         setIsLoading(true)
         const response = await fetch(`/api/business-plans/${businessPlanId}`)
@@ -59,20 +74,20 @@ export default function VisionQuestionnaire({ businessPlanId, onComplete }: Prop
         const data = await response.json()
         console.log('Fetched business plan data:', data)
         
-        // Check for vision data in the response
-        if (data.content?.vision || data.visionData) {
-          const fetchedVisionData = data.visionData || data.content.vision
-          console.log('Found existing vision data:', fetchedVisionData)
-          setVisionData(fetchedVisionData)
+        // Check for products data in the response
+        if (data.content?.products || data.productsData) {
+          const fetchedProductsData = data.productsData || data.content.products
+          console.log('Found existing products data:', fetchedProductsData)
+          setProductsData(fetchedProductsData)
         }
       } catch (error) {
-        console.error('Error fetching vision data:', error)
+        console.error('Error fetching products data:', error)
       } finally {
         setIsLoading(false)
       }
     }
     
-    fetchVisionData()
+    fetchProductsData()
   }, [businessPlanId])
 
   // Scroll to bottom whenever messages change or loading state changes
@@ -83,33 +98,41 @@ export default function VisionQuestionnaire({ businessPlanId, onComplete }: Prop
     }
   }, [messages, isLoading])
 
-  // Format vision data into a readable string
-  const formatVisionText = (data: VisionData): string => {
+  /**
+   * Format products data into a readable string
+   * @param data - The structured products data
+   * @returns Formatted markdown text
+   */
+  const formatProductsText = (data: ProductsData): string => {
     const parts = []
     
-    if (data.longTermVision) {
-      parts.push('# Long-Term Vision\n' + data.longTermVision + '\n')
+    if (data.productDescription) {
+      parts.push('# Products/Services Description\n' + data.productDescription + '\n')
     }
     
-    if (data.yearOneGoals?.length) {
-      parts.push('# First Year Goals\n' + data.yearOneGoals.map(g => '- ' + g).join('\n') + '\n')
+    if (data.uniqueSellingPoints?.length) {
+      parts.push('# Unique Selling Points\n' + data.uniqueSellingPoints.map(p => '- ' + p).join('\n') + '\n')
     }
     
-    if (data.yearThreeGoals?.length) {
-      parts.push('# Three-Year Goals\n' + data.yearThreeGoals.map(g => '- ' + g).join('\n') + '\n')
+    if (data.competitiveAdvantages?.length) {
+      parts.push('# Competitive Advantages\n' + data.competitiveAdvantages.map(a => '- ' + a).join('\n') + '\n')
     }
     
-    if (data.yearFiveGoals?.length) {
-      parts.push('# Five-Year Goals\n' + data.yearFiveGoals.map(g => '- ' + g).join('\n') + '\n')
+    if (data.pricingStrategy) {
+      parts.push('# Pricing Strategy\n' + data.pricingStrategy + '\n')
     }
     
-    if (data.alignmentExplanation) {
-      parts.push('# Goal Alignment\n' + data.alignmentExplanation)
+    if (data.futureProductPlans) {
+      parts.push('# Future Product Plans\n' + data.futureProductPlans)
     }
     
     return parts.join('\n')
   }
 
+  /**
+   * Handle form submission for chat messages
+   * @param e - Form event
+   */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!input.trim() || isLoading) return
@@ -120,7 +143,7 @@ export default function VisionQuestionnaire({ businessPlanId, onComplete }: Prop
       setMessages(prev => [...prev, userMessage])
       setInput('')
 
-      const response = await fetch(`/api/business-plans/${businessPlanId}/vision`, {
+      const response = await fetch(`/api/business-plans/${businessPlanId}/products`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -139,10 +162,10 @@ export default function VisionQuestionnaire({ businessPlanId, onComplete }: Prop
       }
       setMessages(prev => [...prev, assistantMessage])
       
-      // Update vision data if available
-      if (data.visionData) {
-        console.log('Received vision data from API:', data.visionData);
-        setVisionData(data.visionData)
+      // Update products data if available
+      if (data.productsData) {
+        console.log('Received products data from API:', data.productsData);
+        setProductsData(data.productsData)
       }
       
     } catch (error) {
@@ -153,30 +176,33 @@ export default function VisionQuestionnaire({ businessPlanId, onComplete }: Prop
     }
   }
 
+  /**
+   * Handle request for help/examples
+   */
   const handleNotSure = async () => {
     try {
       setIsLoading(true)
 
-      // Add a system message for help that maintains focus on vision and goals
+      // Add a system message for help that maintains focus on products and services
       const helpMessage: Message = {
         role: 'system',
-        content: `The user needs help defining their vision and goals. Break down the current question into simpler parts and provide 2-3 specific examples. Format your response as:
+        content: `The user needs help defining their products or services. Break down the current question into simpler parts and provide 2-3 specific examples. Format your response as:
 
 "Let me help you with some examples:
 
-1. [Specific example with numbers/metrics]
-2. [Specific example with numbers/metrics]
-3. [Specific example with numbers/metrics]
+1. [Specific example with details]
+2. [Specific example with details]
+3. [Specific example with details]
 
 Would you like to:
-- Use one of these examples as your [vision/goal]?
+- Use one of these examples as your [product/service description]?
 - Modify your current one with some ideas from these examples?
 - See different examples?
 
-Keep examples concrete and measurable. Maintain focus on vision and goals. Avoid implementation details."`
+Keep examples concrete and detailed. Maintain focus on products and services. Avoid unrelated topics."`
       }
 
-      const response = await fetch(`/api/business-plans/${businessPlanId}/vision`, {
+      const response = await fetch(`/api/business-plans/${businessPlanId}/products`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -274,32 +300,32 @@ Keep examples concrete and measurable. Maintain focus on vision and goals. Avoid
         </form>
       </div>
 
-      {/* Right side - Vision Text Editor */}
+      {/* Right side - Products Text Editor */}
       <div className="w-1/2 space-y-4">
         <div className="bg-white rounded-lg shadow-sm p-4">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">Vision and Business Goals</h3>
+          <h3 className="text-lg font-medium text-gray-900 mb-4">Products and Services</h3>
           <div className="prose prose-sm max-w-none mb-4">
-            <ReactMarkdown>{formatVisionText(visionData)}</ReactMarkdown>
+            <ReactMarkdown>{formatProductsText(productsData)}</ReactMarkdown>
           </div>
           <div className="flex justify-end mt-4">
             <button
               onClick={() => {
-                const formattedText = formatVisionText(visionData);
-                console.log('Saving vision data:', visionData);
-                console.log('Formatted vision text:', formattedText);
+                const formattedText = formatProductsText(productsData);
+                console.log('Saving products data:', productsData);
+                console.log('Formatted products text:', formattedText);
                 onComplete(formattedText);
               }}
               className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
             >
-              Save Vision & Goals
+              Save Products & Services
             </button>
           </div>
           
-          {/* Show a message if vision data exists */}
-          {visionData.longTermVision && (
+          {/* Show a message if products data exists */}
+          {productsData.productDescription && (
             <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-md text-green-800">
-              <p className="text-sm font-medium">Vision data is loaded and ready to save.</p>
-              <p className="text-xs mt-1">You can continue the conversation to refine it, or click "Save Vision & Goals" to use the current data.</p>
+              <p className="text-sm font-medium">Products data is loaded and ready to save.</p>
+              <p className="text-xs mt-1">You can continue the conversation to refine it, or click "Save Products & Services" to use the current data.</p>
             </div>
           )}
           
@@ -307,15 +333,15 @@ Keep examples concrete and measurable. Maintain focus on vision and goals. Avoid
           {false && (
             <div className="mt-4 p-2 bg-gray-100 rounded text-xs">
               <details>
-                <summary>Debug: Vision Data</summary>
+                <summary>Debug: Products Data</summary>
                 <pre className="overflow-auto max-h-40 mt-1">
-                  {JSON.stringify(visionData, null, 2)}
+                  {JSON.stringify(productsData, null, 2)}
                 </pre>
               </details>
               <details className="mt-2">
-                <summary>Debug: Formatted Vision Text</summary>
+                <summary>Debug: Formatted Products Text</summary>
                 <pre className="overflow-auto max-h-40 mt-1">
-                  {formatVisionText(visionData) || 'No formatted vision text'}
+                  {formatProductsText(productsData) || 'No formatted products text'}
                 </pre>
               </details>
             </div>

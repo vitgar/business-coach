@@ -41,7 +41,7 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
-    const { messages } = await request.json()
+    const { messages, threadId } = await request.json()
 
     // First, delete existing messages
     await prisma.message.deleteMany({
@@ -50,20 +50,27 @@ export async function PUT(
       }
     })
 
-    // Then create new messages
+    // Then create new messages and update threadId if provided
+    const updateData: any = {
+      messages: {
+        create: messages.map((msg: any) => ({
+          content: msg.content,
+          role: msg.role
+        }))
+      },
+      updatedAt: new Date()
+    }
+
+    // Add threadId to update data if provided
+    if (threadId) {
+      updateData.threadId = threadId;
+    }
+
     const conversation = await prisma.conversation.update({
       where: {
         id: params.id
       },
-      data: {
-        messages: {
-          create: messages.map((msg: any) => ({
-            content: msg.content,
-            role: msg.role
-          }))
-        },
-        updatedAt: new Date()
-      },
+      data: updateData,
       include: {
         messages: true
       }

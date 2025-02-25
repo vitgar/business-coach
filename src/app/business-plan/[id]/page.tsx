@@ -4,6 +4,12 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'react-toastify'
 import ExecutiveSummarySection from '@/components/business-plan/ExecutiveSummary'
+import BusinessDescription from '@/components/business-plan/BusinessDescription'
+import MarketingPlan from '@/components/business-plan/MarketingPlan'
+import Operations from '@/components/business-plan/Operations'
+import FinancialPlan from '@/components/business-plan/FinancialPlan'
+import BusinessPlanSidebar, { BusinessPlanSectionType } from '@/components/business-plan/BusinessPlanSidebar'
+import SectionNavigation from '@/components/business-plan/SectionNavigation'
 import type { BusinessPlanSection, ExecutiveSummaryData } from '@/types/business-plan'
 import Link from 'next/link'
 import Logo from '@/components/Logo'
@@ -67,6 +73,36 @@ interface ContentExecutiveSummary {
   distributionStrategy?: string;
 }
 
+interface BusinessPlanContent {
+  executiveSummary?: ContentExecutiveSummary;
+  vision?: VisionData;
+  products?: {
+    productDescription?: string;
+    uniqueSellingPoints?: string[];
+    competitiveAdvantages?: string[];
+    pricingStrategy?: string;
+    futureProductPlans?: string;
+  };
+  markets?: {
+    targetMarket?: string;
+    marketSize?: string;
+    customerSegments?: string[];
+    customerNeeds?: string[];
+    marketTrends?: string[];
+    competitiveLandscape?: string;
+  };
+  distribution?: {
+    distributionChannels?: string[];
+    primaryChannel?: string;
+    channelStrategy?: string;
+    logisticsApproach?: string;
+    partnershipStrategy?: string;
+    costStructure?: string;
+    innovativeApproaches?: string[];
+  };
+  [key: string]: any;
+}
+
 interface Props {
   params: {
     id: string
@@ -75,13 +111,14 @@ interface Props {
 
 export default function BusinessPlanPage({ params }: Props) {
   const router = useRouter()
-  const [isEditing, setIsEditing] = useState(true)
   const [businessPlans, setBusinessPlans] = useState<BusinessPlan[]>([])
-  const [currentPlan, setCurrentPlan] = useState<BusinessPlanDetails | null>(null)
+  const [businessPlan, setBusinessPlan] = useState<BusinessPlanDetails | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isLoadingPlan, setIsLoadingPlan] = useState(true)
+  const [isEditing, setIsEditing] = useState(true)
   const [isMigrating, setIsMigrating] = useState(false)
   const [isSavingTitle, setIsSavingTitle] = useState(false)
+  const [activeSection, setActiveSection] = useState<BusinessPlanSectionType>('executive-summary')
 
   // Create a new business plan if needed
   const createNewBusinessPlan = async () => {
@@ -107,108 +144,62 @@ export default function BusinessPlanPage({ params }: Props) {
     }
   }
 
+  // Fetch business plans list
+  const fetchBusinessPlans = async () => {
+    try {
+      const response = await fetch('/api/business-plans')
+      if (!response.ok) throw new Error('Failed to fetch business plans')
+      const data = await response.json()
+      setBusinessPlans(data)
+
+      // If there are no plans or no ID provided, create a new one
+      if (data.length === 0 || !params.id) {
+        const newPlan = await createNewBusinessPlan()
+        if (newPlan) {
+          setBusinessPlans([newPlan])
+        }
+        return
+      }
+
+      // If we have an ID but it's not in the list, create a new plan
+      if (params.id && !data.some((plan: BusinessPlan) => plan.id === params.id)) {
+        const newPlan = await createNewBusinessPlan()
+        if (newPlan) {
+          setBusinessPlans([...data, newPlan])
+        }
+        return
+      }
+    } catch (error) {
+      console.error('Error fetching business plans:', error)
+      toast.error('Failed to load business plans')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   // Fetch business plans list on component mount
   useEffect(() => {
-    const fetchBusinessPlans = async () => {
-      try {
-        const response = await fetch('/api/business-plans')
-        if (!response.ok) throw new Error('Failed to fetch business plans')
-        const data = await response.json()
-        setBusinessPlans(data)
-
-        // If there are no plans or no ID provided, create a new one
-        if (data.length === 0 || !params.id) {
-          const newPlan = await createNewBusinessPlan()
-          if (newPlan) {
-            setBusinessPlans([newPlan])
-          }
-          return
-        }
-
-        // If we have an ID but it's not in the list, create a new plan
-        if (params.id && !data.some((plan: BusinessPlan) => plan.id === params.id)) {
-          const newPlan = await createNewBusinessPlan()
-          if (newPlan) {
-            setBusinessPlans([...data, newPlan])
-          }
-          return
-        }
-      } catch (error) {
-        console.error('Error fetching business plans:', error)
-        toast.error('Failed to load business plans')
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
     fetchBusinessPlans()
   }, [params.id])
 
   // Fetch current business plan details when ID changes
   useEffect(() => {
     const fetchBusinessPlan = async () => {
-      setIsLoadingPlan(true)
       try {
+        setIsLoadingPlan(true)
         const response = await fetch(`/api/business-plans/${params.id}`)
-        if (!response.ok) throw new Error('Failed to fetch business plan details')
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch business plan')
+        }
+        
         const data = await response.json()
+        console.log('Fetched business plan:', data)
         
-        // Extract vision data from content if it exists
-        const content = data.content as Record<string, unknown> || {}
-        console.log('Content from API:', content);
-        
-        // Check for vision data in the content field or directly from the API response
-        const visionData = (data.visionData as VisionData) || (content.vision as VisionData) || {} as VisionData
-        console.log('Extracted vision data:', visionData);
-        
-        // Format the vision data into the expected executiveSummary format
-        // The vision data is stored in a different format than what the ExecutiveSummary component expects
-        let formattedVisionText = ''
-        
-        if (visionData.longTermVision) {
-          formattedVisionText += `# Long-Term Vision\n${visionData.longTermVision}\n\n`
-        }
-        
-        if (visionData.yearOneGoals && visionData.yearOneGoals.length > 0) {
-          formattedVisionText += `# First Year Goals\n${visionData.yearOneGoals.map((g: string) => `- ${g}`).join('\n')}\n\n`
-        }
-        
-        if (visionData.yearThreeGoals && visionData.yearThreeGoals.length > 0) {
-          formattedVisionText += `# Three-Year Goals\n${visionData.yearThreeGoals.map((g: string) => `- ${g}`).join('\n')}\n\n`
-        }
-        
-        if (visionData.yearFiveGoals && visionData.yearFiveGoals.length > 0) {
-          formattedVisionText += `# Five-Year Goals\n${visionData.yearFiveGoals.map((g: string) => `- ${g}`).join('\n')}\n\n`
-        }
-        
-        if (visionData.alignmentExplanation) {
-          formattedVisionText += `# Goal Alignment\n${visionData.alignmentExplanation}`
-        }
-        
-        console.log('Formatted vision text:', formattedVisionText);
-        
-        // Check for executiveSummary data in the content field
-        const executiveSummary = (content.executiveSummary as ContentExecutiveSummary) || {} as ContentExecutiveSummary
-        
-        // Format the plan data to match the expected structure
-        const formattedPlan: BusinessPlanDetails = {
-          ...data,
-          executiveSummary: {
-            id: data.id,
-            // Use the formatted vision text for visionAndGoals if it exists
-            visionAndGoals: formattedVisionText || executiveSummary.visionAndGoals || '',
-            productsOrServices: executiveSummary.productsOrServices || '',
-            targetMarket: executiveSummary.targetMarket || '',
-            distributionStrategy: executiveSummary.distributionStrategy || '',
-            businessPlanId: data.id
-          }
-        }
-        
-        setCurrentPlan(formattedPlan)
-        console.log('Loaded business plan:', formattedPlan)
+        setBusinessPlan(data)
       } catch (error) {
-        console.error('Error fetching business plan details:', error)
-        toast.error('Failed to load business plan details')
+        console.error('Error fetching business plan:', error)
+        toast.error('Failed to fetch business plan')
       } finally {
         setIsLoadingPlan(false)
       }
@@ -278,20 +269,125 @@ export default function BusinessPlanPage({ params }: Props) {
         
         console.log('Updated vision text:', updatedVisionText);
         
+        // Extract products data from content if it exists
+        const updatedProductsData = (updatedPlanData.productsData as BusinessPlanContent['products']) || 
+                                   (updatedContent.products as BusinessPlanContent['products']) || 
+                                   {} as BusinessPlanContent['products'];
+        console.log('Updated products data:', updatedProductsData);
+        
+        // Format the products data into text
+        let updatedProductsText = ''
+        
+        if (updatedProductsData?.productDescription) {
+          updatedProductsText += `# Products/Services Description\n${updatedProductsData.productDescription}\n\n`
+        }
+        
+        if (updatedProductsData?.uniqueSellingPoints && updatedProductsData.uniqueSellingPoints.length > 0) {
+          updatedProductsText += `# Unique Selling Points\n${updatedProductsData.uniqueSellingPoints.map((p: string) => `- ${p}`).join('\n')}\n\n`
+        }
+        
+        if (updatedProductsData?.competitiveAdvantages && updatedProductsData.competitiveAdvantages.length > 0) {
+          updatedProductsText += `# Competitive Advantages\n${updatedProductsData.competitiveAdvantages.map((a: string) => `- ${a}`).join('\n')}\n\n`
+        }
+        
+        if (updatedProductsData?.pricingStrategy) {
+          updatedProductsText += `# Pricing Strategy\n${updatedProductsData.pricingStrategy}\n\n`
+        }
+        
+        if (updatedProductsData?.futureProductPlans) {
+          updatedProductsText += `# Future Product Plans\n${updatedProductsData.futureProductPlans}`
+        }
+        
+        console.log('Updated products text:', updatedProductsText);
+        
+        // Extract markets data from content if it exists
+        const updatedMarketsData = (updatedPlanData.marketsData as BusinessPlanContent['markets']) || 
+                                  (updatedContent.markets as BusinessPlanContent['markets']) || 
+                                  {} as BusinessPlanContent['markets'];
+        console.log('Updated markets data:', updatedMarketsData);
+        
+        // Format the markets data into text
+        let updatedMarketsText = ''
+        
+        if (updatedMarketsData?.targetMarket) {
+          updatedMarketsText += `# Target Market\n${updatedMarketsData.targetMarket}\n\n`
+        }
+        
+        if (updatedMarketsData?.marketSize) {
+          updatedMarketsText += `# Market Size\n${updatedMarketsData.marketSize}\n\n`
+        }
+        
+        if (updatedMarketsData?.customerSegments && updatedMarketsData.customerSegments.length > 0) {
+          updatedMarketsText += `# Customer Segments\n${updatedMarketsData.customerSegments.map((s: string) => `- ${s}`).join('\n')}\n\n`
+        }
+        
+        if (updatedMarketsData?.customerNeeds && updatedMarketsData.customerNeeds.length > 0) {
+          updatedMarketsText += `# Customer Needs\n${updatedMarketsData.customerNeeds.map((n: string) => `- ${n}`).join('\n')}\n\n`
+        }
+        
+        if (updatedMarketsData?.marketTrends && updatedMarketsData.marketTrends.length > 0) {
+          updatedMarketsText += `# Market Trends\n${updatedMarketsData.marketTrends.map((t: string) => `- ${t}`).join('\n')}\n\n`
+        }
+        
+        if (updatedMarketsData?.competitiveLandscape) {
+          updatedMarketsText += `# Competitive Landscape\n${updatedMarketsData.competitiveLandscape}`
+        }
+        
+        console.log('Updated markets text:', updatedMarketsText);
+        
+        // Extract distribution data from content if it exists
+        const updatedDistributionData = (updatedPlanData.distributionData as BusinessPlanContent['distribution']) || 
+                                       (updatedContent.distribution as BusinessPlanContent['distribution']) || 
+                                       {} as BusinessPlanContent['distribution'];
+        console.log('Updated distribution data:', updatedDistributionData);
+        
+        // Format the distribution data into text
+        let updatedDistributionText = ''
+        
+        if (updatedDistributionData?.distributionChannels && updatedDistributionData.distributionChannels.length > 0) {
+          updatedDistributionText += `# Distribution Channels\n${updatedDistributionData.distributionChannels.map((c: string) => `- ${c}`).join('\n')}\n\n`
+        }
+        
+        if (updatedDistributionData?.primaryChannel) {
+          updatedDistributionText += `# Primary Distribution Method\n${updatedDistributionData.primaryChannel}\n\n`
+        }
+        
+        if (updatedDistributionData?.channelStrategy) {
+          updatedDistributionText += `# Channel Management Strategy\n${updatedDistributionData.channelStrategy}\n\n`
+        }
+        
+        if (updatedDistributionData?.logisticsApproach) {
+          updatedDistributionText += `# Logistics and Fulfillment\n${updatedDistributionData.logisticsApproach}\n\n`
+        }
+        
+        if (updatedDistributionData?.partnershipStrategy) {
+          updatedDistributionText += `# Partnerships and Intermediaries\n${updatedDistributionData.partnershipStrategy}\n\n`
+        }
+        
+        if (updatedDistributionData?.costStructure) {
+          updatedDistributionText += `# Distribution Costs\n${updatedDistributionData.costStructure}\n\n`
+        }
+        
+        if (updatedDistributionData?.innovativeApproaches && updatedDistributionData.innovativeApproaches.length > 0) {
+          updatedDistributionText += `# Innovative Distribution Methods\n${updatedDistributionData.innovativeApproaches.map((a: string) => `- ${a}`).join('\n')}\n\n`
+        }
+        
+        console.log('Updated distribution text:', updatedDistributionText);
+        
         // Format the plan data to match the expected structure
         const formattedPlan: BusinessPlanDetails = {
           ...updatedPlanData,
           executiveSummary: updatedExecutiveSummary ? {
             id: updatedPlanData.id,
             visionAndGoals: updatedVisionText || updatedExecutiveSummary.visionAndGoals || '',
-            productsOrServices: updatedExecutiveSummary.productsOrServices || '',
-            targetMarket: updatedExecutiveSummary.targetMarket || '',
-            distributionStrategy: updatedExecutiveSummary.distributionStrategy || '',
+            productsOrServices: updatedProductsText || updatedExecutiveSummary.productsOrServices || '',
+            targetMarket: updatedMarketsText || updatedExecutiveSummary.targetMarket || '',
+            distributionStrategy: updatedDistributionText || updatedExecutiveSummary.distributionStrategy || '',
             businessPlanId: updatedPlanData.id
           } : null
         }
         
-        setCurrentPlan(formattedPlan)
+        setBusinessPlan(formattedPlan)
       }
     } catch (error) {
       console.error('Error saving section:', error)
@@ -302,34 +398,29 @@ export default function BusinessPlanPage({ params }: Props) {
   const handleSaveTitle = async (title: string) => {
     try {
       setIsSavingTitle(true)
-      console.log('Saving business plan title:', title)
       
       const response = await fetch(`/api/business-plans/${params.id}`, {
         method: 'PUT',
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-          title
-        }),
+        body: JSON.stringify({ title })
       })
-
+      
       if (!response.ok) {
-        throw new Error('Failed to save title')
+        throw new Error('Failed to update title')
       }
-
-      // Update the current plan with the new title
-      if (currentPlan) {
-        setCurrentPlan({
-          ...currentPlan,
-          title
-        })
-      }
-
-      toast.success('Title saved successfully')
+      
+      const updatedPlan = await response.json()
+      setBusinessPlan(updatedPlan)
+      
+      toast.success('Title updated successfully')
+      
+      // Refresh the business plans list
+      fetchBusinessPlans()
     } catch (error) {
-      console.error('Error saving title:', error)
-      toast.error('Failed to save title')
+      console.error('Error updating title:', error)
+      toast.error('Failed to update title')
     } finally {
       setIsSavingTitle(false)
     }
@@ -372,6 +463,62 @@ export default function BusinessPlanPage({ params }: Props) {
     plan.user.email === 'temp@example.com' || 
     !plan.user.email.startsWith('temp_')
   )
+
+  // Handle section change
+  const handleSectionChange = (section: BusinessPlanSectionType) => {
+    setActiveSection(section);
+  };
+
+  // Render the active section content
+  const renderSectionContent = () => {
+    switch (activeSection) {
+      case 'executive-summary':
+        return (
+          <ExecutiveSummarySection
+            data={businessPlan?.executiveSummary || undefined}
+            onSave={handleSaveSection}
+            isEditing={isEditing}
+            businessPlanId={params.id}
+            planTitle={businessPlan?.title}
+            onTitleSave={handleSaveTitle}
+          />
+        );
+      case 'business-description':
+        return (
+          <BusinessDescription
+            businessPlanId={params.id}
+            isEditing={isEditing}
+          />
+        );
+      case 'marketing-plan':
+        return (
+          <MarketingPlan
+            businessPlanId={params.id}
+            isEditing={isEditing}
+          />
+        );
+      case 'operations':
+        return (
+          <Operations
+            businessPlanId={params.id}
+            isEditing={isEditing}
+          />
+        );
+      case 'financial-plan':
+        return (
+          <FinancialPlan
+            businessPlanId={params.id}
+            isEditing={isEditing}
+          />
+        );
+      default:
+        return (
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <p>Select a section from the sidebar to begin.</p>
+          </div>
+        );
+    }
+  };
 
   return (
     <div className="h-screen flex flex-col bg-gray-50">
@@ -458,14 +605,25 @@ export default function BusinessPlanPage({ params }: Props) {
                 <p className="mt-4 text-gray-600">Loading business plan...</p>
               </div>
             ) : (
-              <ExecutiveSummarySection
-                data={currentPlan?.executiveSummary || undefined}
-                onSave={handleSaveSection}
-                isEditing={isEditing}
-                businessPlanId={params.id}
-                planTitle={currentPlan?.title || ''}
-                onTitleSave={handleSaveTitle}
-              />
+              <div className="flex gap-8">
+                {/* Sidebar */}
+                <BusinessPlanSidebar 
+                  activeSection={activeSection} 
+                  onSectionChange={handleSectionChange} 
+                />
+                
+                {/* Main content area */}
+                <div className="flex-1">
+                  {/* Active section content */}
+                  {renderSectionContent()}
+                  
+                  {/* Section navigation */}
+                  <SectionNavigation 
+                    activeSection={activeSection} 
+                    onSectionChange={handleSectionChange} 
+                  />
+                </div>
+              </div>
             )}
           </div>
         </div>

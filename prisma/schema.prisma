@@ -45,6 +45,7 @@ model BusinessPlan {
 model Conversation {
   id        String    @id @default(cuid())
   title     String
+  threadId  String?   // OpenAI thread ID for continuing conversations
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   userId    String

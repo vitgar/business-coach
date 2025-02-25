@@ -12,6 +12,12 @@ interface ChatProps {
   onConversationCreated?: (id: string) => void
 }
 
+// Store thread IDs for conversations
+// This map associates conversation IDs with their corresponding OpenAI thread IDs
+// It's used to maintain continuity in conversations across sessions
+// Similar to how the chat API endpoint manages threads
+const threadMap = new Map<string, string>();
+
 export default function Chat({ conversationId, onConversationCreated }: ChatProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
@@ -50,6 +56,11 @@ export default function Chat({ conversationId, onConversationCreated }: ChatProp
       if (!response.ok) throw new Error('Failed to load conversation')
       const data = await response.json()
       
+      // Store the threadId if it exists
+      if (data.threadId) {
+        threadMap.set(id, data.threadId);
+      }
+      
       // Ensure system message is included
       const systemMessage = {
         role: 'system' as Role,
@@ -69,7 +80,7 @@ export default function Chat({ conversationId, onConversationCreated }: ChatProp
     }
   }
 
-  const saveConversation = async (title: string, newMessages: ChatMessage[]) => {
+  const saveConversation = async (title: string, newMessages: ChatMessage[], threadId?: string) => {
     try {
       // Filter out system messages when saving
       const messagesToSave = newMessages.filter(msg => msg.role !== 'system')
@@ -84,13 +95,20 @@ export default function Chat({ conversationId, onConversationCreated }: ChatProp
           messages: messagesToSave.map(msg => ({
             role: msg.role,
             content: msg.content
-          }))
+          })),
+          threadId // Include the OpenAI thread ID
         }),
       })
 
       if (!response.ok) throw new Error('Failed to save conversation')
       
       const data = await response.json()
+      
+      // Store the threadId if it exists
+      if (threadId && data.id) {
+        threadMap.set(data.id, threadId);
+      }
+      
       if (onConversationCreated) {
         onConversationCreated(data.id)
       }
@@ -106,6 +124,9 @@ export default function Chat({ conversationId, onConversationCreated }: ChatProp
       // Filter out system messages when saving
       const messagesToSave = newMessages.filter(msg => msg.role !== 'system')
       
+      // Get the threadId from the response data
+      const threadId = threadMap.get(id);
+      
       const response = await fetch(`/api/conversations/${id}`, {
         method: 'PUT',
         headers: {
@@ -115,7 +136,8 @@ export default function Chat({ conversationId, onConversationCreated }: ChatProp
           messages: messagesToSave.map(msg => ({
             role: msg.role,
             content: msg.content
-          }))
+          })),
+          threadId // Include the OpenAI thread ID if available
         }),
       })
 
@@ -183,7 +205,8 @@ export default function Chat({ conversationId, onConversationCreated }: ChatProp
         },
         body: JSON.stringify({
           messages: contextMessages,
-          isFirstMessage
+          isFirstMessage,
+          conversationId: conversationId || undefined
         }),
       })
 
@@ -192,7 +215,12 @@ export default function Chat({ conversationId, onConversationCreated }: ChatProp
         throw new Error(errorData.details || 'Failed to send message')
       }
 
-      const data: ChatResponse & { title?: string } = await response.json()
+      const data: ChatResponse & { title?: string, threadId?: string } = await response.json()
+      
+      // Store the threadId if it exists
+      if (data.threadId && conversationId) {
+        threadMap.set(conversationId, data.threadId);
+      }
       
       const assistantMessage: ChatMessage = {
         role: 'assistant',
@@ -205,7 +233,8 @@ export default function Chat({ conversationId, onConversationCreated }: ChatProp
 
       // If this is a new conversation, save it with the generated title
       if (isFirstMessage && data.title) {
-        await saveConversation(data.title, newMessages)
+        // Pass the threadId to be stored with the conversation
+        await saveConversation(data.title, newMessages, data.threadId)
       } else if (conversationId) {
         // Update existing conversation
         await updateConversation(conversationId, newMessages)

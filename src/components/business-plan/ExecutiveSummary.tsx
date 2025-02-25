@@ -4,6 +4,9 @@ import { useState, useEffect } from 'react'
 import { ChevronDown, ChevronRight, Edit2 } from 'lucide-react'
 import type { ExecutiveSummaryData, BusinessPlanSection } from '@/types/business-plan'
 import VisionQuestionnaire from './VisionQuestionnaire'
+import ProductsQuestionnaire from './ProductsQuestionnaire'
+import MarketsQuestionnaire from './MarketsQuestionnaire'
+import DistributionQuestionnaire from './DistributionQuestionnaire'
 import ReactMarkdown from 'react-markdown'
 
 interface Section {
@@ -110,6 +113,31 @@ export default function ExecutiveSummary({
       setExpandedSection('visionAndGoals');
     }
   }, [content.visionAndGoals, expandedSection]);
+
+  // Auto-expand the Products/Services section if it has content
+  useEffect(() => {
+    if (content.productsOrServices && expandedSection === null && !content.visionAndGoals) {
+      console.log('Auto-expanding Products/Services section because it has content');
+      setExpandedSection('productsOrServices');
+    }
+  }, [content.productsOrServices, expandedSection, content.visionAndGoals]);
+
+  // Auto-expand the Markets/Customers section if it has content
+  useEffect(() => {
+    if (content.targetMarket && expandedSection === null && !content.visionAndGoals && !content.productsOrServices) {
+      console.log('Auto-expanding Markets/Customers section because it has content');
+      setExpandedSection('targetMarket');
+    }
+  }, [content.targetMarket, expandedSection, content.visionAndGoals, content.productsOrServices]);
+
+  // Auto-expand the Distribution Strategy section if it has content
+  useEffect(() => {
+    if (content.distributionStrategy && expandedSection === null && 
+        !content.visionAndGoals && !content.productsOrServices && !content.targetMarket) {
+      console.log('Auto-expanding Distribution Strategy section because it has content');
+      setExpandedSection('distributionStrategy');
+    }
+  }, [content.distributionStrategy, expandedSection, content.visionAndGoals, content.productsOrServices, content.targetMarket]);
 
   // Generate a title based on vision data if none is provided
   useEffect(() => {
@@ -281,6 +309,51 @@ export default function ExecutiveSummary({
                       onComplete={(text) => handleQuestionnaireComplete(section.id, text)}
                     />
                   </>
+                ) : section.id === 'productsOrServices' ? (
+                  <>
+                    {/* Hide the duplicate products content display */}
+                    {false && content.productsOrServices && (
+                      <div className="mt-3">
+                        <div className="prose prose-sm max-w-none">
+                          <ReactMarkdown>{content.productsOrServices}</ReactMarkdown>
+                        </div>
+                      </div>
+                    )}
+                    <ProductsQuestionnaire
+                      businessPlanId={businessPlanId}
+                      onComplete={(text) => handleQuestionnaireComplete(section.id, text)}
+                    />
+                  </>
+                ) : section.id === 'targetMarket' ? (
+                  <>
+                    {/* Hide the duplicate markets content display */}
+                    {false && content.targetMarket && (
+                      <div className="mt-3">
+                        <div className="prose prose-sm max-w-none">
+                          <ReactMarkdown>{content.targetMarket}</ReactMarkdown>
+                        </div>
+                      </div>
+                    )}
+                    <MarketsQuestionnaire
+                      businessPlanId={businessPlanId}
+                      onComplete={(text) => handleQuestionnaireComplete(section.id, text)}
+                    />
+                  </>
+                ) : section.id === 'distributionStrategy' ? (
+                  <>
+                    {/* Hide the duplicate distribution content display */}
+                    {false && content.distributionStrategy && (
+                      <div className="mt-3">
+                        <div className="prose prose-sm max-w-none">
+                          <ReactMarkdown>{content.distributionStrategy}</ReactMarkdown>
+                        </div>
+                      </div>
+                    )}
+                    <DistributionQuestionnaire
+                      businessPlanId={businessPlanId}
+                      onComplete={(text) => handleQuestionnaireComplete(section.id, text)}
+                    />
+                  </>
                 ) : (
                   <div>
                     <textarea
@@ -303,14 +376,16 @@ export default function ExecutiveSummary({
                     )}
                     
                     {/* Debug display for this section */}
-                    <div className="mt-4 p-2 bg-gray-100 rounded text-xs">
-                      <details>
-                        <summary>Debug: Section Content</summary>
-                        <pre className="overflow-auto max-h-40 mt-1">
-                          {JSON.stringify(content[section.id] || 'No content for this section', null, 2)}
-                        </pre>
-                      </details>
-                    </div>
+                    {false && (
+                      <div className="mt-4 p-2 bg-gray-100 rounded text-xs">
+                        <details>
+                          <summary>Debug: Section Content</summary>
+                          <pre className="overflow-auto max-h-40 mt-1">
+                            {JSON.stringify(content[section.id] || 'No content for this section', null, 2)}
+                          </pre>
+                        </details>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

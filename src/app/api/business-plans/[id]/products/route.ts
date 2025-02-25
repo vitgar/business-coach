@@ -6,15 +6,17 @@ import { ASSISTANT_CONFIG } from '@/config/constants'
 import { sleep } from '@/lib/utils'
 import { Prisma, BusinessPlan } from '@prisma/client'
 
-// Type for business plan content
+/**
+ * Type for business plan content
+ */
 interface BusinessPlanContent {
   threadId?: string;
-  vision?: {
-    longTermVision?: string;
-    yearOneGoals?: string[];
-    yearThreeGoals?: string[];
-    yearFiveGoals?: string[];
-    alignmentExplanation?: string;
+  products?: {
+    productDescription?: string;
+    uniqueSellingPoints?: string[];
+    competitiveAdvantages?: string[];
+    pricingStrategy?: string;
+    futureProductPlans?: string;
   };
   [key: string]: any;
 }
@@ -109,17 +111,17 @@ async function processWithAssistant(threadId: string, assistantId: string, messa
     instructions: needsExamples ? 
       `${baseInstructions}
       
-      Provide 2-3 specific, measurable examples in your response. Examples should:
-      1. Include concrete numbers and metrics
-      2. Be realistic and achievable
+      Provide 2-3 specific, detailed examples in your response. Examples should:
+      1. Include concrete details about products or services
+      2. Be realistic and specific to different industries
       3. Cover different aspects or approaches
       4. Be clearly formatted and numbered
       5. After presenting examples, ask:
-         - "Would you like to use one of these examples as your [vision/goal]?"
+         - "Would you like to use one of these examples as your product/service description?"
          - "Or would you prefer to modify your current one with some ideas from these examples?"
          - "Or would you like different examples?"
       
-      Keep focused on vision and goals, avoid implementation details.
+      Keep focused on products and services, their unique selling points, competitive advantages, pricing, and future plans.
       
       Remember: Never include JSON, code blocks, or technical formatting in your responses.` : baseInstructions
   })
@@ -138,23 +140,23 @@ async function processWithAssistant(threadId: string, assistantId: string, messa
 }
 
 /**
- * Extracts structured vision data from conversation
+ * Extracts structured products data from conversation
  * @param threadId The thread ID to use
  * @param conversation The conversation history
- * @returns Structured vision data
+ * @returns Structured products data
  */
-async function extractVisionData(threadId: string, conversation: string): Promise<BusinessPlanContent['vision']> {
+async function extractProductsData(threadId: string, conversation: string): Promise<BusinessPlanContent['products']> {
   // Create a separate thread for data extraction to avoid polluting the main conversation
   const extractionThread = await openai.beta.threads.create();
   
-  const structuringPrompt = `Based on this conversation about business vision and goals, 
+  const structuringPrompt = `Based on this conversation about business products and services, 
   extract and structure the following information in JSON format:
   {
-    "longTermVision": "The overall long-term vision statement",
-    "yearOneGoals": ["Array of specific, measurable first-year goals"],
-    "yearThreeGoals": ["Array of specific three-year goals"],
-    "yearFiveGoals": ["Array of specific five-year goals"],
-    "alignmentExplanation": "Explanation of how these goals align with the vision"
+    "productDescription": "The overall description of products or services offered",
+    "uniqueSellingPoints": ["Array of unique selling points"],
+    "competitiveAdvantages": ["Array of competitive advantages"],
+    "pricingStrategy": "Description of pricing strategy",
+    "futureProductPlans": "Description of future product development or service expansion plans"
   }
   
   IMPORTANT: Return ONLY the JSON structure without any additional text, explanations, or code formatting.
@@ -185,13 +187,13 @@ async function extractVisionData(threadId: string, conversation: string): Promis
       
       if ('text' in content) {
         try {
-          // Extract JSON from the response text
+          // Extract JSON from the response text - look for anything that looks like JSON
           const jsonMatch = content.text.value.match(/\{[\s\S]*\}/);
           if (jsonMatch) {
             return JSON.parse(jsonMatch[0]);
           }
         } catch (error) {
-          console.error('Error parsing vision data:', error);
+          console.error('Error parsing products data:', error);
         }
       }
       break;
@@ -201,14 +203,14 @@ async function extractVisionData(threadId: string, conversation: string): Promis
     await sleep(1000);
   }
   
-  throw new Error('Failed to extract structured vision data');
+  throw new Error('Failed to extract structured products data');
 }
 
 /**
- * POST - Main API endpoint handler for chat interactions
+ * POST - Main API endpoint handler for chat interactions about products and services
  * 
  * Purpose:
- * - Processes incoming chat messages for business plan vision
+ * - Processes incoming chat messages for business plan products and services
  * - Manages conversation flow with the OpenAI assistant
  * - Handles conversation state through OpenAI threads
  * 
@@ -248,9 +250,9 @@ export async function POST(
       throw new Error('Unexpected response format')
     }
 
-    // Get structured vision data
+    // Get structured products data
     const allMessages = messages.map(m => m.content).join("\n") + "\n" + conversationContent.text.value
-    const visionData = await extractVisionData(threadId, allMessages)
+    const productsData = await extractProductsData(threadId, allMessages)
 
     // Update business plan with structured data
     const businessPlan = await prisma.businessPlan.findUnique({
@@ -264,7 +266,7 @@ export async function POST(
         data: {
           content: {
             ...content,
-            vision: visionData
+            products: productsData
           }
         }
       })
@@ -317,7 +319,7 @@ export async function POST(
         content: cleanedContent || conversationContent.text.value,
         role: 'assistant'
       },
-      visionData,
+      productsData,
       finish_reason: 'stop'
     })
 
