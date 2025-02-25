@@ -3,13 +3,32 @@ import { Pinecone } from '@pinecone-database/pinecone'
 import type { ChatMessage } from '@/types/chat'
 import { ASSISTANT_CONFIG } from '@/config/constants'
 
+/**
+ * Initialize Pinecone client with API key from environment variables
+ * This is used for vector database operations and AI assistant interactions
+ */
 const pc = new Pinecone({
   apiKey: process.env.PINECONE_API_KEY!
 })
 
-// Create a singleton assistant instance
+// Singleton instance of the assistant to prevent multiple initializations
 let assistant: any = null
 
+/**
+ * getOrCreateAssistant - Creates or retrieves a singleton instance of the business coach assistant
+ * 
+ * Purpose:
+ * - Ensures only one instance of the assistant exists throughout the application
+ * - Initializes the assistant with specific business coaching instructions
+ * 
+ * Flow:
+ * 1. Checks if assistant exists
+ * 2. If not, creates new assistant and initializes with instructions from ASSISTANT_CONFIG
+ * 3. Returns existing or newly created assistant
+ * 
+ * @returns {Promise<any>} The assistant instance
+ * @throws {Error} If assistant creation fails
+ */
 async function getOrCreateAssistant() {
   if (!assistant) {
     try {
@@ -29,10 +48,30 @@ async function getOrCreateAssistant() {
   return assistant
 }
 
+/**
+ * generateTitle - Creates a concise title from a chat message using the business coach assistant
+ * 
+ * Purpose:
+ * - Generates a descriptive title for chat conversations
+ * - Used for organizing and identifying chat threads
+ * - Uses the same business coach assistant for consistency
+ * 
+ * Flow:
+ * 1. Uses the existing business coach assistant
+ * 2. Attempts to generate a title using AI
+ * 3. Falls back to using first few words if AI generation fails
+ * 
+ * Connected to:
+ * - Used in POST method when isFirstMessage is true
+ * - Uses the same business-coach assistant for better context awareness
+ * 
+ * @param {string} message - The chat message to generate title from
+ * @returns {Promise<string>} Generated title (max 40 chars)
+ */
 async function generateTitle(message: string) {
   try {
-    const titleAssistant = await pc.assistant("title-generator")
-    const response = await titleAssistant.chat({
+    const businessCoach = await getOrCreateAssistant()
+    const response = await businessCoach.chat({
       messages: [{
         role: 'user',
         content: `Generate a concise, descriptive title (max 40 chars) that captures the main topic from this message: "${message}". Make it clear and specific, avoiding generic phrases.`
@@ -55,6 +94,33 @@ async function generateTitle(message: string) {
   }
 }
 
+/**
+ * POST - Main API endpoint handler for chat interactions
+ * 
+ * Purpose:
+ * - Processes incoming chat messages
+ * - Manages conversation flow with the business coach assistant
+ * - Handles title generation for new conversations
+ * 
+ * Request body:
+ * - messages: Array of ChatMessage objects containing conversation history
+ * - isFirstMessage: Boolean flag indicating if this is the start of a new conversation
+ * 
+ * Flow:
+ * 1. Filters out system messages, keeping only user/assistant messages
+ * 2. Gets or creates business coach assistant
+ * 3. Processes chat request
+ * 4. Generates title if it's the first message
+ * 5. Returns formatted response
+ * 
+ * Connected to:
+ * - Frontend chat interface
+ * - Uses ChatMessage type from @/types/chat
+ * - Interacts with Pinecone assistant
+ * 
+ * @param {Request} request - Incoming HTTP request
+ * @returns {Promise<NextResponse>} JSON response with chat result or error
+ */
 export async function POST(request: Request) {
   try {
     const { messages, isFirstMessage } = await request.json() as { 
@@ -83,7 +149,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       id: response.id || Date.now().toString(),
-      model: response.model || 'gpt-4',
+      model: response.model || 'gpt-4o',
       message: {
         content: response.message.content,
         role: 'assistant'

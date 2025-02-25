@@ -27,107 +27,18 @@ model User {
   conversations Conversation[]
 }
 
-// Business Plan model with detailed structure
+// Business Plan model with simplified JSON content structure
 model BusinessPlan {
   id          String   @id @default(cuid())
   title       String
+  description String?
+  content     Json?    // Stores all plan content including executive summary, vision, etc.
+  metadata    Json?    // Stores OpenAI thread IDs and other metadata
   status      String   @default("draft") // draft, completed
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   userId      String
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  // Executive Summary
-  executiveSummary ExecutiveSummary?
-
-  // Business Description
-  businessDescription BusinessDescription?
-
-  // Marketing Plan
-  marketingPlan BusinessMarketingPlan?
-
-  // Operating Plan
-  operatingPlan OperatingPlan?
-
-  // Financial Plan
-  financialPlan FinancialPlan?
-
-  // Risk Management
-  riskManagement RiskManagement?
-
-  // Attachments
-  attachments String[] // Array of file URLs or references
-}
-
-// Executive Summary section
-model ExecutiveSummary {
-  id                 String      @id @default(cuid())
-  visionAndGoals     String      @db.Text
-  productsOrServices String      @db.Text
-  targetMarket       String      @db.Text
-  distributionStrategy String    @db.Text
-  businessPlan       BusinessPlan @relation(fields: [businessPlanId], references: [id], onDelete: Cascade)
-  businessPlanId     String      @unique // One-to-one relation
-}
-
-// Business Description section
-model BusinessDescription {
-  id                String      @id @default(cuid())
-  nameAndAddress    String      @db.Text
-  dateFounded       String
-  founders          String      @db.Text
-  ownershipStructure String     @db.Text
-  missionStatement  String      @db.Text
-  keyManagement     String[]    // Array of management team members
-  businessPlan      BusinessPlan @relation(fields: [businessPlanId], references: [id], onDelete: Cascade)
-  businessPlanId    String      @unique // One-to-one relation
-}
-
-// Marketing Plan section
-model BusinessMarketingPlan {
-  id                    String      @id @default(cuid())
-  productDifferentiation String     @db.Text
-  industryProfile       String      @db.Text
-  competitiveAnalysis   String      @db.Text
-  targetMarketDetails   String      @db.Text
-  marketingStrategy     String      @db.Text
-  businessPlan          BusinessPlan @relation(fields: [businessPlanId], references: [id], onDelete: Cascade)
-  businessPlanId        String      @unique // One-to-one relation
-}
-
-// Operating Plan section
-model OperatingPlan {
-  id                    String      @id @default(cuid())
-  personnel             String      @db.Text
-  productionMethods     String      @db.Text
-  qualityControl        String      @db.Text
-  facilitiesAndEquipment String     @db.Text
-  suppliers             String      @db.Text
-  billingAndCollections String      @db.Text
-  recordkeeping         String      @db.Text
-  businessPlan          BusinessPlan @relation(fields: [businessPlanId], references: [id], onDelete: Cascade)
-  businessPlanId        String      @unique // One-to-one relation
-}
-
-// Financial Plan section
-model FinancialPlan {
-  id                    String      @id @default(cuid())
-  financialStatements   String      @db.Text
-  pricingStrategy       String      @db.Text
-  breakEvenAnalysis     String      @db.Text
-  cashFlowProjections   String      @db.Text
-  forecastingAssumptions String     @db.Text
-  businessPlan          BusinessPlan @relation(fields: [businessPlanId], references: [id], onDelete: Cascade)
-  businessPlanId        String      @unique // One-to-one relation
-}
-
-// Risk Management section
-model RiskManagement {
-  id                String      @id @default(cuid())
-  keyRisks          String      @db.Text
-  contingencyPlans  String      @db.Text
-  businessPlan      BusinessPlan @relation(fields: [businessPlanId], references: [id], onDelete: Cascade)
-  businessPlanId    String      @unique // One-to-one relation
 }
 
 // Conversation model for storing chat history

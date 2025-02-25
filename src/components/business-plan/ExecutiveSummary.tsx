@@ -1,9 +1,10 @@
 'use client'
 
-import { useState } from 'react'
-import { ChevronDown, ChevronRight } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { ChevronDown, ChevronRight, Edit2 } from 'lucide-react'
 import type { ExecutiveSummaryData, BusinessPlanSection } from '@/types/business-plan'
 import VisionQuestionnaire from './VisionQuestionnaire'
+import ReactMarkdown from 'react-markdown'
 
 interface Section {
   id: BusinessPlanSection
@@ -68,17 +69,80 @@ interface Props {
   onSave: (sectionId: BusinessPlanSection, content: string) => Promise<void>
   isEditing?: boolean
   businessPlanId: string
+  planTitle?: string
+  onTitleSave?: (title: string) => Promise<void>
 }
 
-export default function ExecutiveSummary({ data, onSave, isEditing = false, businessPlanId }: Props) {
+export default function ExecutiveSummary({ 
+  data, 
+  onSave, 
+  isEditing = false, 
+  businessPlanId,
+  planTitle = '',
+  onTitleSave 
+}: Props) {
   const [expandedSection, setExpandedSection] = useState<BusinessPlanSection | null>(null)
   const [content, setContent] = useState<Partial<ExecutiveSummaryData>>(data || {})
   const [isSaving, setIsSaving] = useState(false)
-  const [questionnaireMode, setQuestionnaireMode] = useState<BusinessPlanSection | null>(null)
+  const [title, setTitle] = useState(planTitle || '')
+  const [isEditingTitle, setIsEditingTitle] = useState(!planTitle)
+  const [isSavingTitle, setIsSavingTitle] = useState(false)
+
+  // Update content when data prop changes
+  useEffect(() => {
+    if (data) {
+      console.log('ExecutiveSummary received new data:', data);
+      setContent(data);
+    }
+  }, [data]);
+
+  // Update title when planTitle prop changes
+  useEffect(() => {
+    if (planTitle) {
+      setTitle(planTitle);
+    }
+  }, [planTitle]);
+
+  // Auto-expand the Vision and Goals section if it has content
+  useEffect(() => {
+    if (content.visionAndGoals && expandedSection === null) {
+      console.log('Auto-expanding Vision and Goals section because it has content');
+      setExpandedSection('visionAndGoals');
+    }
+  }, [content.visionAndGoals, expandedSection]);
+
+  // Generate a title based on vision data if none is provided
+  useEffect(() => {
+    if (!title && content.visionAndGoals) {
+      // Extract business type from vision data if possible
+      const visionText = content.visionAndGoals;
+      let generatedTitle = 'Business Plan';
+      
+      // Try to extract business type from vision text
+      if (visionText.includes('tax preparation')) {
+        generatedTitle = 'Tax Preparation Business Plan';
+      } else if (visionText.toLowerCase().includes('restaurant')) {
+        generatedTitle = 'Restaurant Business Plan';
+      } else if (visionText.toLowerCase().includes('consulting')) {
+        generatedTitle = 'Consulting Business Plan';
+      } else if (visionText.toLowerCase().includes('retail')) {
+        generatedTitle = 'Retail Business Plan';
+      } else if (visionText.toLowerCase().includes('tech')) {
+        generatedTitle = 'Technology Business Plan';
+      } else if (visionText.toLowerCase().includes('software')) {
+        generatedTitle = 'Software Business Plan';
+      } else if (visionText.toLowerCase().includes('service')) {
+        generatedTitle = 'Service Business Plan';
+      }
+      
+      setTitle(generatedTitle);
+    }
+  }, [title, content.visionAndGoals]);
 
   const handleSave = async (sectionId: BusinessPlanSection) => {
     try {
       setIsSaving(true)
+      console.log(`Saving section ${sectionId}:`, content[sectionId]);
       await onSave(sectionId, content[sectionId] || '')
     } catch (error) {
       console.error('Error saving section:', error)
@@ -87,108 +151,172 @@ export default function ExecutiveSummary({ data, onSave, isEditing = false, busi
     }
   }
 
+  const handleTitleSave = async () => {
+    if (!onTitleSave) return;
+    
+    try {
+      setIsSavingTitle(true);
+      await onTitleSave(title);
+      setIsEditingTitle(false);
+    } catch (error) {
+      console.error('Error saving title:', error);
+    } finally {
+      setIsSavingTitle(false);
+    }
+  }
+
   const handleQuestionnaireComplete = async (sectionId: BusinessPlanSection, text: string) => {
+    console.log(`Questionnaire complete for section ${sectionId}:`, text);
     setContent(prev => ({
       ...prev,
       [sectionId]: text
     }))
-    setQuestionnaireMode(null)
     await handleSave(sectionId)
-  }
-
-  const handleStartQuestionnaire = (sectionId: BusinessPlanSection) => {
-    setQuestionnaireMode(sectionId)
   }
 
   return (
     <div className="space-y-6">
+      {/* Business Plan Title Section */}
+      <div className="bg-white rounded-lg shadow-sm p-6 mb-4">
+        {isEditingTitle ? (
+          <div className="space-y-3">
+            <label htmlFor="business-plan-title" className="block text-sm font-medium text-gray-700">
+              Business Plan Title
+            </label>
+            <input
+              id="business-plan-title"
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Enter a title for your business plan"
+              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+            <div className="flex justify-end">
+              <button
+                onClick={handleTitleSave}
+                disabled={isSavingTitle || !title.trim()}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+              >
+                {isSavingTitle ? 'Saving...' : 'Save Title'}
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-center justify-between">
+            <h1 className="text-3xl font-bold text-gray-900">{title}</h1>
+            {isEditing && (
+              <button
+                onClick={() => setIsEditingTitle(true)}
+                className="p-2 text-gray-500 hover:text-blue-600 rounded-full hover:bg-gray-100"
+              >
+                <Edit2 className="h-5 w-5" />
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+
       <div className="border-b border-gray-200 pb-4">
         <h2 className="text-2xl font-bold text-gray-900">Executive Summary</h2>
         <p className="mt-2 text-gray-600">
           This is the most important section as it provides a snapshot of your business and captures the reader's attention.
           It should be written last, after completing the other sections.
         </p>
+        
+        {/* Debug display - hidden */}
+        {false && (
+          <div className="mt-4 p-2 bg-gray-100 rounded text-xs">
+            <details>
+              <summary>Debug: Content State</summary>
+              <pre className="overflow-auto max-h-40">
+                {JSON.stringify(content, null, 2)}
+              </pre>
+            </details>
+            <details className="mt-2">
+              <summary>Debug: Vision and Goals Content</summary>
+              <div className="mt-2 p-2 bg-white rounded">
+                <h4 className="font-bold">Raw Content:</h4>
+                <pre className="overflow-auto max-h-40 mt-1">
+                  {content.visionAndGoals || 'No vision and goals data'}
+                </pre>
+              </div>
+            </details>
+          </div>
+        )}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main content area */}
-        <div className="lg:col-span-2 space-y-4">
-          {sections.map((section) => (
-            <div key={section.id} className="border rounded-lg shadow-sm bg-white">
-              <button
-                onClick={() => setExpandedSection(expandedSection === section.id ? null : section.id)}
-                className="w-full px-4 py-3 flex items-center justify-between text-left"
-              >
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900">{section.title}</h3>
-                  <p className="text-sm text-gray-500">{section.description}</p>
-                </div>
-                {expandedSection === section.id ? (
-                  <ChevronDown className="h-5 w-5 text-gray-400" />
-                ) : (
-                  <ChevronRight className="h-5 w-5 text-gray-400" />
-                )}
-              </button>
+      {/* Main content area - now full width */}
+      <div className="space-y-4">
+        {sections.map((section) => (
+          <div key={section.id} className="border rounded-lg shadow-sm bg-white">
+            <button
+              onClick={() => setExpandedSection(expandedSection === section.id ? null : section.id)}
+              className="w-full px-4 py-3 flex items-center justify-between text-left"
+            >
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">{section.title}</h3>
+                <p className="text-sm text-gray-500">{section.description}</p>
+              </div>
+              {expandedSection === section.id ? (
+                <ChevronDown className="h-5 w-5 text-gray-400" />
+              ) : (
+                <ChevronRight className="h-5 w-5 text-gray-400" />
+              )}
+            </button>
 
-              {expandedSection === section.id && (
-                <div className="px-4 pb-4">
-                  {questionnaireMode === section.id ? (
+            {expandedSection === section.id && (
+              <div className="px-4 pb-4">
+                {section.id === 'visionAndGoals' ? (
+                  <>
+                    {/* Hide the duplicate vision content display */}
+                    {false && content.visionAndGoals && (
+                      <div className="mt-3">
+                        <div className="prose prose-sm max-w-none">
+                          <ReactMarkdown>{content.visionAndGoals}</ReactMarkdown>
+                        </div>
+                      </div>
+                    )}
                     <VisionQuestionnaire
                       businessPlanId={businessPlanId}
                       onComplete={(text) => handleQuestionnaireComplete(section.id, text)}
                     />
-                  ) : (
-                    <div>
-                      <textarea
-                        value={content[section.id] || ''}
-                        onChange={(e) => setContent(prev => ({ ...prev, [section.id]: e.target.value }))}
-                        disabled={!isEditing || isSaving}
-                        placeholder={`Enter your ${section.title.toLowerCase()}...`}
-                        className="w-full h-40 p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      />
-                      {isEditing && (
-                        <div className="mt-2 flex justify-end gap-2">
-                          {!content[section.id] && (
-                            <button
-                              onClick={() => handleStartQuestionnaire(section.id)}
-                              className="px-4 py-2 text-blue-600 hover:bg-blue-50 rounded-md"
-                            >
-                              Use Questionnaire
-                            </button>
-                          )}
-                          <button
-                            onClick={() => handleSave(section.id)}
-                            disabled={isSaving}
-                            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
-                          >
-                            {isSaving ? 'Saving...' : 'Save'}
-                          </button>
-                        </div>
-                      )}
+                  </>
+                ) : (
+                  <div>
+                    <textarea
+                      value={content[section.id] || ''}
+                      onChange={(e) => setContent(prev => ({ ...prev, [section.id]: e.target.value }))}
+                      disabled={!isEditing || isSaving}
+                      placeholder={`Enter your ${section.title.toLowerCase()}...`}
+                      className="w-full h-40 p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                    {isEditing && (
+                      <div className="mt-2 flex justify-end">
+                        <button
+                          onClick={() => handleSave(section.id)}
+                          disabled={isSaving}
+                          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+                        >
+                          {isSaving ? 'Saving...' : 'Save'}
+                        </button>
+                      </div>
+                    )}
+                    
+                    {/* Debug display for this section */}
+                    <div className="mt-4 p-2 bg-gray-100 rounded text-xs">
+                      <details>
+                        <summary>Debug: Section Content</summary>
+                        <pre className="overflow-auto max-h-40 mt-1">
+                          {JSON.stringify(content[section.id] || 'No content for this section', null, 2)}
+                        </pre>
+                      </details>
                     </div>
-                  )}
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-
-        {/* Prompts sidebar */}
-        <div className="lg:col-span-1">
-          {expandedSection && !questionnaireMode && (
-            <div className="border rounded-lg shadow-sm bg-white p-4">
-              <h4 className="font-semibold text-gray-900 mb-3">Guiding Questions</h4>
-              <ul className="space-y-3">
-                {sections.find(s => s.id === expandedSection)?.prompts.map((prompt, index) => (
-                  <li key={index} className="flex items-start gap-2">
-                    <span className="text-blue-600 mt-1">•</span>
-                    <span className="text-gray-600">{prompt}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-        </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        ))}
       </div>
     </div>
   )

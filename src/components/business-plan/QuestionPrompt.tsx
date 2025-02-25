@@ -50,7 +50,7 @@ export default function QuestionPrompt({ question, onAnswer, onNotSure, isLoadin
           disabled={isLoading}
           className="rounded-lg border border-gray-300 px-4 py-2 text-gray-700 hover:bg-gray-50 disabled:opacity-50"
         >
-          I'm not sure
+          Help me
         </button>
       </form>
     </div>

@@ -2,6 +2,14 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import type { BusinessPlanSection } from '@/types/business-plan'
 
+/**
+ * Executive Summary API Endpoint
+ * 
+ * This endpoint handles updates to the executive summary section of a business plan.
+ * After schema simplification, executive summary data is stored in the content JSON field
+ * of the BusinessPlan model rather than in a separate ExecutiveSummary model.
+ */
+
 const requiredFields: BusinessPlanSection[] = [
   'visionAndGoals',
   'productsOrServices',
@@ -18,8 +26,7 @@ export async function PUT(
     
     // Validate the business plan exists
     const businessPlan = await prisma.businessPlan.findUnique({
-      where: { id: params.id },
-      include: { executiveSummary: true }
+      where: { id: params.id }
     })
 
     if (!businessPlan) {
@@ -30,7 +37,6 @@ export async function PUT(
     }
 
     // Prepare the data with validation
-    const updateData: Record<string, string> = {}
     const updateField = Object.keys(updates)[0] as BusinessPlanSection
 
     if (!requiredFields.includes(updateField)) {
@@ -40,36 +46,33 @@ export async function PUT(
       )
     }
 
-    updateData[updateField] = updates[updateField]
-
-    if (businessPlan.executiveSummary) {
-      // Update existing summary
-      const summary = await prisma.executiveSummary.update({
-        where: {
-          businessPlanId: params.id
-        },
-        data: updateData
-      })
-      return NextResponse.json(summary)
-    } else {
-      // Create new summary with required fields initialized as empty strings
-      const initialData = requiredFields.reduce((acc, field) => ({
-        ...acc,
-        [field]: field === updateField ? updates[field] : ''
-      }), {})
-
-      const summary = await prisma.executiveSummary.create({
-        data: {
-          ...initialData,
-          businessPlan: {
-            connect: {
-              id: params.id
-            }
-          }
-        }
-      })
-      return NextResponse.json(summary)
+    // Get current content or initialize if it doesn't exist
+    const currentContent = businessPlan.content as Record<string, any> || {}
+    console.log('Current content before update:', currentContent);
+    
+    // Initialize executiveSummary object if it doesn't exist
+    if (!currentContent.executiveSummary) {
+      currentContent.executiveSummary = {}
     }
+    
+    // Update the specific field in the executiveSummary object
+    currentContent.executiveSummary[updateField] = updates[updateField]
+    console.log('Updated content:', currentContent);
+    
+    // Update the business plan with the new content
+    const updatedPlan = await prisma.businessPlan.update({
+      where: { id: params.id },
+      data: {
+        content: currentContent
+      }
+    })
+
+    // Return the executive summary and vision data in the response
+    return NextResponse.json({
+      id: updatedPlan.id,
+      ...currentContent.executiveSummary,
+      visionData: currentContent.vision || null
+    })
   } catch (error) {
     console.error('Error updating executive summary:', error)
     return NextResponse.json(
