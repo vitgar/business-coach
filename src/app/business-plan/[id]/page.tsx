@@ -522,7 +522,8 @@ export default function BusinessPlanPage({ params }: Props) {
 
   return (
     <div className="h-screen flex flex-col bg-gray-50">
-      <header className="bg-blue-600 text-white py-4">
+      {/* Enhanced header with gradient background and shadow */}
+      <header className="bg-gradient-to-r from-blue-700 to-blue-600 text-white py-6 shadow-md">
         <div className="container mx-auto px-4">
           <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
             <Logo />
@@ -538,9 +539,10 @@ export default function BusinessPlanPage({ params }: Props) {
 
       <main className="flex-1 overflow-auto">
         <div className="max-w-7xl mx-auto px-4 py-8">
-          <div className="flex justify-between items-center mb-8">
+          {/* Enhanced top navigation bar with improved styling */}
+          <div className="flex justify-between items-center mb-8 bg-white p-4 rounded-lg shadow-sm">
             <div className="flex items-center gap-4">
-              <h1 className="text-3xl font-bold text-gray-900">Business Plan</h1>
+              {/* Removed "Business Plan" text */}
               {businessPlans.length > 0 && (
                 <select
                   value={params.id}
@@ -559,25 +561,28 @@ export default function BusinessPlanPage({ params }: Props) {
                   )}
                 </select>
               )}
-              <button
-                onClick={createNewBusinessPlan}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-              >
-                New Plan
-              </button>
-              <Link
-                href="/cleanup"
-                className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 text-sm"
-              >
-                Cleanup
-              </Link>
+              {/* Hidden buttons, but keeping them in the code for future use if needed */}
+              <div className="hidden">
+                <button
+                  onClick={createNewBusinessPlan}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                >
+                  New Plan
+                </button>
+                <Link
+                  href="/cleanup"
+                  className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 text-sm transition-colors"
+                >
+                  Cleanup
+                </Link>
+              </div>
             </div>
             <div className="flex gap-2">
               {hasOldPlans && (
                 <button
                   onClick={handleMigrate}
                   disabled={isMigrating}
-                  className="px-4 py-2 bg-yellow-600 text-white rounded-md hover:bg-yellow-700 disabled:opacity-50 flex items-center gap-2"
+                  className="px-4 py-2 bg-yellow-600 text-white rounded-md hover:bg-yellow-700 disabled:opacity-50 flex items-center gap-2 transition-colors"
                 >
                   {isMigrating ? (
                     <>
@@ -591,7 +596,7 @@ export default function BusinessPlanPage({ params }: Props) {
               )}
               <button
                 onClick={() => setIsEditing(!isEditing)}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
               >
                 {isEditing ? 'Preview' : 'Edit'}
               </button>
@@ -606,11 +611,13 @@ export default function BusinessPlanPage({ params }: Props) {
               </div>
             ) : (
               <div className="flex gap-8">
-                {/* Sidebar */}
-                <BusinessPlanSidebar 
-                  activeSection={activeSection} 
-                  onSectionChange={handleSectionChange} 
-                />
+                {/* Fixed sidebar with sticky positioning */}
+                <div className="sticky top-4 self-start">
+                  <BusinessPlanSidebar 
+                    activeSection={activeSection} 
+                    onSectionChange={handleSectionChange} 
+                  />
+                </div>
                 
                 {/* Main content area */}
                 <div className="flex-1">

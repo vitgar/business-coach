@@ -88,23 +88,23 @@ export default function VisionQuestionnaire({ businessPlanId, onComplete }: Prop
     const parts = []
     
     if (data.longTermVision) {
-      parts.push('# Long-Term Vision\n' + data.longTermVision + '\n')
+      parts.push('### Long-Term Vision\n' + data.longTermVision + '\n')
     }
     
     if (data.yearOneGoals?.length) {
-      parts.push('# First Year Goals\n' + data.yearOneGoals.map(g => '- ' + g).join('\n') + '\n')
+      parts.push('### First Year Goals\n' + data.yearOneGoals.map(g => '- ' + g).join('\n') + '\n')
     }
     
     if (data.yearThreeGoals?.length) {
-      parts.push('# Three-Year Goals\n' + data.yearThreeGoals.map(g => '- ' + g).join('\n') + '\n')
+      parts.push('### Three-Year Goals\n' + data.yearThreeGoals.map(g => '- ' + g).join('\n') + '\n')
     }
     
     if (data.yearFiveGoals?.length) {
-      parts.push('# Five-Year Goals\n' + data.yearFiveGoals.map(g => '- ' + g).join('\n') + '\n')
+      parts.push('### Five-Year Goals\n' + data.yearFiveGoals.map(g => '- ' + g).join('\n') + '\n')
     }
     
     if (data.alignmentExplanation) {
-      parts.push('# Goal Alignment\n' + data.alignmentExplanation)
+      parts.push('### Goal Alignment\n' + data.alignmentExplanation)
     }
     
     return parts.join('\n')
@@ -276,9 +276,9 @@ Keep examples concrete and measurable. Maintain focus on vision and goals. Avoid
 
       {/* Right side - Vision Text Editor */}
       <div className="w-1/2 space-y-4">
-        <div className="bg-white rounded-lg shadow-sm p-4">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">Vision and Business Goals</h3>
-          <div className="prose prose-sm max-w-none mb-4">
+        <div className="bg-white rounded-lg shadow-sm p-4 border-l-4 border-blue-500">
+          <h3 className="text-lg font-medium text-blue-700 mb-4">Vision and Business Goals</h3>
+          <div className="prose prose-sm max-w-none mb-4 prose-headings:text-blue-600 prose-headings:font-medium prose-headings:text-base prose-p:text-gray-700 prose-li:text-gray-700">
             <ReactMarkdown>{formatVisionText(visionData)}</ReactMarkdown>
           </div>
           <div className="flex justify-end mt-4">

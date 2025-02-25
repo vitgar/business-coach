@@ -239,10 +239,10 @@ First question: What distribution channels will you use to reach your customers?
   const formatDistributionData = (data: DistributionData): string => {
     if (!data) return ''
 
-    let formattedText = '## Distribution Strategy\n\n'
+    let formattedText = '### Distribution Strategy\n\n'
 
     if (data.distributionChannels && data.distributionChannels.length > 0) {
-      formattedText += '### Distribution Channels\n'
+      formattedText += '#### Distribution Channels\n'
       data.distributionChannels.forEach(channel => {
         formattedText += `- ${channel}\n`
       })
@@ -250,27 +250,27 @@ First question: What distribution channels will you use to reach your customers?
     }
 
     if (data.primaryChannel) {
-      formattedText += `### Primary Distribution Method\n${data.primaryChannel}\n\n`
+      formattedText += `#### Primary Distribution Method\n${data.primaryChannel}\n\n`
     }
 
     if (data.channelStrategy) {
-      formattedText += `### Channel Management Strategy\n${data.channelStrategy}\n\n`
+      formattedText += `#### Channel Management Strategy\n${data.channelStrategy}\n\n`
     }
 
     if (data.logisticsApproach) {
-      formattedText += `### Logistics and Fulfillment\n${data.logisticsApproach}\n\n`
+      formattedText += `#### Logistics and Fulfillment\n${data.logisticsApproach}\n\n`
     }
 
     if (data.partnershipStrategy) {
-      formattedText += `### Partnerships and Intermediaries\n${data.partnershipStrategy}\n\n`
+      formattedText += `#### Partnerships and Intermediaries\n${data.partnershipStrategy}\n\n`
     }
 
     if (data.costStructure) {
-      formattedText += `### Distribution Costs\n${data.costStructure}\n\n`
+      formattedText += `#### Distribution Costs\n${data.costStructure}\n\n`
     }
 
     if (data.innovativeApproaches && data.innovativeApproaches.length > 0) {
-      formattedText += '### Innovative Distribution Methods\n'
+      formattedText += '#### Innovative Distribution Methods\n'
       data.innovativeApproaches.forEach(approach => {
         formattedText += `- ${approach}\n`
       })
@@ -359,16 +359,16 @@ First question: What distribution channels will you use to reach your customers?
 
       {/* Right side - Distribution Data Display */}
       <div className="w-1/2 space-y-4">
-        <div className="bg-white rounded-lg shadow-sm p-4">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">Distribution Strategy Information</h3>
-          <div className="prose prose-sm max-w-none mb-4">
+        <div className="bg-white rounded-lg shadow-sm p-4 border-l-4 border-purple-500">
+          <h3 className="text-lg font-medium text-purple-700 mb-4">Distribution Strategy Information</h3>
+          <div className="prose prose-sm max-w-none mb-4 prose-headings:text-purple-600 prose-headings:font-medium prose-headings:text-base prose-p:text-gray-700 prose-li:text-gray-700">
             <ReactMarkdown>{distributionData ? formatDistributionData(distributionData) : "No distribution data available yet. Complete the questionnaire to generate distribution strategy information."}</ReactMarkdown>
           </div>
           <div className="flex justify-end mt-4">
             <button
               onClick={handleSave}
               disabled={!distributionData}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+              className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 disabled:opacity-50"
             >
               Save Distribution Strategy
             </button>

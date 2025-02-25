@@ -223,7 +223,7 @@ export default function ExecutiveSummary({
               <button
                 onClick={handleTitleSave}
                 disabled={isSavingTitle || !title.trim()}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 transition-colors"
               >
                 {isSavingTitle ? 'Saving...' : 'Save Title'}
               </button>
@@ -231,11 +231,11 @@ export default function ExecutiveSummary({
           </div>
         ) : (
           <div className="flex items-center justify-between">
-            <h1 className="text-3xl font-bold text-gray-900">{title}</h1>
+            <h1 className="text-xl font-medium text-gray-800">{title}</h1>
             {isEditing && (
               <button
                 onClick={() => setIsEditingTitle(true)}
-                className="p-2 text-gray-500 hover:text-blue-600 rounded-full hover:bg-gray-100"
+                className="p-2 text-gray-500 hover:text-blue-600 rounded-full hover:bg-gray-100 transition-colors"
               >
                 <Edit2 className="h-5 w-5" />
               </button>
@@ -244,8 +244,8 @@ export default function ExecutiveSummary({
         )}
       </div>
 
-      <div className="border-b border-gray-200 pb-4">
-        <h2 className="text-2xl font-bold text-gray-900">Executive Summary</h2>
+      <div className="border-b-2 border-blue-500 pb-4 mb-6">
+        <h2 className="text-2xl font-bold text-blue-700">Executive Summary</h2>
         <p className="mt-2 text-gray-600">
           This is the most important section as it provides a snapshot of your business and captures the reader's attention.
           It should be written last, after completing the other sections.
@@ -274,26 +274,26 @@ export default function ExecutiveSummary({
       </div>
 
       {/* Main content area - now full width */}
-      <div className="space-y-4">
+      <div className="space-y-6">
         {sections.map((section) => (
-          <div key={section.id} className="border rounded-lg shadow-sm bg-white">
+          <div key={section.id} className="border rounded-lg shadow-sm bg-white overflow-hidden">
             <button
               onClick={() => setExpandedSection(expandedSection === section.id ? null : section.id)}
-              className="w-full px-4 py-3 flex items-center justify-between text-left"
+              className="w-full px-6 py-4 flex items-center justify-between text-left bg-gradient-to-r from-gray-50 to-white border-b transition-colors hover:bg-gray-50"
             >
               <div>
                 <h3 className="text-lg font-semibold text-gray-900">{section.title}</h3>
                 <p className="text-sm text-gray-500">{section.description}</p>
               </div>
               {expandedSection === section.id ? (
-                <ChevronDown className="h-5 w-5 text-gray-400" />
+                <ChevronDown className="h-5 w-5 text-blue-500" />
               ) : (
                 <ChevronRight className="h-5 w-5 text-gray-400" />
               )}
             </button>
 
             {expandedSection === section.id && (
-              <div className="px-4 pb-4">
+              <div className="px-6 py-5 bg-white">
                 {section.id === 'visionAndGoals' ? (
                   <>
                     {/* Hide the duplicate vision content display */}
@@ -361,16 +361,23 @@ export default function ExecutiveSummary({
                       onChange={(e) => setContent(prev => ({ ...prev, [section.id]: e.target.value }))}
                       disabled={!isEditing || isSaving}
                       placeholder={`Enter your ${section.title.toLowerCase()}...`}
-                      className="w-full h-40 p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full h-40 p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50 text-gray-800"
                     />
                     {isEditing && (
-                      <div className="mt-2 flex justify-end">
+                      <div className="mt-4 flex justify-end">
                         <button
                           onClick={() => handleSave(section.id)}
                           disabled={isSaving}
-                          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+                          className="px-5 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 transition-colors shadow-sm flex items-center gap-2"
                         >
-                          {isSaving ? 'Saving...' : 'Save'}
+                          {isSaving ? (
+                            <>
+                              <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
+                              <span>Saving...</span>
+                            </>
+                          ) : (
+                            'Save'
+                          )}
                         </button>
                       </div>
                     )}

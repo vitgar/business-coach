@@ -236,18 +236,18 @@ First question: Who are your target customers or market segments? Please describ
   const formatMarketsData = (data: MarketsData): string => {
     if (!data) return ''
 
-    let formattedText = '## Target Markets and Customers\n\n'
+    let formattedText = '### Target Markets and Customers\n\n'
 
     if (data.targetMarket) {
-      formattedText += `### Target Market\n${data.targetMarket}\n\n`
+      formattedText += `#### Target Market\n${data.targetMarket}\n\n`
     }
 
     if (data.marketSize) {
-      formattedText += `### Market Size\n${data.marketSize}\n\n`
+      formattedText += `#### Market Size\n${data.marketSize}\n\n`
     }
 
     if (data.customerSegments && data.customerSegments.length > 0) {
-      formattedText += '### Customer Segments\n'
+      formattedText += '#### Customer Segments\n'
       data.customerSegments.forEach(segment => {
         formattedText += `- ${segment}\n`
       })
@@ -255,7 +255,7 @@ First question: Who are your target customers or market segments? Please describ
     }
 
     if (data.customerNeeds && data.customerNeeds.length > 0) {
-      formattedText += '### Customer Needs\n'
+      formattedText += '#### Customer Needs\n'
       data.customerNeeds.forEach(need => {
         formattedText += `- ${need}\n`
       })
@@ -263,7 +263,7 @@ First question: Who are your target customers or market segments? Please describ
     }
 
     if (data.marketTrends && data.marketTrends.length > 0) {
-      formattedText += '### Market Trends\n'
+      formattedText += '#### Market Trends\n'
       data.marketTrends.forEach(trend => {
         formattedText += `- ${trend}\n`
       })
@@ -271,7 +271,7 @@ First question: Who are your target customers or market segments? Please describ
     }
 
     if (data.competitiveLandscape) {
-      formattedText += `### Competitive Landscape\n${data.competitiveLandscape}\n\n`
+      formattedText += `#### Competitive Landscape\n${data.competitiveLandscape}\n\n`
     }
 
     return formattedText
@@ -356,16 +356,16 @@ First question: Who are your target customers or market segments? Please describ
 
       {/* Right side - Markets Data Display */}
       <div className="w-1/2 space-y-4">
-        <div className="bg-white rounded-lg shadow-sm p-4">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">Markets and Customers Information</h3>
-          <div className="prose prose-sm max-w-none mb-4">
+        <div className="bg-white rounded-lg shadow-sm p-4 border-l-4 border-orange-500">
+          <h3 className="text-lg font-medium text-orange-700 mb-4">Markets and Customers Information</h3>
+          <div className="prose prose-sm max-w-none mb-4 prose-headings:text-orange-600 prose-headings:font-medium prose-headings:text-base prose-p:text-gray-700 prose-li:text-gray-700">
             <ReactMarkdown>{marketsData ? formatMarketsData(marketsData) : "No markets data available yet. Complete the questionnaire to generate markets information."}</ReactMarkdown>
           </div>
           <div className="flex justify-end mt-4">
             <button
               onClick={handleSave}
               disabled={!marketsData}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+              className="px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 disabled:opacity-50"
             >
               Save Markets Information
             </button>

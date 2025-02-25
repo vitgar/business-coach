@@ -47,8 +47,8 @@ export default function BusinessPlanSidebar({
   onSectionChange 
 }: BusinessPlanSidebarProps) {
   return (
-    <div className="w-64 bg-white shadow-sm rounded-lg overflow-hidden">
-      <div className="p-4 bg-blue-600 text-white">
+    <div className="w-64 bg-white shadow-md rounded-lg overflow-hidden border border-gray-200">
+      <div className="p-4 bg-gradient-to-r from-blue-700 to-blue-600 text-white">
         <h2 className="font-semibold text-lg">Business Plan Sections</h2>
       </div>
       
@@ -58,10 +58,10 @@ export default function BusinessPlanSidebar({
             <li key={section.id}>
               <button
                 onClick={() => onSectionChange(section.id)}
-                className={`w-full text-left px-4 py-3 flex items-center justify-between transition-colors ${
+                className={`w-full text-left px-4 py-3 flex items-center justify-between transition-all ${
                   activeSection === section.id
                     ? 'bg-blue-50 text-blue-700 font-medium border-l-4 border-blue-600'
-                    : 'text-gray-700 hover:bg-gray-50'
+                    : 'text-gray-700 hover:bg-gray-50 hover:border-l-4 hover:border-blue-200'
                 }`}
               >
                 <span>{section.name}</span>

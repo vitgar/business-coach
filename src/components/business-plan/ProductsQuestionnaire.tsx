@@ -107,23 +107,23 @@ export default function ProductsQuestionnaire({ businessPlanId, onComplete }: Pr
     const parts = []
     
     if (data.productDescription) {
-      parts.push('# Products/Services Description\n' + data.productDescription + '\n')
+      parts.push('### Products/Services Description\n' + data.productDescription + '\n')
     }
     
     if (data.uniqueSellingPoints?.length) {
-      parts.push('# Unique Selling Points\n' + data.uniqueSellingPoints.map(p => '- ' + p).join('\n') + '\n')
+      parts.push('### Unique Selling Points\n' + data.uniqueSellingPoints.map(p => '- ' + p).join('\n') + '\n')
     }
     
     if (data.competitiveAdvantages?.length) {
-      parts.push('# Competitive Advantages\n' + data.competitiveAdvantages.map(a => '- ' + a).join('\n') + '\n')
+      parts.push('### Competitive Advantages\n' + data.competitiveAdvantages.map(a => '- ' + a).join('\n') + '\n')
     }
     
     if (data.pricingStrategy) {
-      parts.push('# Pricing Strategy\n' + data.pricingStrategy + '\n')
+      parts.push('### Pricing Strategy\n' + data.pricingStrategy + '\n')
     }
     
     if (data.futureProductPlans) {
-      parts.push('# Future Product Plans\n' + data.futureProductPlans)
+      parts.push('### Future Product Plans\n' + data.futureProductPlans)
     }
     
     return parts.join('\n')
@@ -302,9 +302,9 @@ Keep examples concrete and detailed. Maintain focus on products and services. Av
 
       {/* Right side - Products Text Editor */}
       <div className="w-1/2 space-y-4">
-        <div className="bg-white rounded-lg shadow-sm p-4">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">Products and Services</h3>
-          <div className="prose prose-sm max-w-none mb-4">
+        <div className="bg-white rounded-lg shadow-sm p-4 border-l-4 border-green-500">
+          <h3 className="text-lg font-medium text-green-700 mb-4">Products and Services</h3>
+          <div className="prose prose-sm max-w-none mb-4 prose-headings:text-green-600 prose-headings:font-medium prose-headings:text-base prose-p:text-gray-700 prose-li:text-gray-700">
             <ReactMarkdown>{formatProductsText(productsData)}</ReactMarkdown>
           </div>
           <div className="flex justify-end mt-4">
@@ -315,7 +315,7 @@ Keep examples concrete and detailed. Maintain focus on products and services. Av
                 console.log('Formatted products text:', formattedText);
                 onComplete(formattedText);
               }}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+              className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
             >
               Save Products & Services
             </button>
