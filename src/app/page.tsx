@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ArrowRight, BookOpen, DollarSign, LineChart, Settings } from 'lucide-react'
+import { ArrowRight, BookOpen, DollarSign, LineChart, Settings, Book } from 'lucide-react'
 import ClientLayout from '@/components/ClientLayout'
 import { toast } from 'react-toastify'
 
@@ -43,7 +43,7 @@ export default function Home() {
             Transform your business idea into reality with our comprehensive coaching platform. 
             Get expert guidance every step of the way.
           </p>
-          <div className="space-x-4">
+          <div className="flex flex-wrap gap-4">
             <button 
               onClick={handleStartBusinessPlan}
               className="bg-white text-blue-600 px-6 py-3 rounded-lg font-semibold hover:bg-blue-50 transition-colors inline-flex items-center"
@@ -57,6 +57,13 @@ export default function Home() {
             >
               Get Free Business Coaching
             </Link>
+            <Link
+              href="/smart-journal"
+              className="bg-green-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-600 transition-colors inline-flex items-center"
+            >
+              Open Smart Journal
+              <Book className="ml-2 h-5 w-5" />
+            </Link>
           </div>
         </div>
       </section>
@@ -68,7 +75,7 @@ export default function Home() {
             Everything You Need to Succeed
           </h2>
           
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-8">
             {/* Business Planning */}
             <div className="bg-white p-6 rounded-xl shadow-sm hover:shadow-md transition-shadow">
               <BookOpen className="h-12 w-12 text-blue-600 mb-4" />
@@ -76,6 +83,22 @@ export default function Home() {
               <p className="text-gray-600">
                 Create comprehensive business plans with our step-by-step guidance
               </p>
+            </div>
+
+            {/* Smart Journal */}
+            <div className="bg-white p-6 rounded-xl shadow-sm hover:shadow-md transition-shadow">
+              <Book className="h-12 w-12 text-green-600 mb-4" />
+              <h3 className="text-xl font-semibold mb-2">Smart Journal</h3>
+              <p className="text-gray-600">
+                Keep track of your business activities, create to-do lists, and get AI-powered insights
+              </p>
+              <Link 
+                href="/smart-journal" 
+                className="mt-4 text-green-600 inline-flex items-center hover:text-green-700"
+              >
+                Try Smart Journal
+                <ArrowRight className="ml-1 h-4 w-4" />
+              </Link>
             </div>
 
             {/* Funding & Financials */}

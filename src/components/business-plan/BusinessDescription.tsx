@@ -1,4 +1,8 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import CompanyOverviewQuestionnaire from './CompanyOverviewQuestionnaire';
+import LegalStructureQuestionnaire from './LegalStructureQuestionnaire';
+import LocationFacilitiesQuestionnaire from './LocationFacilitiesQuestionnaire';
+import MissionStatementQuestionnaire from './MissionStatementQuestionnaire';
 
 /**
  * Props for the BusinessDescription component
@@ -6,6 +10,7 @@ import React from 'react';
 interface BusinessDescriptionProps {
   businessPlanId: string;
   isEditing?: boolean;
+  onSave?: (section: string, content: string) => Promise<void>;
 }
 
 /**
@@ -15,8 +20,75 @@ interface BusinessDescriptionProps {
  */
 export default function BusinessDescription({ 
   businessPlanId, 
-  isEditing = false 
+  isEditing = false,
+  onSave
 }: BusinessDescriptionProps) {
+  // Company overview content
+  const [companyOverview, setCompanyOverview] = useState('');
+  
+  // Other sections state
+  const [legalStructure, setLegalStructure] = useState('');
+  const [locationFacilities, setLocationFacilities] = useState('');
+  const [missionStatement, setMissionStatement] = useState('');
+
+  // Fetch existing business description data if available
+  useEffect(() => {
+    // This would fetch data from the API in a future implementation
+    // For now, we'll just use the state variables
+  }, [businessPlanId]);
+
+  /**
+   * Handle completion of the company overview questionnaire
+   */
+  const handleCompanyOverviewComplete = (overviewText: string) => {
+    setCompanyOverview(overviewText);
+  };
+
+  /**
+   * Handle completion of the legal structure questionnaire
+   */
+  const handleLegalStructureComplete = (legalStructureText: string) => {
+    setLegalStructure(legalStructureText);
+  };
+
+  /**
+   * Handle completion of the location & facilities questionnaire
+   */
+  const handleLocationFacilitiesComplete = (locationText: string) => {
+    setLocationFacilities(locationText);
+  };
+
+  /**
+   * Handle completion of the mission statement questionnaire
+   */
+  const handleMissionStatementComplete = (missionText: string) => {
+    setMissionStatement(missionText);
+  };
+
+  /**
+   * Handle saving all business description data
+   */
+  const handleSaveAll = async () => {
+    if (onSave) {
+      // Format all business description data into a single string
+      const fullDescription = `
+# Company Overview
+${companyOverview}
+
+# Legal Structure
+${legalStructure}
+
+# Location & Facilities
+${locationFacilities}
+
+# Mission Statement
+${missionStatement}
+      `.trim();
+      
+      await onSave('businessDescription', fullDescription);
+    }
+  };
+
   return (
     <div className="bg-white rounded-lg shadow-sm p-6">
       <h2 className="text-2xl font-bold text-gray-900 mb-4">Business Description</h2>
@@ -29,61 +101,96 @@ export default function BusinessDescription({
         
         {isEditing ? (
           <div className="space-y-6">
+            {/* Company Overview Section with Chat Interface */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 mb-3">
                 Company Overview
               </label>
-              <textarea
-                className="w-full rounded-md border border-gray-300 p-3 min-h-[120px]"
-                placeholder="Describe your company's history, founding story, and current status..."
+              
+              {/* CompanyOverviewQuestionnaire is now always shown directly */}
+              <CompanyOverviewQuestionnaire 
+                businessPlanId={businessPlanId}
+                onComplete={handleCompanyOverviewComplete}
               />
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 mb-3">
                 Legal Structure
               </label>
-              <select className="w-full rounded-md border border-gray-300 p-3">
-                <option value="">Select legal structure...</option>
-                <option value="sole_proprietorship">Sole Proprietorship</option>
-                <option value="partnership">Partnership</option>
-                <option value="llc">Limited Liability Company (LLC)</option>
-                <option value="corporation">Corporation</option>
-                <option value="s_corporation">S Corporation</option>
-                <option value="nonprofit">Nonprofit</option>
-              </select>
+              
+              {/* Replacing dropdown with LegalStructureQuestionnaire */}
+              <LegalStructureQuestionnaire
+                businessPlanId={businessPlanId}
+                onComplete={handleLegalStructureComplete}
+              />
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 mb-3">
                 Location & Facilities
               </label>
-              <textarea
-                className="w-full rounded-md border border-gray-300 p-3 min-h-[120px]"
-                placeholder="Describe your business location, facilities, and any strategic advantages they provide..."
+              
+              {/* Replacing textarea with LocationFacilitiesQuestionnaire */}
+              <LocationFacilitiesQuestionnaire
+                businessPlanId={businessPlanId}
+                onComplete={handleLocationFacilitiesComplete}
               />
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 mb-3">
                 Mission Statement
               </label>
-              <textarea
-                className="w-full rounded-md border border-gray-300 p-3 min-h-[80px]"
-                placeholder="Your company's mission statement..."
+              
+              {/* Replacing textarea with MissionStatementQuestionnaire */}
+              <MissionStatementQuestionnaire
+                businessPlanId={businessPlanId}
+                onComplete={handleMissionStatementComplete}
               />
             </div>
             
-            <button className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+            <button 
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+              onClick={handleSaveAll}
+            >
               Save Business Description
             </button>
           </div>
         ) : (
-          <div className="bg-gray-50 p-4 rounded-md border border-gray-200">
-            <p className="text-gray-500 italic">
-              This section will display your saved business description information.
-              Switch to Edit mode to add or update your business description.
-            </p>
+          <div>
+            {companyOverview ? (
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold">Company Overview</h3>
+                <div className="whitespace-pre-wrap">{companyOverview}</div>
+                
+                {legalStructure && (
+                  <>
+                    <h3 className="text-lg font-semibold mt-6">Legal Structure</h3>
+                    <div className="whitespace-pre-wrap">{legalStructure}</div>
+                  </>
+                )}
+                
+                {locationFacilities && (
+                  <>
+                    <h3 className="text-lg font-semibold mt-6">Location & Facilities</h3>
+                    <div className="whitespace-pre-wrap">{locationFacilities}</div>
+                  </>
+                )}
+                
+                {missionStatement && (
+                  <>
+                    <h3 className="text-lg font-semibold mt-6">Mission Statement</h3>
+                    <div className="whitespace-pre-wrap">{missionStatement}</div>
+                  </>
+                )}
+              </div>
+            ) : (
+              <p className="text-gray-500 italic">
+                This section will display your saved business description information.
+                Switch to Edit mode to add or update your business description.
+              </p>
+            )}
           </div>
         )}
       </div>

@@ -110,4 +110,32 @@ model Progress {
   status      Int      // Percentage complete
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+// Smart Journal TodoList model
+model TodoList {
+  id          String     @id @default(cuid())
+  title       String
+  description String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  userId      String
+  conversationId String?  // Optional link to the conversation that created this list
+  items       TodoItem[]
+}
+
+// Individual todo items
+model TodoItem {
+  id          String     @id @default(cuid())
+  content     String
+  completed   Boolean    @default(false)
+  dueDate     DateTime?
+  priority    String?    // high, medium, low
+  description String?    // Additional details about the task
+  categoryTags String?   // Comma-separated list of category tags
+  checklist   String?    // Pipe-separated list of checklist items
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  todoListId  String
+  todoList    TodoList   @relation(fields: [todoListId], references: [id], onDelete: Cascade)
 } 

@@ -17,9 +17,13 @@ if (!process.env.OPENAI_API_KEY) {
   console.warn('OPENAI_API_KEY is not set. Chat functionality will not work.');
 }
 
-// Check if assistant ID is available
+// Check if assistant IDs are available
 if (!process.env.OPENAI_ASSISTANT_ID) {
   console.warn('OPENAI_ASSISTANT_ID is not set. Chat functionality will not work.');
+}
+
+if (!process.env.OPENAI_SMART_JOURNAL_ASSISTANT_ID) {
+  console.warn('OPENAI_SMART_JOURNAL_ASSISTANT_ID is not set. Smart Journal functionality will not work.');
 }
 
 // Store thread IDs for conversations
@@ -60,9 +64,10 @@ async function getOrCreateThread(conversationId: string): Promise<string> {
  * 
  * @param {string} threadId - The thread ID to use
  * @param {ChatMessage[]} messages - The messages to process
+ * @param {boolean} isJournalMode - Whether to use the Smart Journal assistant
  * @returns {Promise<any>} The assistant's response
  */
-async function processWithAssistant(threadId: string, messages: ChatMessage[]) {
+async function processWithAssistant(threadId: string, messages: ChatMessage[], isJournalMode: boolean = false) {
   // Get the latest user message
   const latestUserMessage = messages.filter(msg => msg.role === 'user').pop();
   
@@ -83,9 +88,14 @@ async function processWithAssistant(threadId: string, messages: ChatMessage[]) {
   This is critical - your response will be shown directly to the user without any processing.
   If you need to work with structured data, do it internally without showing the technical details.`;
 
+  // Select the appropriate assistant ID based on the mode
+  const assistantId = isJournalMode 
+    ? process.env.OPENAI_SMART_JOURNAL_ASSISTANT_ID!
+    : process.env.OPENAI_ASSISTANT_ID!;
+
   // Run the assistant
   const run = await openai.beta.threads.runs.create(threadId, {
-    assistant_id: process.env.OPENAI_ASSISTANT_ID!,
+    assistant_id: assistantId,
     instructions: baseInstructions
   });
 
@@ -110,9 +120,10 @@ async function processWithAssistant(threadId: string, messages: ChatMessage[]) {
  * - Used for organizing and identifying chat threads
  * 
  * @param {string} message - The chat message to generate title from
+ * @param {boolean} isJournalMode - Whether to use the Smart Journal assistant
  * @returns {Promise<string>} Generated title (max 40 chars)
  */
-async function generateTitle(message: string): Promise<string> {
+async function generateTitle(message: string, isJournalMode: boolean = false): Promise<string> {
   try {
     // Create a temporary thread for title generation
     const thread = await openai.beta.threads.create();
@@ -123,9 +134,14 @@ async function generateTitle(message: string): Promise<string> {
       content: `Generate a concise, descriptive title (max 40 chars) that captures the main topic from this message: "${message}". Make it clear and specific, avoiding generic phrases.`
     });
     
+    // Select the appropriate assistant ID based on the mode
+    const assistantId = isJournalMode 
+      ? process.env.OPENAI_SMART_JOURNAL_ASSISTANT_ID!
+      : process.env.OPENAI_ASSISTANT_ID!;
+    
     // Run the assistant
     const run = await openai.beta.threads.runs.create(thread.id, {
-      assistant_id: process.env.OPENAI_ASSISTANT_ID!,
+      assistant_id: assistantId,
       instructions: "Generate a short, descriptive title only. No explanations or additional text."
     });
     
@@ -172,6 +188,7 @@ async function generateTitle(message: string): Promise<string> {
  * - messages: Array of ChatMessage objects containing conversation history
  * - isFirstMessage: Boolean flag indicating if this is the start of a new conversation
  * - conversationId: String identifier for the conversation
+ * - isJournalMode: Boolean flag indicating if this is a Smart Journal conversation
  * 
  * Flow:
  * 1. Gets or creates OpenAI thread for the conversation
@@ -184,17 +201,18 @@ async function generateTitle(message: string): Promise<string> {
  */
 export async function POST(request: Request) {
   try {
-    const { messages, isFirstMessage, conversationId = Date.now().toString() } = await request.json() as { 
+    const { messages, isFirstMessage, conversationId = Date.now().toString(), isJournalMode = false } = await request.json() as { 
       messages: ChatMessage[]
       isFirstMessage?: boolean
       conversationId?: string
+      isJournalMode?: boolean
     }
     
     // Get or create thread for this conversation
     const threadId = await getOrCreateThread(conversationId);
     
     // Process the conversation with the assistant
-    const response = await processWithAssistant(threadId, messages);
+    const response = await processWithAssistant(threadId, messages, isJournalMode);
     
     // Extract the response content
     const responseContent = response.content[0];
@@ -245,7 +263,7 @@ export async function POST(request: Request) {
     // If this is the first message, generate a title
     let title: string | undefined;
     if (isFirstMessage) {
-      title = await generateTitle(messages[messages.length - 1].content);
+      title = await generateTitle(messages[messages.length - 1].content, isJournalMode);
     }
 
     return NextResponse.json({

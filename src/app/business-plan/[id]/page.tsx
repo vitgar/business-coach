@@ -210,10 +210,23 @@ export default function BusinessPlanPage({ params }: Props) {
     }
   }, [params.id])
 
-  const handleSaveSection = async (sectionId: BusinessPlanSection, content: string) => {
+  const handleSaveSection = async (sectionId: BusinessPlanSection | string, content: string) => {
     try {
       console.log(`Saving section ${sectionId} to API:`, content);
-      const response = await fetch(`/api/business-plans/${params.id}/executive-summary`, {
+      
+      // Determine the appropriate API endpoint based on the section
+      let endpoint;
+      if (sectionId === 'businessDescription') {
+        endpoint = `/api/business-plans/${params.id}/business-description`;
+      } else if (sectionId.startsWith('marketingPlan.')) {
+        // Extract the specific marketing plan section (positioning, pricing, etc.)
+        const marketingSection = sectionId.split('.')[1];
+        endpoint = `/api/business-plans/${params.id}/marketing-plan/${marketingSection}`;
+      } else {
+        endpoint = `/api/business-plans/${params.id}/executive-summary`;
+      }
+      
+      const response = await fetch(endpoint, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -224,7 +237,7 @@ export default function BusinessPlanPage({ params }: Props) {
       })
 
       if (!response.ok) {
-        throw new Error('Failed to save section')
+        throw new Error(`Failed to save section: ${sectionId}`)
       }
 
       toast.success('Section saved successfully')
@@ -488,6 +501,7 @@ export default function BusinessPlanPage({ params }: Props) {
           <BusinessDescription
             businessPlanId={params.id}
             isEditing={isEditing}
+            onSave={handleSaveSection}
           />
         );
       case 'marketing-plan':
@@ -495,6 +509,7 @@ export default function BusinessPlanPage({ params }: Props) {
           <MarketingPlan
             businessPlanId={params.id}
             isEditing={isEditing}
+            onSave={handleSaveSection}
           />
         );
       case 'operations':

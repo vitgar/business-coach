@@ -147,3 +147,80 @@
 - [ ] 8.2 Add functionality to Marketing Plan section
 - [ ] 8.3 Add functionality to Operations section
 - [ ] 8.4 Add functionality to Financial Plan section 
+
+## Current Tasks: Business Description Implementation
+
+### 1. Company Overview Implementation
+- [x] 1.1. Create `CompanyOverviewQuestionnaire` component
+  - [x] 1.1.1. Define interface for company overview data
+  - [x] 1.1.2. Create questionnaire UI similar to existing questionnaires
+  - [x] 1.1.3. Implement chat functionality with OpenAI
+  - [x] 1.1.4. Add formatting for company overview data display
+
+- [x] 1.2. Create API endpoint for company overview data
+  - [x] 1.2.1. Create route handler at `/api/business-plans/[id]/company-overview`
+  - [x] 1.2.2. Implement POST handler for chat interactions
+  - [x] 1.2.3. Add data extraction functionality
+  - [x] 1.2.4. Ensure proper storage in business plan content
+  - [x] 1.2.5. Add content cleaning for responses
+
+- [x] 1.3. Update BusinessDescription component
+  - [x] 1.3.1. Integrate CompanyOverviewQuestionnaire into the component
+  - [x] 1.3.2. Add state management for company overview data
+  - [x] 1.3.3. Implement auto-expand functionality similar to ExecutiveSummary
+  - [x] 1.3.4. Ensure proper display of company overview data
+  - [x] 1.3.5. Add edit/view toggle functionality
+
+- [x] 1.4. Update business plan page for company overview
+  - [x] 1.4.1. Add company overview data handling
+  - [x] 1.4.2. Format company overview data for display
+  - [x] 1.4.3. Ensure proper refresh after saving
+
+- [x] 1.5. Testing and refinement for company overview
+  - [x] 1.5.1. Test the complete flow from questionnaire to display
+  - [x] 1.5.2. Fix any bugs or issues
+  - [x] 1.5.3. Optimize performance if needed
+
+### 2. Legal Structure Implementation
+- [ ] 2.1. Create `LegalStructureQuestionnaire` component
+  - [x] 2.1.1. Define interface for legal structure data
+  - [x] 2.1.2. Create questionnaire UI similar to CompanyOverviewQuestionnaire
+  - [x] 2.1.3. Define questions and prompts for legal structure
+  - [x] 2.1.4. Implement chat functionality with OpenAI
+  - [x] 2.1.5. Add formatting for legal structure data display
+
+- [ ] 2.2. Create API endpoint for legal structure data
+  - [ ] 2.2.1. Create route handler at `/api/business-plans/[id]/legal-structure`
+  - [ ] 2.2.2. Implement POST handler for chat interactions
+  - [ ] 2.2.3. Add data extraction functionality
+  - [ ] 2.2.4. Ensure proper storage in business plan content
+  - [ ] 2.2.5. Add content cleaning for responses
+
+- [ ] 2.3. Update BusinessDescription component
+  - [ ] 2.3.1. Integrate LegalStructureQuestionnaire into the component
+  - [ ] 2.3.2. Replace the existing select dropdown with the questionnaire
+  - [ ] 2.3.3. Add state management for legal structure data
+  - [ ] 2.3.4. Ensure proper display of legal structure data
+
+- [ ] 2.4. Update business plan page for legal structure
+  - [ ] 2.4.1. Add legal structure data handling
+  - [ ] 2.4.2. Format legal structure data for display
+  - [ ] 2.4.3. Ensure proper refresh after saving
+
+- [ ] 2.5. Testing and refinement for legal structure
+  - [ ] 2.5.1. Test the complete flow from questionnaire to display
+  - [ ] 2.5.2. Fix any bugs or issues
+  - [ ] 2.5.3. Optimize performance if needed
+
+### 3. Complete Business Description Section
+- [ ] 3.1. Create interactive questionnaires for other sections
+  - [ ] 3.1.1. Implement `LocationFacilitiesQuestionnaire` component
+  - [ ] 3.1.2. Implement `MissionStatementQuestionnaire` component
+- [ ] 3.2. Add functionality to save and load business description data
+  - [ ] 3.2.1. Enhance API to handle all business description subsections
+  - [ ] 3.2.2. Implement data loading on component mount
+  - [ ] 3.2.3. Add validation before saving
+
+### Later Tasks
+- [ ] 4. Location & Facilities Implementation
+- [ ] 5. Mission Statement Implementation 

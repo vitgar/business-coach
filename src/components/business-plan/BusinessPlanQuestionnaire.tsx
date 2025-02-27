@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { toast } from 'react-toastify'
 import { HelpCircle, Send } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
+import LoadingIndicator from './LoadingIndicator'
 
 interface Props {
   businessPlanId: string
@@ -222,15 +223,7 @@ export default function BusinessPlanQuestionnaire({ businessPlanId, onComplete }
           </div>
         ))}
         {isLoading && (
-          <div className="flex justify-start">
-            <div className="bg-white rounded-lg px-4 py-2 shadow-sm">
-              <div className="animate-pulse flex space-x-2">
-                <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
-                <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
-                <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
-              </div>
-            </div>
-          </div>
+          <LoadingIndicator type="spinner" />
         )}
       </div>
 

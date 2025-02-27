@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Send, Loader2 } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import { toast } from 'react-toastify'
+import LoadingIndicator from './LoadingIndicator'
 
 /**
  * Props for the MarketsQuestionnaire component
@@ -317,11 +318,7 @@ First question: Who are your target customers or market segments? Please describ
             </div>
           ))}
           {isLoading && (
-            <div className="flex justify-start mb-4">
-              <div className="max-w-[80%] rounded-lg p-3 bg-white border border-gray-200">
-                <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
-              </div>
-            </div>
+            <LoadingIndicator type="spinner" />
           )}
           <div ref={messagesEndRef} />
         </div>
