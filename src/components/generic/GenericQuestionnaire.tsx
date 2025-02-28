@@ -364,149 +364,160 @@ export default function GenericQuestionnaire({
   };
 
   return (
-    <div className="flex flex-col md:flex-row gap-6 h-full" onClick={(e) => e.stopPropagation()}>
-      {/* Left side - Chat interface */}
-      <div className="flex-1 flex flex-col bg-white rounded-lg shadow-sm border overflow-hidden">
-        <div className="p-4 border-b bg-gray-50">
-          <h3 className="text-lg font-medium text-gray-800">{title}</h3>
-          {description && <p className="mt-1 text-sm text-gray-600">{description}</p>}
-        </div>
-        
-        {/* Chat messages container */}
-        <div 
-          ref={chatContainerRef}
-          className="flex-1 overflow-y-auto p-4 space-y-4"
-          style={{ maxHeight: '500px' }}
-        >
-          {messages.map((message, index) => (
+    <div className="space-y-6">
+      <div className="flex flex-col md:flex-row gap-6">
+        {/* Left side - Chat interface */}
+        <div className="flex-1 border rounded-lg shadow-sm bg-white overflow-hidden">
+          <div className="p-6">
+            {/* Chat messages container */}
             <div 
-              key={index}
-              className={`flex ${message.role === 'assistant' ? 'justify-start' : 'justify-end'}`}
+              ref={chatContainerRef}
+              className="flex-1 overflow-y-auto p-4 space-y-4 border-b border-gray-200"
+              style={{ maxHeight: '500px' }}
             >
-              <div 
-                className={`max-w-3/4 rounded-lg p-3 ${
-                  message.role === 'assistant' 
-                    ? 'bg-gray-100 text-gray-800' 
-                    : 'bg-blue-600 text-white'
-                }`}
-              >
-                <ReactMarkdown>{message.content}</ReactMarkdown>
-              </div>
+              {messages.map((message, index) => (
+                <div 
+                  key={index}
+                  className={`flex ${message.role === 'assistant' ? 'justify-start' : 'justify-end'}`}
+                >
+                  <div 
+                    className={`max-w-3/4 rounded-lg p-3 ${
+                      message.role === 'assistant' 
+                        ? 'bg-gray-100 text-gray-800' 
+                        : 'bg-blue-600 text-white'
+                    }`}
+                  >
+                    <ReactMarkdown>{message.content}</ReactMarkdown>
+                  </div>
+                </div>
+              ))}
+              
+              {/* Loading indicator for messages */}
+              {isLoading && (
+                <div className="flex justify-start">
+                  <div className="max-w-3/4 rounded-lg p-3 bg-gray-100">
+                    <LoadingIndicator />
+                  </div>
+                </div>
+              )}
+              
+              {/* Reference for auto-scrolling */}
+              <div ref={messagesEndRef} />
             </div>
-          ))}
+            
+            {/* Suggested prompts - Dropdown implementation */}
+            {prompts.length > 0 && (
+              <div className="p-3 border-t border-gray-200 bg-gray-50">
+                <div className="relative">
+                  <select 
+                    onChange={(e) => {
+                      if (e.target.value) {
+                        setInput(e.target.value);
+                        // Reset the select after selection
+                        e.target.value = "";
+                      }
+                    }}
+                    className="w-full p-2 text-sm border border-gray-300 rounded-md bg-white text-gray-700 appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">Select a suggested question...</option>
+                    {prompts.map((prompt, index) => (
+                      <option key={index} value={prompt}>
+                        {prompt}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                    <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
+                    </svg>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {/* Input form */}
+            <form onSubmit={handleSubmit} className="p-4 border-t flex gap-2">
+              <input
+                type="text"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                placeholder="Type your message..."
+                className="flex-1 rounded-lg border border-gray-300 px-4 py-2 focus:border-blue-500 focus:outline-none"
+                disabled={isLoading}
+              />
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 disabled:opacity-50"
+              >
+                <Send className="h-5 w-5" />
+              </button>
+              <button
+                type="button"
+                onClick={handleNotSure}
+                disabled={isLoading}
+                className="rounded-lg border border-gray-300 px-4 py-2 text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+              >
+                <HelpCircle className="h-5 w-5" />
+              </button>
+            </form>
+          </div>
+        </div>
+
+        {/* Right side - Preview panel */}
+        <div className="flex-1 flex flex-col bg-white rounded-lg shadow-sm border overflow-hidden">
+          <div className="p-4 border-b bg-gray-50">
+            <h3 className="text-lg font-medium text-gray-800">{previewTitle || `${title} Preview`}</h3>
+          </div>
           
-          {/* Loading indicator for messages */}
-          {isLoading && (
-            <div className="flex justify-start">
-              <div className="max-w-3/4 rounded-lg p-3 bg-gray-100">
+          <div className="flex-1 p-4 overflow-y-auto" style={{ maxHeight: '500px' }}>
+            {isDataLoading ? (
+              <div className="flex items-center justify-center h-full">
                 <LoadingIndicator />
               </div>
-            </div>
-          )}
-          
-          {/* Reference for auto-scrolling */}
-          <div ref={messagesEndRef} />
-        </div>
-        
-        {/* Suggested prompts */}
-        {prompts.length > 0 && (
-          <div className="p-3 border-t border-gray-200 bg-gray-50">
-            <h4 className="text-sm font-medium text-gray-700 mb-2">Suggested questions:</h4>
-            <div className="flex flex-wrap gap-2">
-              {prompts.map((prompt, index) => (
-                <button
-                  key={index}
-                  onClick={() => setInput(prompt)}
-                  className="text-sm px-3 py-1 rounded-full bg-blue-100 text-blue-800 hover:bg-blue-200 transition-colors"
-                >
-                  {prompt.length > 50 ? prompt.substring(0, 47) + '...' : prompt}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-        
-        {/* Input form */}
-        <form onSubmit={handleSubmit} className="p-4 border-t flex gap-2">
-          <input
-            type="text"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="Type your message..."
-            className="flex-1 rounded-lg border border-gray-300 px-4 py-2 focus:border-blue-500 focus:outline-none"
-            disabled={isLoading}
-          />
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 disabled:opacity-50"
-          >
-            <Send className="h-5 w-5" />
-          </button>
-          <button
-            type="button"
-            onClick={handleNotSure}
-            disabled={isLoading}
-            className="rounded-lg border border-gray-300 px-4 py-2 text-gray-700 hover:bg-gray-50 disabled:opacity-50"
-          >
-            <HelpCircle className="h-5 w-5" />
-          </button>
-        </form>
-      </div>
-
-      {/* Right side - Preview panel */}
-      <div className="flex-1 flex flex-col bg-white rounded-lg shadow-sm border overflow-hidden">
-        <div className="p-4 border-b bg-gray-50">
-          <h3 className="text-lg font-medium text-gray-800">{previewTitle || `${title} Preview`}</h3>
-        </div>
-        
-        <div className="flex-1 p-4 overflow-y-auto" style={{ maxHeight: '500px' }}>
-          {isDataLoading ? (
-            <div className="flex items-center justify-center h-full">
-              <LoadingIndicator />
-            </div>
-          ) : (
-            <>
-              {formattedContent ? (
-                <div className="prose prose-sm max-w-none mb-4 prose-headings:text-blue-600 prose-headings:font-medium prose-headings:text-base prose-p:text-gray-700 prose-li:text-gray-700">
-                  <ReactMarkdown>{formattedContent}</ReactMarkdown>
-                </div>
-              ) : (
-                <p className="text-gray-500 italic">
-                  {`${title} information will be displayed here. Continue the conversation to generate content.`}
-                </p>
-              )}
-            </>
-          )}
-        </div>
-        
-        {/* Save button */}
-        <div className="p-4 border-t flex justify-end">
-          <button
-            onClick={handleSave}
-            disabled={isSaving || !formattedContent}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2"
-          >
-            {isSaving ? (
-              <>
-                <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
-                <span>Saving...</span>
-              </>
             ) : (
-              `Save ${title}`
+              <>
+                {formattedContent ? (
+                  <div className="prose prose-sm max-w-none mb-4 prose-headings:text-blue-600 prose-headings:font-medium prose-headings:text-base prose-p:text-gray-700 prose-li:text-gray-700">
+                    <ReactMarkdown>{formattedContent}</ReactMarkdown>
+                  </div>
+                ) : (
+                  <p className="text-gray-500 italic">
+                    {`${title} information will be displayed here. Continue the conversation to generate content.`}
+                  </p>
+                )}
+              </>
             )}
-          </button>
-        </div>
-        
-        {/* Status message if data exists */}
-        {Object.keys(sectionData).length > 0 && (
-          <div className="px-4 pb-4">
-            <div className="p-3 bg-green-50 border border-green-200 rounded-md text-green-800">
-              <p className="text-sm font-medium">{title} data is loaded and ready to save.</p>
-              <p className="text-xs mt-1">You can continue the conversation to refine it, or click "Save {title}" to use the current data.</p>
-            </div>
           </div>
-        )}
+          
+          {/* Save button */}
+          <div className="p-4 border-t flex justify-end">
+            <button
+              onClick={handleSave}
+              disabled={isSaving || !formattedContent}
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2"
+            >
+              {isSaving ? (
+                <>
+                  <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
+                  <span>Saving...</span>
+                </>
+              ) : (
+                `Save ${title}`
+              )}
+            </button>
+          </div>
+          
+          {/* Status message if data exists */}
+          {Object.keys(sectionData).length > 0 && (
+            <div className="px-4 pb-4">
+              <div className="p-3 bg-green-50 border border-green-200 rounded-md text-green-800">
+                <p className="text-sm font-medium">{title} data is loaded and ready to save.</p>
+                <p className="text-xs mt-1">You can continue the conversation to refine it, or click "Save {title}" to use the current data.</p>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

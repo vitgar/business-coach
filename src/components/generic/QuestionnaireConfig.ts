@@ -240,11 +240,11 @@ export const SECTION_CONFIGS: Record<string, SectionConfig> = {
     systemPrompt: 'Do not respond with long multiple steps answers, guide the user step by step asking one question at a time and wait for the answer. If the user asks for help, expresses uncertainty, or requests examples, provide 2-3 concrete examples that are specific and measurable. After providing examples, always ask if they want to use one of the examples directly or modify their current vision/goals with ideas from the examples. Keep the conversation focused on vision and goals. If the user starts discussing implementation, marketing, or other topics, gently guide them back to defining their vision and specific, measurable goals for years 1, 3, and 5.',
     dataFormatter: formatVisionData,
     prompts: [
-      'What is your core business vision?',
-      'What specific, measurable goals do you want to achieve in your first year?',
-      'What are your three-year goals?',
-      'What are your five-year goals?',
-      'How do these goals align with your overall business strategy?'
+      'Guide me step by step to create a business vision',
+      'How do I create a 5-year vision?',
+      'Tips for setting achievable goals',
+      'Mission vs. vision - what\'s the difference?',
+      'How to align goals with my vision'
     ],
     helpMessage: 'Let me help you define your business vision and goals with some examples. A good vision statement articulates the purpose and impact of your business, while goals should be specific, measurable, achievable, relevant, and time-bound (SMART).'
   },
@@ -257,11 +257,11 @@ export const SECTION_CONFIGS: Record<string, SectionConfig> = {
     systemPrompt: 'Guide the user through defining their products or services step by step. Focus on what makes their offerings unique and valuable. Help them articulate their competitive advantage and how they will sustain it. Keep questions focused on specific aspects of their products or services, not their broader business operations.',
     dataFormatter: formatProductsData,
     prompts: [
-      'What products or services will your business offer?',
-      'How are your offerings different from competitors?',
-      'What unique value do your products/services provide to customers?',
-      'What is your competitive advantage?',
-      'How will you maintain this advantage over time?'
+      'Guide me step by step to define my product offering',
+      'How to choose which products to focus on first',
+      'Ways to differentiate from competitors',
+      'How to describe my service\'s value',
+      'What to include in my MVP'
     ]
   },
   'targetMarket': {
@@ -273,11 +273,11 @@ export const SECTION_CONFIGS: Record<string, SectionConfig> = {
     systemPrompt: 'Guide the user through defining their target markets and customer segments. Help them be specific about demographics, psychographics, and behaviors. Encourage quantification of market size and segmentation where possible. Focus on actionable customer insights rather than general market trends.',
     dataFormatter: formatMarketsData,
     prompts: [
-      'Who are your target customers?',
-      'What market segments will you serve?',
-      'What is the size of your target market?',
-      'What are the key demographics of your customers?',
-      'How will you reach these customer segments?'
+      'Guide me step by step to identify my target market',
+      'How to narrow my customer focus',
+      'Low-cost market research methods',
+      'Creating effective customer personas',
+      'Optimal number of customer segments to target'
     ]
   },
   'distributionStrategy': {
@@ -289,11 +289,11 @@ export const SECTION_CONFIGS: Record<string, SectionConfig> = {
     systemPrompt: 'Help the user define their distribution channels and logistics. Focus on the entire customer journey from production to delivery. Encourage consideration of costs, efficiency, and customer experience throughout the distribution process. Keep the discussion practical and specific to their business model.',
     dataFormatter: formatDistributionData,
     prompts: [
-      'How will your products/services reach customers?',
-      'What distribution channels will you use?',
-      'Are there any unique or innovative distribution methods?',
-      'How will you manage the distribution process?',
-      'What are the costs associated with your distribution strategy?'
+      'Guide me step by step to create a distribution strategy',
+      'Best distribution options for my business type',
+      'Direct sales vs. using distributors',
+      'Online vs. physical distribution pros/cons',
+      'Creating a scalable distribution model'
     ]
   },
   'positioning': {
@@ -305,11 +305,11 @@ export const SECTION_CONFIGS: Record<string, SectionConfig> = {
     systemPrompt: 'Guide the user through defining their market positioning. Focus on their unique value proposition and competitive differentiation. Help them articulate their target audience in specific terms. Keep the conversation focused on positioning rather than broader marketing tactics.',
     dataFormatter: formatMarketPositioningData,
     prompts: [
-      'Who is your ideal customer?',
-      'What makes your business different from competitors?',
-      'How would you describe your unique value proposition?',
-      'What market gap or need does your business address?',
-      'How do you want customers to perceive your brand?'
+      'Guide me step by step to define my market position',
+      'Finding my niche in a crowded market',
+      'Creating an effective positioning statement',
+      'Should I compete on price, quality, or service?',
+      'Defending against competitors copying my position'
     ]
   },
   'pricing': {
@@ -321,11 +321,11 @@ export const SECTION_CONFIGS: Record<string, SectionConfig> = {
     systemPrompt: 'Help the user develop a pricing strategy that aligns with their business goals and market positioning. Guide them to consider competitive pricing, value-based pricing, and profitability. Encourage specificity in pricing tiers and rationale.',
     dataFormatter: formatPricingStrategyData,
     prompts: [
-      'What pricing model best fits your business?',
-      'How does your pricing compare to competitors?',
-      'Will you offer different pricing tiers?',
-      'What profit margins are you targeting?',
-      'How will you handle discounts or promotions?'
+      'Guide me step by step to develop a pricing strategy',
+      'Finding the optimal price point',
+      'How to structure pricing tiers',
+      'Value-based pricing techniques',
+      'Pricing psychology tactics that work'
     ]
   },
   'promotional': {
@@ -337,11 +337,11 @@ export const SECTION_CONFIGS: Record<string, SectionConfig> = {
     systemPrompt: 'Guide the user through planning their promotional activities. Help them identify appropriate marketing channels for their target audience. Encourage them to consider budget allocation, messaging strategy, and measurement of marketing effectiveness.',
     dataFormatter: formatPromotionalActivitiesData,
     prompts: [
-      'What advertising channels will you use?',
-      'How will you use social media?',
-      'What content marketing strategies will you employ?',
-      'Are there PR opportunities you can leverage?',
-      'How much budget will you allocate to marketing?'
+      'Guide me step by step to create a promotional plan',
+      'Most effective marketing channels for startups',
+      'Creating a marketing budget that makes sense',
+      'Content marketing strategies that drive sales',
+      'Measuring marketing ROI effectively'
     ]
   },
   'sales': {
@@ -353,11 +353,11 @@ export const SECTION_CONFIGS: Record<string, SectionConfig> = {
     systemPrompt: 'Help the user develop their sales strategy. Guide them through defining their sales process, channels, team structure, and metrics. Focus on practical, actionable approaches that align with their business model and target market.',
     dataFormatter: formatSalesStrategyData,
     prompts: [
-      'What will your sales process look like?',
-      'Which sales channels will you prioritize?',
-      'How will you structure your sales team?',
-      'What metrics will you use to measure conversion?',
-      'What are your sales forecasts for the first year?'
+      'Guide me step by step to develop a sales strategy',
+      'Creating an effective sales process',
+      'Best CRM tools for small businesses',
+      'Setting realistic sales targets',
+      'Hiring and compensating salespeople'
     ]
   },
   'legalStructure': {
@@ -369,11 +369,11 @@ export const SECTION_CONFIGS: Record<string, SectionConfig> = {
     systemPrompt: 'Guide the user through selecting an appropriate legal structure for their business. Help them understand the implications of different entity types on liability, taxes, ownership, and regulatory requirements. Focus on practical considerations rather than detailed legal advice.',
     dataFormatter: formatLegalStructureData,
     prompts: [
-      'What type of business entity are you considering?',
-      'How will ownership be structured?',
-      'What regulatory requirements apply to your business?',
-      'What intellectual property considerations are important?',
-      'What are the tax implications of different structures?'
+      'Guide me step by step to choose a legal structure',
+      'LLC vs. Corporation: which is right for me?',
+      'Tax implications of different business structures',
+      'Essential business licenses and permits',
+      'Protecting intellectual property effectively'
     ]
   },
   'production': {
@@ -385,12 +385,11 @@ export const SECTION_CONFIGS: Record<string, SectionConfig> = {
     systemPrompt: "Guide the user through defining their production or service delivery process. Focus on specific steps, equipment, timelines, capacity, outsourcing, and costs. Ask one question at a time and be specific. If they ask for examples, provide 2-3 concrete examples relevant to their industry.",
     dataFormatter: formatProductionData,
     prompts: [
-      "What are the key steps in your production or service delivery process?",
-      "What equipment and technology do you use in production?",
-      "What is your production timeline and scheduling approach?",
-      "How do you manage production capacity and scaling?",
-      "Do you outsource any parts of your production process?",
-      "What are your main production costs?"
+      'Guide me step by step to design my production process',
+      'Optimizing production efficiency',
+      'In-house vs. outsourced production',
+      'Managing production costs effectively',
+      'Scaling production as demand grows'
     ]
   },
   'qualityControl': {
@@ -402,12 +401,11 @@ export const SECTION_CONFIGS: Record<string, SectionConfig> = {
     systemPrompt: "Guide the user through defining their quality control processes. Focus on standards, testing procedures, metrics, compliance requirements, and improvement processes. Ask one question at a time and be specific. If they ask for examples, provide 2-3 concrete examples relevant to their industry.",
     dataFormatter: formatQualityControlData,
     prompts: [
-      "What quality standards do you adhere to?",
-      "What quality control processes do you have in place?",
-      "How do you test and verify quality?",
-      "What metrics do you track for quality?",
-      "What compliance requirements apply to your business?",
-      "How do you continuously improve quality?"
+      'Guide me step by step to create a quality control system',
+      'Setting measurable quality standards',
+      'Cost-effective quality testing methods',
+      'Handling customer complaints effectively',
+      'Training staff for quality consistency'
     ]
   },
   'inventory': {
@@ -419,12 +417,11 @@ export const SECTION_CONFIGS: Record<string, SectionConfig> = {
     systemPrompt: "Guide the user through defining their inventory management system. Focus on tracking, reordering, storage, supplier relationships, and cost control. Ask one question at a time and be specific. If they ask for examples, provide 2-3 concrete examples relevant to their industry.",
     dataFormatter: formatInventoryData,
     prompts: [
-      "What inventory management system do you use?",
-      "How do you track inventory levels?",
-      "What is your process for reordering inventory?",
-      "How do you approach storage and warehousing?",
-      "How do you manage relationships with suppliers?",
-      "What strategies do you use to control inventory costs?"
+      'Guide me step by step to set up inventory management',
+      'Determining optimal inventory levels',
+      'Affordable inventory tracking systems',
+      'Reducing inventory holding costs',
+      'Managing seasonal inventory fluctuations'
     ]
   },
   'kpis': {
@@ -436,12 +433,11 @@ export const SECTION_CONFIGS: Record<string, SectionConfig> = {
     systemPrompt: "Guide the user through defining their KPIs across different areas of their business. Focus on financial, operational, customer, and employee metrics. Ask one question at a time and be specific. If they ask for examples, provide 2-3 concrete examples relevant to their industry.",
     dataFormatter: formatKPIData,
     prompts: [
-      "What financial KPIs will you track?",
-      "What operational KPIs will you measure?",
-      "What customer-related KPIs are important to your business?",
-      "What employee or team KPIs will you monitor?",
-      "How will you track and report on these metrics?",
-      "How often will you review KPIs and adjust strategies?"
+      'Guide me step by step to establish business KPIs',
+      'Most important metrics for my business type',
+      'Setting realistic performance targets',
+      'Simple KPI tracking systems',
+      'Using metrics to make better decisions'
     ]
   },
   'technology': {
@@ -449,16 +445,15 @@ export const SECTION_CONFIGS: Record<string, SectionConfig> = {
     title: 'Technology & Systems',
     description: 'Outline the technology and systems you will use to run your business.',
     apiEndpoint: '/operations/technology',
-    initialMessage: "Let's discuss the technology and systems you'll use in your business. What core technology systems will your business rely on?",
-    systemPrompt: "Guide the user through defining their technology systems. Focus on core systems, software applications, data management, cybersecurity, and technology investments. Ask one question at a time and be specific. If they ask for examples, provide 2-3 concrete examples relevant to their industry.",
+    initialMessage: "Let's discuss the technology and systems you will use to run your business. What software, hardware, or other technology will you implement?",
+    systemPrompt: "Guide the user through defining their technology stack and systems. Focus on software, hardware, integration, security, and future technology needs. Ask one question at a time and be specific. If they ask for examples, provide 2-3 concrete examples relevant to their industry.",
     dataFormatter: formatTechnologyData,
     prompts: [
-      "What core technology systems will your business use?",
-      "What software applications are essential to your operations?",
-      "How will you manage data and information?",
-      "What cybersecurity measures will you implement?",
-      "What technology investments are planned for the future?",
-      "How will you integrate different technology systems?"
+      'Guide me step by step to select business technology',
+      'Essential software for my business type',
+      'Affordable tech stack for startups',
+      'Integrating different business systems',
+      'Future-proofing technology investments'
     ]
   },
   'startupCost': {
@@ -507,14 +502,11 @@ export const SECTION_CONFIGS: Record<string, SectionConfig> = {
       return parts.join('\n');
     },
     prompts: [
-      "What are your one-time costs to start your business?",
-      "What equipment or assets do you need to purchase?",
-      "What are your initial inventory requirements?",
-      "What legal or professional fees do you anticipate?",
-      "What facility setup costs will you incur?",
-      "What are your initial marketing and branding costs?",
-      "What is your total startup investment requirement?",
-      "How will you fund these startup costs?"
+      "I'm completely new to this - can you walk me through all the startup costs I should consider?",
+      "What are the typical startup costs for a business in my industry?",
+      "Help me create a detailed startup budget with realistic estimates",
+      "I'm worried about overlooking important costs - what do most entrepreneurs miss?",
+      "How can I minimize my initial investment while still launching effectively?"
     ]
   },
   'revenueProjections': {
@@ -533,34 +525,33 @@ export const SECTION_CONFIGS: Record<string, SectionConfig> = {
       }
       
       if (data.yearOneProjections) {
-        parts.push('### Year One Projections\n' + data.yearOneProjections + '\n');
+        parts.push('### Year 1 Projections\n' + data.yearOneProjections + '\n');
       }
       
       if (data.yearTwoProjections) {
-        parts.push('### Year Two Projections\n' + data.yearTwoProjections + '\n');
+        parts.push('### Year 2 Projections\n' + data.yearTwoProjections + '\n');
       }
       
       if (data.yearThreeProjections) {
-        parts.push('### Year Three Projections\n' + data.yearThreeProjections + '\n');
+        parts.push('### Year 3 Projections\n' + data.yearThreeProjections + '\n');
       }
       
       if (data.growthAssumptions) {
         parts.push('### Growth Assumptions\n' + data.growthAssumptions + '\n');
       }
       
-      if (data.seasonalFactors) {
-        parts.push('### Seasonal Factors\n' + data.seasonalFactors + '\n');
+      if (data.seasonalityFactors) {
+        parts.push('### Seasonality Factors\n' + data.seasonalityFactors + '\n');
       }
       
       return parts.join('\n');
     },
     prompts: [
-      "What are your primary revenue streams?",
-      "What are your projected sales for year one (monthly or quarterly)?",
-      "What growth rate do you expect in years two and three?",
-      "What pricing assumptions are you making?",
-      "Are there seasonal factors affecting your revenue?",
-      "What is your rationale for these projections?"
+      "I have no idea how to forecast revenue - can you guide me through the process?",
+      "What's a realistic monthly revenue ramp-up for a new business like mine?",
+      "Help me create revenue projections that won't scare off potential investors",
+      "How do I account for multiple revenue streams in my projections?",
+      "What are common mistakes entrepreneurs make when forecasting revenue?"
     ]
   },
   'expenseProjections': {
@@ -583,15 +574,15 @@ export const SECTION_CONFIGS: Record<string, SectionConfig> = {
       }
       
       if (data.yearOneExpenses) {
-        parts.push('### Year One Expense Projections\n' + data.yearOneExpenses + '\n');
+        parts.push('### Year 1 Expense Projections\n' + data.yearOneExpenses + '\n');
       }
       
       if (data.yearTwoExpenses) {
-        parts.push('### Year Two Expense Projections\n' + data.yearTwoExpenses + '\n');
+        parts.push('### Year 2 Expense Projections\n' + data.yearTwoExpenses + '\n');
       }
       
       if (data.yearThreeExpenses) {
-        parts.push('### Year Three Expense Projections\n' + data.yearThreeExpenses + '\n');
+        parts.push('### Year 3 Expense Projections\n' + data.yearThreeExpenses + '\n');
       }
       
       if (data.costReductionStrategies) {
@@ -601,12 +592,11 @@ export const SECTION_CONFIGS: Record<string, SectionConfig> = {
       return parts.join('\n');
     },
     prompts: [
-      "What are your fixed monthly costs?",
-      "What variable costs will you incur?",
-      "How will your expenses grow as your business expands?",
-      "Are there seasonal variations in your expenses?",
-      "What are your largest expense categories?",
-      "How do you plan to control or reduce costs over time?"
+      "I'm overwhelmed by all the potential costs - help me identify what's really important",
+      "What expenses am I likely forgetting in my business model?",
+      "How should my expenses change as my business grows over 3 years?",
+      "Help me create a month-by-month expense budget for my first year",
+      "What are smart ways to reduce expenses without compromising quality?"
     ]
   },
   'breakEvenAnalysis': {
@@ -637,32 +627,35 @@ export const SECTION_CONFIGS: Record<string, SectionConfig> = {
       }
       
       if (data.breakEvenUnits) {
-        parts.push('### Break-Even in Units\n' + data.breakEvenUnits + '\n');
+        parts.push('### Break-Even Point (Units)\n' + data.breakEvenUnits + '\n');
       }
       
       if (data.breakEvenRevenue) {
-        parts.push('### Break-Even in Revenue\n' + data.breakEvenRevenue + '\n');
+        parts.push('### Break-Even Point (Revenue)\n' + data.breakEvenRevenue + '\n');
       }
       
       if (data.breakEvenTimeline) {
-        parts.push('### Estimated Timeline to Break-Even\n' + data.breakEvenTimeline + '\n');
+        parts.push('### Estimated Break-Even Timeline\n' + data.breakEvenTimeline + '\n');
+      }
+      
+      if (data.breakEvenAnalysis) {
+        parts.push('### Break-Even Analysis\n' + data.breakEvenAnalysis + '\n');
       }
       
       return parts.join('\n');
     },
     prompts: [
-      "What are your total fixed costs per month?",
-      "What is your variable cost per unit or service?",
-      "What is your selling price per unit or service?",
-      "What is your contribution margin?",
-      "How many units or services do you need to sell to break even?",
-      "When do you expect to reach your break-even point?"
+      "I've never done a break-even analysis before - can you explain it simply?",
+      "My business has multiple products/services - how do I calculate my break-even point?",
+      "What factors most influence how quickly I'll reach profitability?",
+      "Help me understand what happens to my break-even point if my costs increase",
+      "Is my expected break-even timeline realistic for my industry?"
     ]
   },
   'fundingRequirements': {
     id: 'fundingRequirements',
     title: 'Funding Requirements',
-    description: 'Outline your funding needs and potential sources',
+    description: 'Outline how much funding you need and how it will be used',
     apiEndpoint: '/financial-plan/funding-requirements',
     initialMessage: "Let's outline your funding requirements. How much total funding do you need and for what purposes?",
     systemPrompt: "Guide the user through defining their funding requirements. Help them identify how much funding they need, what it will be used for, and potential funding sources. Focus on creating a realistic funding plan that aligns with their business goals. Ask one question at a time and be specific. If they ask for examples, provide 2-3 concrete examples relevant to their industry.",
@@ -697,12 +690,11 @@ export const SECTION_CONFIGS: Record<string, SectionConfig> = {
       return parts.join('\n');
     },
     prompts: [
-      "How much total funding does your business require?",
-      "What specific purposes will the funding serve?",
-      "What funding sources are you considering?",
-      "What is the breakdown between equity and debt financing?",
-      "What is your timeline for obtaining funding?",
-      "What return on investment can investors expect?"
+      "I'm not sure how much funding I actually need - can you help me figure it out?",
+      "What funding options are available for someone with limited personal resources?",
+      "Help me create a compelling use-of-funds section for my business plan",
+      "How do I approach potential investors with my funding requirements?",
+      "What should I prepare before meeting with a bank about a business loan?"
     ]
   },
   'financialMetrics': {
@@ -732,23 +724,26 @@ export const SECTION_CONFIGS: Record<string, SectionConfig> = {
         parts.push('### Growth Metrics\n' + data.growthMetrics + '\n');
       }
       
-      if (data.targetMetrics) {
-        parts.push('### Target Metrics\n' + data.targetMetrics + '\n');
+      if (data.cashFlowMetrics) {
+        parts.push('### Cash Flow Metrics\n' + data.cashFlowMetrics + '\n');
       }
       
-      if (data.reportingFrequency) {
-        parts.push('### Reporting Frequency\n' + data.reportingFrequency + '\n');
+      if (data.targetValues) {
+        parts.push('### Target Values\n' + data.targetValues + '\n');
+      }
+      
+      if (data.reviewFrequency) {
+        parts.push('### Review Frequency\n' + data.reviewFrequency + '\n');
       }
       
       return parts.join('\n');
     },
     prompts: [
-      "What profitability ratios will you track?",
-      "What liquidity ratios are important for your business?",
-      "What efficiency ratios will you monitor?",
-      "What growth metrics are most relevant to your business?",
-      "What are your target values for these metrics?",
-      "How frequently will you review these financial metrics?"
+      "I find financial metrics confusing - can you explain which ones really matter for my business?",
+      "What financial warning signs should I watch for in my first year?",
+      "Help me set up a simple system to track my key financial metrics",
+      "How often should I review different financial metrics?",
+      "What metrics will investors or lenders focus on when evaluating my business?"
     ]
   },
   'missionStatement': {
@@ -786,10 +781,10 @@ export const SECTION_CONFIGS: Record<string, SectionConfig> = {
     },
     prompts: [
       "What is the core purpose of your business?",
-      "What problem does your business solve?",
-      "What are the core values that guide your business?",
-      "What impact do you want to make in your industry or community?",
-      "What is your vision for the future of your business?"
+      "Can you guide me step by step to create a compelling mission statement?",
+      "I'm not sure about my core values, can you help me identify them?",
+      "Show me some examples of good mission statements in my industry",
+      "How do I make my mission statement stand out from competitors?"
     ]
   },
   'businessModel': {
@@ -802,10 +797,10 @@ export const SECTION_CONFIGS: Record<string, SectionConfig> = {
     dataFormatter: formatBusinessModelData,
     prompts: [
       "How will your business make money?",
-      "What is your revenue model?",
-      "Who are your key partners or suppliers?",
-      "What are your key activities and resources?",
-      "What is your cost structure?"
+      "I'm not sure which revenue model fits my business, can you explain the options?",
+      "Guide me step by step through creating a business model canvas",
+      "What are some successful business models in my industry?",
+      "Help me identify my key resources and activities"
     ]
   },
   'businessStructure': {
@@ -842,11 +837,11 @@ export const SECTION_CONFIGS: Record<string, SectionConfig> = {
       return formattedText;
     },
     prompts: [
-      "What is the legal structure of your business?",
-      "Who are the key members of your team?",
-      "What is your management structure?",
-      "How is ownership distributed?",
-      "Do you have advisors or board members?"
+      "I'm not sure which legal structure is best for my business, can you help me decide?",
+      "Guide me step by step through setting up my management structure",
+      "What roles should I consider for my initial team?",
+      "How should I distribute ownership in my business?",
+      "What advisors or board members would benefit my type of business?"
     ]
   },
   'industryBackground': {
@@ -883,11 +878,11 @@ export const SECTION_CONFIGS: Record<string, SectionConfig> = {
       return formattedText;
     },
     prompts: [
-      "What industry is your business in?",
-      "What is the size and growth rate of your market?",
-      "Who are your main competitors?",
-      "What trends are shaping your industry?",
-      "Are there regulatory considerations that affect your business?"
+      "Guide me step by step through analyzing my industry",
+      "I'm not sure about the current trends in my industry, can you help?",
+      "How do I identify my main competitors and their strengths?",
+      "What information should I include about market size and growth?",
+      "Help me understand the regulatory considerations for my industry"
     ]
   }
 };

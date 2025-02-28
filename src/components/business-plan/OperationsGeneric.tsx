@@ -190,17 +190,17 @@ export default function OperationsGeneric({
         {sections.map((section) => (
           <div key={section.id} className="border rounded-lg shadow-sm bg-white overflow-hidden">
             <button
-              onClick={() => toggleSection(section.id)}
-              className="w-full px-6 py-4 flex items-center justify-between text-left bg-gradient-to-r from-gray-50 to-white border-b transition-colors hover:bg-gray-50"
+              onClick={(e) => toggleSection(section.id)}
+              className="w-full px-6 py-4 flex items-center justify-between text-left bg-blue-50 hover:bg-blue-100 border-b transition-colors"
             >
               <div>
-                <h3 className="text-lg font-semibold text-gray-900">{section.title}</h3>
-                <p className="text-sm text-gray-500">{section.description}</p>
+                <h3 className="text-lg font-semibold text-blue-800">{section.title}</h3>
+                <p className="text-sm text-blue-600">{section.description}</p>
               </div>
               {expandedSection === section.id ? (
                 <ChevronDown className="h-5 w-5 text-blue-500" />
               ) : (
-                <ChevronRight className="h-5 w-5 text-gray-400" />
+                <ChevronRight className="h-5 w-5 text-blue-400" />
               )}
             </button>
 
