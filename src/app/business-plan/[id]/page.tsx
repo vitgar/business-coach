@@ -4,10 +4,10 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'react-toastify'
 import ExecutiveSummarySection from '@/components/business-plan/ExecutiveSummary'
-import BusinessDescription from '@/components/business-plan/BusinessDescription'
+import BusinessDescriptionGeneric from '@/components/business-plan/BusinessDescriptionGeneric'
 import MarketingPlanGeneric from '@/components/business-plan/MarketingPlanGeneric'
 import OperationsGeneric from '@/components/business-plan/OperationsGeneric'
-import FinancialPlan from '@/components/business-plan/FinancialPlan'
+import FinancialPlanGeneric from '@/components/business-plan/FinancialPlanGeneric'
 import BusinessPlanSidebar, { BusinessPlanSectionType } from '@/components/business-plan/BusinessPlanSidebar'
 import SectionNavigation from '@/components/business-plan/SectionNavigation'
 import type { BusinessPlanSection, ExecutiveSummaryData } from '@/types/business-plan'
@@ -498,7 +498,7 @@ export default function BusinessPlanPage({ params }: Props) {
         );
       case 'business-description':
         return (
-          <BusinessDescription
+          <BusinessDescriptionGeneric
             businessPlanId={params.id}
             isEditing={isEditing}
             onSave={handleSaveSection}
@@ -522,9 +522,10 @@ export default function BusinessPlanPage({ params }: Props) {
         );
       case 'financial-plan':
         return (
-          <FinancialPlan
+          <FinancialPlanGeneric
             businessPlanId={params.id}
             isEditing={isEditing}
+            onSave={handleSaveSection}
           />
         );
       default:
