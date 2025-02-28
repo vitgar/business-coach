@@ -83,6 +83,13 @@ export default function Home() {
               <p className="text-gray-600">
                 Create comprehensive business plans with our step-by-step guidance
               </p>
+              <button 
+                onClick={handleStartBusinessPlan} 
+                className="mt-4 text-blue-600 inline-flex items-center hover:text-blue-700"
+              >
+                Create Business Plan
+                <ArrowRight className="ml-1 h-4 w-4" />
+              </button>
             </div>
 
             {/* Smart Journal */}

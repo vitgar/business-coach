@@ -5,8 +5,8 @@ import { useRouter } from 'next/navigation'
 import { toast } from 'react-toastify'
 import ExecutiveSummarySection from '@/components/business-plan/ExecutiveSummary'
 import BusinessDescription from '@/components/business-plan/BusinessDescription'
-import MarketingPlan from '@/components/business-plan/MarketingPlan'
-import Operations from '@/components/business-plan/Operations'
+import MarketingPlanGeneric from '@/components/business-plan/MarketingPlanGeneric'
+import OperationsGeneric from '@/components/business-plan/OperationsGeneric'
 import FinancialPlan from '@/components/business-plan/FinancialPlan'
 import BusinessPlanSidebar, { BusinessPlanSectionType } from '@/components/business-plan/BusinessPlanSidebar'
 import SectionNavigation from '@/components/business-plan/SectionNavigation'
@@ -506,7 +506,7 @@ export default function BusinessPlanPage({ params }: Props) {
         );
       case 'marketing-plan':
         return (
-          <MarketingPlan
+          <MarketingPlanGeneric
             businessPlanId={params.id}
             isEditing={isEditing}
             onSave={handleSaveSection}
@@ -514,9 +514,10 @@ export default function BusinessPlanPage({ params }: Props) {
         );
       case 'operations':
         return (
-          <Operations
+          <OperationsGeneric
             businessPlanId={params.id}
             isEditing={isEditing}
+            onSave={handleSaveSection}
           />
         );
       case 'financial-plan':

@@ -1,3 +1,44 @@
+/**
+ * DEPRECATED: This component has been replaced by OperationsGeneric.tsx
+ * This file is kept for reference purposes only. 
+ * DO NOT USE IN PRODUCTION.
+ */
+
+import React from 'react';
+
+/**
+ * Original Operations component (kept as reference)
+ * The complete implementation has been commented out to prevent usage.
+ * 
+ * This component previously handled:
+ * - Production processes
+ * - Quality control
+ * - Inventory management
+ * - KPIs
+ * - Technology systems
+ * 
+ * Please use OperationsGeneric.tsx instead.
+ */
+
+// Props interface for type safety
+interface OperationsProps {
+  businessPlanId: string;
+  isEditing?: boolean;
+  onSave?: () => void;
+}
+
+/**
+ * Placeholder component that replaces the original Operations component
+ * Returns null and logs a warning when used
+ */
+const Operations: React.FC<OperationsProps> = () => {
+  console.warn('Using deprecated Operations component. Please use OperationsGeneric instead.');
+  return null;
+};
+
+export default Operations;
+
+/* Original implementation preserved as reference:
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import ReactMarkdown from 'react-markdown';
@@ -8,18 +49,14 @@ import KPIQuestionnaire from './KPIQuestionnaire';
 import TechnologyQuestionnaire from './TechnologyQuestionnaire';
 import LoadingIndicator from './LoadingIndicator';
 
-/**
- * Interface for Operations component props
- */
+// Interface for Operations component props
 interface OperationsProps {
   businessPlanId: string;
   isEditing?: boolean;
   onSave?: () => void;
 }
 
-/**
- * Interface for Operations data
- */
+// Interface for Operations data
 interface OperationsData {
   production?: string;
   productionData?: any;
@@ -33,362 +70,393 @@ interface OperationsData {
   technologyData?: any;
 }
 
-/**
- * Operations component for displaying and editing operations and control systems
- * 
- * @param businessPlanId - The ID of the business plan
- * @param isEditing - Whether the component is in edit mode
- * @param onSave - Optional callback for when operations data is saved
- */
+// Operations component for displaying and editing operations and control systems
 const Operations: React.FC<OperationsProps> = ({ 
   businessPlanId, 
   isEditing = false,
   onSave
 }) => {
   // State for operations data
-  const [operationsData, setOperationsData] = useState<OperationsData>({
-    production: '',
-    productionData: {},
-    qualityControl: '',
-    qualityControlData: {},
-    inventory: '',
-    inventoryData: {},
-    kpis: '',
-    kpiData: {},
-    technology: '',
-    technologyData: {}
-  });
+  const [operationsData, setOperationsData] = useState<OperationsData>({});
   
-  // State for loading indicators
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
+  // State for loading indicator
+  const [loading, setLoading] = useState(false);
   
-  // State for form values
-  const [formValues, setFormValues] = useState({
-    production: '',
-    qualityControl: '',
-    inventory: '',
-    kpis: '',
-    technology: ''
-  });
+  // States for section expansion
+  const [productionExpanded, setProductionExpanded] = useState(false);
+  const [qualityControlExpanded, setQualityControlExpanded] = useState(false);
+  const [inventoryExpanded, setInventoryExpanded] = useState(false);
+  const [kpiExpanded, setKpiExpanded] = useState(false);
+  const [technologyExpanded, setTechnologyExpanded] = useState(false);
   
-  // Fetch operations data when component mounts or businessPlanId changes
+  // State for saving indicator
+  const [savingOperations, setSavingOperations] = useState(false);
+  
+  // Auto-expand sections with content
+  useEffect(() => {
+    if (operationsData) {
+      if (operationsData.production) {
+        setProductionExpanded(true);
+      }
+      
+      if (operationsData.qualityControl) {
+        setQualityControlExpanded(true);
+      }
+      
+      if (operationsData.inventory) {
+        setInventoryExpanded(true);
+      }
+      
+      if (operationsData.kpis) {
+        setKpiExpanded(true);
+      }
+      
+      if (operationsData.technology) {
+        setTechnologyExpanded(true);
+      }
+    }
+  }, [operationsData]);
+  
+  // Function to fetch operations data
+  const fetchOperationsData = async () => {
+    setLoading(true);
+    
+    try {
+      // Fetch production process data
+      const productionRes = await fetch(`/api/business-plans/${businessPlanId}/operations/production`);
+      const productionData = await productionRes.json();
+      
+      // Fetch quality control data
+      const qualityControlRes = await fetch(`/api/business-plans/${businessPlanId}/operations/quality-control`);
+      const qualityControlData = await qualityControlRes.json();
+      
+      // Fetch inventory management data
+      const inventoryRes = await fetch(`/api/business-plans/${businessPlanId}/operations/inventory`);
+      const inventoryData = await inventoryRes.json();
+      
+      // Fetch KPI data
+      const kpiRes = await fetch(`/api/business-plans/${businessPlanId}/operations/kpis`);
+      const kpiData = await kpiRes.json();
+      
+      // Fetch technology systems data
+      const technologyRes = await fetch(`/api/business-plans/${businessPlanId}/operations/technology`);
+      const technologyData = await technologyRes.json();
+      
+      // Update state with fetched data
+      setOperationsData({
+        production: productionData.markdown || '',
+        productionData: productionData.data || {},
+        qualityControl: qualityControlData.markdown || '',
+        qualityControlData: qualityControlData.data || {},
+        inventory: inventoryData.markdown || '',
+        inventoryData: inventoryData.data || {},
+        kpis: kpiData.markdown || '',
+        kpiData: kpiData.data || {},
+        technology: technologyData.markdown || '',
+        technologyData: technologyData.data || {},
+      });
+      
+      setLoading(false);
+    } catch (error) {
+      console.error('Error fetching operations data:', error);
+      toast.error('Failed to load operations data. Please try again.');
+      setLoading(false);
+    }
+  };
+  
+  // Fetch operations data on mount
   useEffect(() => {
     if (businessPlanId) {
       fetchOperationsData();
     }
   }, [businessPlanId]);
   
-  /**
-   * Fetch operations data from API
-   */
-  const fetchOperationsData = async () => {
-    setIsLoading(true);
-    try {
-      // Fetch all operations data
-      const response = await fetch(`/api/business-plans/${businessPlanId}/operations`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch operations data');
-      }
-      
-      const data = await response.json();
-      const operations = data.operations || {};
-      
-      // Set operations data
-      setOperationsData({
-        production: operations.production || '',
-        productionData: operations.productionData || {},
-        qualityControl: operations.qualityControl || '',
-        qualityControlData: operations.qualityControlData || {},
-        inventory: operations.inventory || '',
-        inventoryData: operations.inventoryData || {},
-        kpis: operations.kpis || '',
-        kpiData: operations.kpiData || {},
-        technology: operations.technology || '',
-        technologyData: operations.technologyData || {}
-      });
-      
-      // Set form values
-      setFormValues({
-        production: operations.production || '',
-        qualityControl: operations.qualityControl || '',
-        inventory: operations.inventory || '',
-        kpis: operations.kpis || '',
-        technology: operations.technology || ''
-      });
-    } catch (error) {
-      console.error('Error fetching operations data:', error);
-      toast.error('Failed to load operations data');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-  
-  /**
-   * Handle completion of production process questionnaire
-   * 
-   * @param production - The production process markdown
-   * @param productionData - The structured production data
-   */
-  const handleProductionComplete = (production: string, productionData: any) => {
-    setOperationsData(prev => ({
-      ...prev,
-      production,
-      productionData
-    }));
-  };
-  
-  /**
-   * Handle completion of quality control questionnaire
-   * 
-   * @param qualityControl - The quality control markdown
-   * @param qualityControlData - The structured quality control data
-   */
-  const handleQualityControlComplete = (qualityControl: string, qualityControlData: any) => {
-    setOperationsData(prev => ({
-      ...prev,
-      qualityControl,
-      qualityControlData
-    }));
-  };
-  
-  /**
-   * Handle completion of inventory management questionnaire
-   * 
-   * @param inventory - The inventory management markdown
-   * @param inventoryData - The structured inventory data
-   */
-  const handleInventoryComplete = (inventory: string, inventoryData: any) => {
-    setOperationsData(prev => ({
-      ...prev,
-      inventory,
-      inventoryData
-    }));
-  };
-  
-  /**
-   * Handle completion of KPI questionnaire
-   * 
-   * @param kpis - The KPIs markdown
-   * @param kpiData - The structured KPI data
-   */
-  const handleKPIComplete = (kpis: string, kpiData: any) => {
-    setOperationsData(prev => ({
-      ...prev,
-      kpis,
-      kpiData
-    }));
-  };
-  
-  /**
-   * Handle completion of technology questionnaire
-   * 
-   * @param technology - The technology markdown
-   * @param technologyData - The structured technology data
-   */
-  const handleTechnologyComplete = (technology: string, technologyData: any) => {
-    setOperationsData(prev => ({
-      ...prev,
-      technology,
-      technologyData
-    }));
-  };
-  
-  /**
-   * Handle changes in text area fields
-   * 
-   * @param e - The change event
-   */
-  const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setFormValues(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-  
-  /**
-   * Save operations data to the API
-   */
+  // Function to handle saving operations data
   const handleSaveOperations = async () => {
-    setIsSaving(true);
-    try {
-      const response = await fetch(`/api/business-plans/${businessPlanId}/operations`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          production: operationsData.production || formValues.production,
-          productionData: operationsData.productionData,
-          qualityControl: operationsData.qualityControl || formValues.qualityControl,
-          qualityControlData: operationsData.qualityControlData,
-          inventory: operationsData.inventory || formValues.inventory,
-          inventoryData: operationsData.inventoryData,
-          kpis: operationsData.kpis || formValues.kpis,
-          kpiData: operationsData.kpiData,
-          technology: operationsData.technology || formValues.technology,
-          technologyData: operationsData.technologyData,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to save operations data');
-      }
-
-      toast.success('Operations data saved successfully');
-      if (onSave) {
-        onSave();
-      }
-    } catch (error) {
-      console.error('Error saving operations data:', error);
-      toast.error('Failed to save operations data');
-    } finally {
-      setIsSaving(false);
+    if (onSave) {
+      setSavingOperations(true);
+      await new Promise(resolve => setTimeout(resolve, 500));
+      setSavingOperations(false);
+      onSave();
     }
   };
   
-  // Show loading indicator while data is being fetched
-  if (isLoading) {
-    return (
-      <div className="p-6">
-        <h2 className="text-2xl font-bold mb-4">Operating & Control Systems</h2>
-        <LoadingIndicator />
-      </div>
-    );
+  // Function to handle section expansion toggle
+  const toggleSection = (section: string) => {
+    switch (section) {
+      case 'production':
+        setProductionExpanded(prev => !prev);
+        break;
+      case 'qualityControl':
+        setQualityControlExpanded(prev => !prev);
+        break;
+      case 'inventory':
+        setInventoryExpanded(prev => !prev);
+        break;
+      case 'kpi':
+        setKpiExpanded(prev => !prev);
+        break;
+      case 'technology':
+        setTechnologyExpanded(prev => !prev);
+        break;
+      default:
+        break;
+    }
+  };
+  
+  // Functions to handle individual section completion
+  const handleProductionComplete = (markdown: string, data: any) => {
+    setOperationsData(prev => ({
+      ...prev,
+      production: markdown,
+      productionData: data
+    }));
+  };
+  
+  const handleQualityControlComplete = (markdown: string, data: any) => {
+    setOperationsData(prev => ({
+      ...prev,
+      qualityControl: markdown,
+      qualityControlData: data
+    }));
+  };
+  
+  const handleInventoryComplete = (markdown: string, data: any) => {
+    setOperationsData(prev => ({
+      ...prev,
+      inventory: markdown,
+      inventoryData: data
+    }));
+  };
+  
+  const handleKpiComplete = (markdown: string, data: any) => {
+    setOperationsData(prev => ({
+      ...prev,
+      kpis: markdown,
+      kpiData: data
+    }));
+  };
+  
+  const handleTechnologyComplete = (markdown: string, data: any) => {
+    setOperationsData(prev => ({
+      ...prev,
+      technology: markdown,
+      technologyData: data
+    }));
+  };
+  
+  // If loading, display loading indicator
+  if (loading) {
+    return <LoadingIndicator />;
   }
   
   return (
-    <div className="p-6">
+    <div className="mb-6">
       <h2 className="text-2xl font-bold mb-4">Operating & Control Systems</h2>
-      <p className="mb-6 text-gray-600">
-        Define how your business will operate on a day-to-day basis, including production processes, 
-        quality control measures, inventory management, key performance indicators, and technology systems.
-      </p>
       
-      {isEditing ? (
-        <div className="space-y-8">
-          {/* Production Process Questionnaire */}
-          <div className="border rounded-lg p-4">
-            <h3 className="text-xl font-semibold mb-4">Production Process</h3>
-            <ProductionProcessQuestionnaire
-              businessPlanId={businessPlanId}
-              onComplete={handleProductionComplete}
-            />
-          </div>
-          
-          {/* Quality Control Questionnaire */}
-          <div className="border rounded-lg p-4">
-            <h3 className="text-xl font-semibold mb-4">Quality Control</h3>
-            <QualityControlQuestionnaire
-              businessPlanId={businessPlanId}
-              onComplete={handleQualityControlComplete}
-            />
-          </div>
-          
-          {/* Inventory Management Questionnaire */}
-          <div className="border rounded-lg p-4">
-            <h3 className="text-xl font-semibold mb-4">Inventory Management</h3>
-            <InventoryManagementQuestionnaire
-              businessPlanId={businessPlanId}
-              onComplete={handleInventoryComplete}
-            />
-          </div>
-          
-          {/* Key Performance Indicators */}
-          <div className="border rounded-lg p-4">
-            <h3 className="text-xl font-semibold mb-4">Key Performance Indicators (KPIs)</h3>
-            <KPIQuestionnaire
-              businessPlanId={businessPlanId}
-              onComplete={handleKPIComplete}
-            />
-          </div>
-          
-          {/* Technology & Systems */}
-          <div className="border rounded-lg p-4">
-            <h3 className="text-xl font-semibold mb-4">Technology & Systems</h3>
-            <TechnologyQuestionnaire
-              businessPlanId={businessPlanId}
-              onComplete={handleTechnologyComplete}
-            />
-          </div>
-          
-          {/* Save Button */}
-          <div className="flex justify-end">
-            <button
-              onClick={handleSaveOperations}
-              disabled={isSaving}
-              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-blue-300"
-            >
-              {isSaving ? 'Saving...' : 'Save Operations'}
-            </button>
-          </div>
+      {/* Production Process Section */}
+      <div className="mb-4 border rounded-lg overflow-hidden">
+        <div 
+          className="flex justify-between items-center p-4 bg-gray-50 cursor-pointer"
+          onClick={() => toggleSection('production')}
+        >
+          <h3 className="text-xl font-semibold">Production Process</h3>
+          <button className="text-gray-500">
+            {productionExpanded ? (
+              <span>▼</span>
+            ) : (
+              <span>▶</span>
+            )}
+          </button>
         </div>
-      ) : (
-        <div className="space-y-6">
-          {/* Production Process */}
-          <div className="border rounded-lg p-4">
-            <h3 className="text-xl font-semibold mb-4">Production Process</h3>
-            {operationsData.production ? (
-              <div className="prose max-w-none">
-                <ReactMarkdown>{operationsData.production}</ReactMarkdown>
-              </div>
+        
+        {productionExpanded && (
+          <div className="p-4">
+            {isEditing ? (
+              <ProductionProcessQuestionnaire 
+                businessPlanId={businessPlanId}
+                onComplete={handleProductionComplete}
+              />
             ) : (
-              <p className="text-gray-500 italic">No production process information available. Switch to edit mode to add details.</p>
+              <>
+                {operationsData.production ? (
+                  <ReactMarkdown>{operationsData.production}</ReactMarkdown>
+                ) : (
+                  <p className="text-gray-500">
+                    No production process information available. Switch to edit mode to add details.
+                  </p>
+                )}
+              </>
             )}
           </div>
-
-          {/* Quality Control */}
-          <div className="border rounded-lg p-4">
-            <h3 className="text-xl font-semibold mb-4">Quality Control</h3>
-            {operationsData.qualityControl ? (
-              <div className="prose max-w-none">
-                <ReactMarkdown>{operationsData.qualityControl}</ReactMarkdown>
-              </div>
+        )}
+      </div>
+      
+      {/* Quality Control Section */}
+      <div className="mb-4 border rounded-lg overflow-hidden">
+        <div 
+          className="flex justify-between items-center p-4 bg-gray-50 cursor-pointer"
+          onClick={() => toggleSection('qualityControl')}
+        >
+          <h3 className="text-xl font-semibold">Quality Control</h3>
+          <button className="text-gray-500">
+            {qualityControlExpanded ? (
+              <span>▼</span>
             ) : (
-              <p className="text-gray-500 italic">No quality control information available. Switch to edit mode to add details.</p>
+              <span>▶</span>
+            )}
+          </button>
+        </div>
+        
+        {qualityControlExpanded && (
+          <div className="p-4">
+            {isEditing ? (
+              <QualityControlQuestionnaire 
+                businessPlanId={businessPlanId}
+                onComplete={handleQualityControlComplete}
+              />
+            ) : (
+              <>
+                {operationsData.qualityControl ? (
+                  <ReactMarkdown>{operationsData.qualityControl}</ReactMarkdown>
+                ) : (
+                  <p className="text-gray-500">
+                    No quality control information available. Switch to edit mode to add details.
+                  </p>
+                )}
+              </>
             )}
           </div>
-
-          {/* Inventory Management */}
-          <div className="border rounded-lg p-4">
-            <h3 className="text-xl font-semibold mb-4">Inventory Management</h3>
-            {operationsData.inventory ? (
-              <div className="prose max-w-none">
-                <ReactMarkdown>{operationsData.inventory}</ReactMarkdown>
-              </div>
+        )}
+      </div>
+      
+      {/* Inventory Management Section */}
+      <div className="mb-4 border rounded-lg overflow-hidden">
+        <div 
+          className="flex justify-between items-center p-4 bg-gray-50 cursor-pointer"
+          onClick={() => toggleSection('inventory')}
+        >
+          <h3 className="text-xl font-semibold">Inventory Management</h3>
+          <button className="text-gray-500">
+            {inventoryExpanded ? (
+              <span>▼</span>
             ) : (
-              <p className="text-gray-500 italic">No inventory management information available. Switch to edit mode to add details.</p>
+              <span>▶</span>
+            )}
+          </button>
+        </div>
+        
+        {inventoryExpanded && (
+          <div className="p-4">
+            {isEditing ? (
+              <InventoryManagementQuestionnaire 
+                businessPlanId={businessPlanId}
+                onComplete={handleInventoryComplete}
+              />
+            ) : (
+              <>
+                {operationsData.inventory ? (
+                  <ReactMarkdown>{operationsData.inventory}</ReactMarkdown>
+                ) : (
+                  <p className="text-gray-500">
+                    No inventory management information available. Switch to edit mode to add details.
+                  </p>
+                )}
+              </>
             )}
           </div>
-
-          {/* Key Performance Indicators */}
-          <div className="border rounded-lg p-4">
-            <h3 className="text-xl font-semibold mb-4">Key Performance Indicators (KPIs)</h3>
-            {operationsData.kpis ? (
-              <div className="prose max-w-none">
-                <ReactMarkdown>{operationsData.kpis}</ReactMarkdown>
-              </div>
+        )}
+      </div>
+      
+      {/* KPI Section */}
+      <div className="mb-4 border rounded-lg overflow-hidden">
+        <div 
+          className="flex justify-between items-center p-4 bg-gray-50 cursor-pointer"
+          onClick={() => toggleSection('kpi')}
+        >
+          <h3 className="text-xl font-semibold">Key Performance Indicators (KPIs)</h3>
+          <button className="text-gray-500">
+            {kpiExpanded ? (
+              <span>▼</span>
             ) : (
-              <p className="text-gray-500 italic">No KPI information available. Switch to edit mode to add details.</p>
+              <span>▶</span>
+            )}
+          </button>
+        </div>
+        
+        {kpiExpanded && (
+          <div className="p-4">
+            {isEditing ? (
+              <KPIQuestionnaire 
+                businessPlanId={businessPlanId}
+                onComplete={handleKpiComplete}
+              />
+            ) : (
+              <>
+                {operationsData.kpis ? (
+                  <ReactMarkdown>{operationsData.kpis}</ReactMarkdown>
+                ) : (
+                  <p className="text-gray-500">
+                    No KPI information available. Switch to edit mode to add details.
+                  </p>
+                )}
+              </>
             )}
           </div>
-
-          {/* Technology & Systems */}
-          <div className="border rounded-lg p-4">
-            <h3 className="text-xl font-semibold mb-4">Technology & Systems</h3>
-            {operationsData.technology ? (
-              <div className="prose max-w-none">
-                <ReactMarkdown>{operationsData.technology}</ReactMarkdown>
-              </div>
+        )}
+      </div>
+      
+      {/* Technology Systems Section */}
+      <div className="mb-4 border rounded-lg overflow-hidden">
+        <div 
+          className="flex justify-between items-center p-4 bg-gray-50 cursor-pointer"
+          onClick={() => toggleSection('technology')}
+        >
+          <h3 className="text-xl font-semibold">Technology Systems</h3>
+          <button className="text-gray-500">
+            {technologyExpanded ? (
+              <span>▼</span>
             ) : (
-              <p className="text-gray-500 italic">No technology information available. Switch to edit mode to add details.</p>
+              <span>▶</span>
+            )}
+          </button>
+        </div>
+        
+        {technologyExpanded && (
+          <div className="p-4">
+            {isEditing ? (
+              <TechnologyQuestionnaire 
+                businessPlanId={businessPlanId}
+                onComplete={handleTechnologyComplete}
+              />
+            ) : (
+              <>
+                {operationsData.technology ? (
+                  <ReactMarkdown>{operationsData.technology}</ReactMarkdown>
+                ) : (
+                  <p className="text-gray-500">
+                    No technology systems information available. Switch to edit mode to add details.
+                  </p>
+                )}
+              </>
             )}
           </div>
+        )}
+      </div>
+      
+      {/* Save button for editing mode */}
+      {isEditing && (
+        <div className="mt-4">
+          <button
+            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors"
+            onClick={handleSaveOperations}
+            disabled={savingOperations}
+          >
+            {savingOperations ? 'Saving...' : 'Save Operations & Control Systems'}
+          </button>
         </div>
       )}
     </div>
   );
 };
-
-export default Operations; 
+*/ 

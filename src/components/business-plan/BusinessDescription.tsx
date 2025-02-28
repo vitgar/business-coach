@@ -1,8 +1,45 @@
 import React, { useState, useEffect } from 'react';
+import { ChevronDown, ChevronRight } from 'lucide-react';
 import CompanyOverviewQuestionnaire from './CompanyOverviewQuestionnaire';
 import LegalStructureQuestionnaire from './LegalStructureQuestionnaire';
 import LocationFacilitiesQuestionnaire from './LocationFacilitiesQuestionnaire';
 import MissionStatementQuestionnaire from './MissionStatementQuestionnaire';
+import ReactMarkdown from 'react-markdown';
+
+/**
+ * Section interface for business description sections
+ */
+interface Section {
+  id: string;
+  title: string;
+  description: string;
+}
+
+/**
+ * Sections data for business description
+ */
+const sections: Section[] = [
+  {
+    id: 'companyOverview',
+    title: 'Company Overview',
+    description: 'Provide a clear description of your business, its history, and current status.',
+  },
+  {
+    id: 'legalStructure',
+    title: 'Legal Structure',
+    description: 'Define the legal structure of your business and explain why you chose it.',
+  },
+  {
+    id: 'locationFacilities',
+    title: 'Location & Facilities',
+    description: 'Describe your business location, facilities, and why they are suitable for your operations.',
+  },
+  {
+    id: 'missionStatement',
+    title: 'Mission Statement',
+    description: 'Articulate your business mission, vision, and core values.',
+  },
+];
 
 /**
  * Props for the BusinessDescription component
@@ -17,31 +54,76 @@ interface BusinessDescriptionProps {
  * BusinessDescription component
  * 
  * Displays and allows editing of the business description section of the business plan
+ * with collapsible sections and improved UI/UX
  */
 export default function BusinessDescription({ 
   businessPlanId, 
   isEditing = false,
   onSave
 }: BusinessDescriptionProps) {
-  // Company overview content
-  const [companyOverview, setCompanyOverview] = useState('');
+  // Track which section is expanded
+  const [expandedSection, setExpandedSection] = useState<string | null>(null);
   
-  // Other sections state
+  // Section content states
+  const [companyOverview, setCompanyOverview] = useState('');
   const [legalStructure, setLegalStructure] = useState('');
   const [locationFacilities, setLocationFacilities] = useState('');
   const [missionStatement, setMissionStatement] = useState('');
+  
+  // Loading state
+  const [isSaving, setIsSaving] = useState(false);
 
   // Fetch existing business description data if available
   useEffect(() => {
-    // This would fetch data from the API in a future implementation
-    // For now, we'll just use the state variables
+    const fetchBusinessDescriptionData = async () => {
+      try {
+        const response = await fetch(`/api/business-plans/${businessPlanId}`);
+        if (!response.ok) throw new Error('Failed to fetch business plan');
+        
+        const data = await response.json();
+        console.log('Fetched business plan data:', data);
+        
+        // Check for business description data in the response
+        if (data.content?.businessDescription) {
+          // Parse the content if needed
+          // For now, we'll just log it
+          console.log('Found existing business description data:', data.content.businessDescription);
+          
+          // You would parse the content and set individual section states here
+          // This is a placeholder for future implementation
+        }
+      } catch (error) {
+        console.error('Error fetching business description data:', error);
+      }
+    };
+    
+    fetchBusinessDescriptionData();
   }, [businessPlanId]);
+
+  // Auto-expand the first section with content
+  useEffect(() => {
+    if (companyOverview && expandedSection === null) {
+      setExpandedSection('companyOverview');
+    } else if (!companyOverview && legalStructure && expandedSection === null) {
+      setExpandedSection('legalStructure');
+    } else if (!companyOverview && !legalStructure && locationFacilities && expandedSection === null) {
+      setExpandedSection('locationFacilities');
+    } else if (!companyOverview && !legalStructure && !locationFacilities && missionStatement && expandedSection === null) {
+      setExpandedSection('missionStatement');
+    } else if (expandedSection === null) {
+      // If no content exists, default to opening the first section
+      setExpandedSection('companyOverview');
+    }
+  }, [companyOverview, legalStructure, locationFacilities, missionStatement, expandedSection]);
 
   /**
    * Handle completion of the company overview questionnaire
    */
   const handleCompanyOverviewComplete = (overviewText: string) => {
     setCompanyOverview(overviewText);
+    if (onSave) {
+      onSave('companyOverview', overviewText);
+    }
   };
 
   /**
@@ -49,6 +131,9 @@ export default function BusinessDescription({
    */
   const handleLegalStructureComplete = (legalStructureText: string) => {
     setLegalStructure(legalStructureText);
+    if (onSave) {
+      onSave('legalStructure', legalStructureText);
+    }
   };
 
   /**
@@ -56,6 +141,9 @@ export default function BusinessDescription({
    */
   const handleLocationFacilitiesComplete = (locationText: string) => {
     setLocationFacilities(locationText);
+    if (onSave) {
+      onSave('locationFacilities', locationText);
+    }
   };
 
   /**
@@ -63,6 +151,9 @@ export default function BusinessDescription({
    */
   const handleMissionStatementComplete = (missionText: string) => {
     setMissionStatement(missionText);
+    if (onSave) {
+      onSave('missionStatement', missionText);
+    }
   };
 
   /**
@@ -70,8 +161,10 @@ export default function BusinessDescription({
    */
   const handleSaveAll = async () => {
     if (onSave) {
-      // Format all business description data into a single string
-      const fullDescription = `
+      setIsSaving(true);
+      try {
+        // Format all business description data into a single string
+        const fullDescription = `
 # Company Overview
 ${companyOverview}
 
@@ -83,117 +176,109 @@ ${locationFacilities}
 
 # Mission Statement
 ${missionStatement}
-      `.trim();
-      
-      await onSave('businessDescription', fullDescription);
+        `.trim();
+        
+        await onSave('businessDescription', fullDescription);
+      } catch (error) {
+        console.error('Error saving business description:', error);
+      } finally {
+        setIsSaving(false);
+      }
     }
   };
 
+  /**
+   * Toggle section expansion with proper event handling
+   */
+  const toggleSection = (e: React.MouseEvent, sectionId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setExpandedSection(expandedSection === sectionId ? null : sectionId);
+  };
+
   return (
-    <div className="bg-white rounded-lg shadow-sm p-6">
-      <h2 className="text-2xl font-bold text-gray-900 mb-4">Business Description</h2>
-      
-      <div className="prose max-w-none">
-        <p className="text-gray-600 mb-4">
+    <div className="space-y-6">
+      <div className="border-b-2 border-blue-500 pb-4 mb-6">
+        <h2 className="text-2xl font-bold text-blue-700">Business Description</h2>
+        <p className="mt-2 text-gray-600">
           This section provides a detailed overview of your business, including its history, 
           legal structure, location, and overall mission and vision.
         </p>
-        
-        {isEditing ? (
-          <div className="space-y-6">
-            {/* Company Overview Section with Chat Interface */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-3">
-                Company Overview
-              </label>
-              
-              {/* CompanyOverviewQuestionnaire is now always shown directly */}
-              <CompanyOverviewQuestionnaire 
-                businessPlanId={businessPlanId}
-                onComplete={handleCompanyOverviewComplete}
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-3">
-                Legal Structure
-              </label>
-              
-              {/* Replacing dropdown with LegalStructureQuestionnaire */}
-              <LegalStructureQuestionnaire
-                businessPlanId={businessPlanId}
-                onComplete={handleLegalStructureComplete}
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-3">
-                Location & Facilities
-              </label>
-              
-              {/* Replacing textarea with LocationFacilitiesQuestionnaire */}
-              <LocationFacilitiesQuestionnaire
-                businessPlanId={businessPlanId}
-                onComplete={handleLocationFacilitiesComplete}
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-3">
-                Mission Statement
-              </label>
-              
-              {/* Replacing textarea with MissionStatementQuestionnaire */}
-              <MissionStatementQuestionnaire
-                businessPlanId={businessPlanId}
-                onComplete={handleMissionStatementComplete}
-              />
-            </div>
-            
-            <button 
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-              onClick={handleSaveAll}
+      </div>
+
+      {/* Main content area with collapsible sections */}
+      <div className="space-y-6">
+        {sections.map((section) => (
+          <div key={section.id} className="border rounded-lg shadow-sm bg-white overflow-hidden">
+            <button
+              onClick={(e) => toggleSection(e, section.id)}
+              className="w-full px-6 py-4 flex items-center justify-between text-left bg-gradient-to-r from-gray-50 to-white border-b transition-colors hover:bg-gray-50"
             >
-              Save Business Description
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">{section.title}</h3>
+                <p className="text-sm text-gray-500">{section.description}</p>
+              </div>
+              {expandedSection === section.id ? (
+                <ChevronDown className="h-5 w-5 text-blue-500" />
+              ) : (
+                <ChevronRight className="h-5 w-5 text-gray-400" />
+              )}
             </button>
-          </div>
-        ) : (
-          <div>
-            {companyOverview ? (
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold">Company Overview</h3>
-                <div className="whitespace-pre-wrap">{companyOverview}</div>
-                
-                {legalStructure && (
-                  <>
-                    <h3 className="text-lg font-semibold mt-6">Legal Structure</h3>
-                    <div className="whitespace-pre-wrap">{legalStructure}</div>
-                  </>
+
+            {expandedSection === section.id && (
+              <div className="px-6 py-5 bg-white">
+                {section.id === 'companyOverview' && (
+                  <CompanyOverviewQuestionnaire
+                    businessPlanId={businessPlanId}
+                    onComplete={handleCompanyOverviewComplete}
+                  />
                 )}
                 
-                {locationFacilities && (
-                  <>
-                    <h3 className="text-lg font-semibold mt-6">Location & Facilities</h3>
-                    <div className="whitespace-pre-wrap">{locationFacilities}</div>
-                  </>
+                {section.id === 'legalStructure' && (
+                  <LegalStructureQuestionnaire
+                    businessPlanId={businessPlanId}
+                    onComplete={handleLegalStructureComplete}
+                  />
                 )}
                 
-                {missionStatement && (
-                  <>
-                    <h3 className="text-lg font-semibold mt-6">Mission Statement</h3>
-                    <div className="whitespace-pre-wrap">{missionStatement}</div>
-                  </>
+                {section.id === 'locationFacilities' && (
+                  <LocationFacilitiesQuestionnaire
+                    businessPlanId={businessPlanId}
+                    onComplete={handleLocationFacilitiesComplete}
+                  />
+                )}
+                
+                {section.id === 'missionStatement' && (
+                  <MissionStatementQuestionnaire
+                    businessPlanId={businessPlanId}
+                    onComplete={handleMissionStatementComplete}
+                  />
                 )}
               </div>
-            ) : (
-              <p className="text-gray-500 italic">
-                This section will display your saved business description information.
-                Switch to Edit mode to add or update your business description.
-              </p>
             )}
           </div>
-        )}
+        ))}
       </div>
+
+      {/* Save All Button */}
+      {isEditing && (
+        <div className="mt-8 flex justify-end">
+          <button 
+            className="px-5 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 transition-colors shadow-sm flex items-center gap-2"
+            onClick={handleSaveAll}
+            disabled={isSaving}
+          >
+            {isSaving ? (
+              <>
+                <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
+                <span>Saving...</span>
+              </>
+            ) : (
+              'Save All Sections'
+            )}
+          </button>
+        </div>
+      )}
     </div>
   );
 } 
