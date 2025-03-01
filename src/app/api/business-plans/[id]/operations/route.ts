@@ -91,10 +91,32 @@ export async function GET(
     }
     
     const content = businessPlan.content as any;
+    const operations = content.operations || {};
     
-    // Return the operations data
+    // Return the operations data in a format compatible with GenericQuestionnaire
     return NextResponse.json({
-      operations: content.operations || {},
+      operations: operations,
+      // Add each section directly to the response for GenericQuestionnaire compatibility
+      production: operations.production ? {
+        content: operations.production,
+        data: operations.productionData || {}
+      } : null,
+      qualityControl: operations.qualityControl ? {
+        content: operations.qualityControl,
+        data: operations.qualityControlData || {}
+      } : null,
+      inventory: operations.inventory ? {
+        content: operations.inventory,
+        data: operations.inventoryData || {}
+      } : null,
+      kpis: operations.kpis ? {
+        content: operations.kpis,
+        data: operations.kpisData || {}
+      } : null,
+      technology: operations.technology ? {
+        content: operations.technology,
+        data: operations.technologyData || {}
+      } : null
     });
   } catch (error) {
     console.error('Error retrieving operations data:', error);

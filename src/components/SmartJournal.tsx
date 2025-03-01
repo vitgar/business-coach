@@ -6,7 +6,7 @@ import { Clipboard, Calendar, CheckSquare, ListTodo, Send, Plus, X } from 'lucid
 import { toast } from 'react-toastify'
 import { API_ENDPOINTS, INITIAL_MESSAGES, ASSISTANT_CONFIG } from '@/config/constants'
 import ReactMarkdown from 'react-markdown'
-import LoadingIndicator from './business-plan/LoadingIndicator'
+import { TypingIndicator, EnhancedLoadingIndicator } from './generic/LoadingIndicators'
 
 /**
  * Journal starter prompts for business owners
@@ -780,7 +780,7 @@ I need a clear, structured todo list with priorities, categories, and descriptio
                     <div className="flex mt-2 justify-end gap-2">
                       {processingResponseId === message.id ? (
                         <span className="text-xs text-blue-600 flex items-center">
-                          <LoadingIndicator size={12} /> Processing...
+                          <TypingIndicator message="Processing..." />
                         </span>
                       ) : (
                         <>
@@ -850,7 +850,7 @@ I need a clear, structured todo list with priorities, categories, and descriptio
         
         {extractingTasks && (
           <span className="text-sm text-gray-500 flex items-center">
-            <LoadingIndicator size={16} type="dots" /> Creating todo list...
+            <TypingIndicator message="Creating todo list..." />
           </span>
         )}
       </div>
@@ -897,7 +897,7 @@ I need a clear, structured todo list with priorities, categories, and descriptio
             disabled={isLoading || !input.trim()}
             className="bg-blue-600 text-white p-2 rounded-r hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-blue-300"
           >
-            {isLoading ? <LoadingIndicator size={20} color="white" /> : <Send size={20} />}
+            {isLoading ? <span className="flex items-center"><TypingIndicator message="" /></span> : <Send size={20} />}
           </button>
         </div>
       </form>

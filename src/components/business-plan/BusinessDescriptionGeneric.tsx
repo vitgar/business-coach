@@ -326,11 +326,10 @@ ${businessDescriptionData.industryBackground || ''}
                       description="Define the core purpose and focus of your business"
                       previewTitle="Mission Statement Preview"
                       prompts={[
-                        "What is the core purpose of your business?",
-                        "What problem does your business solve?",
-                        "What are the core values that guide your business?",
-                        "What impact do you want to make in your industry or community?",
-                        "What is your vision for the future of your business?"
+                        "Guide me step by step to create a compelling mission statement?",
+                        "I'm not sure about my core values, can you help me identify them?",
+                        "Show me some examples of good mission statements in my industry",
+                        "How do I make my mission statement stand out from competitors?"
                       ]}
                       apiEndpoint="/business-description"
                     />

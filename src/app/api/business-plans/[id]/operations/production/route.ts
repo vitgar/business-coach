@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import OpenAI from 'openai';
-import { sleep } from '@/lib/utils';
+import { sleep, processWithBusinessPlanCreator } from '@/lib/utils';
 
 /**
  * Interface for the business plan content structure
@@ -351,12 +351,23 @@ export async function POST(
     // Only extract data if not a help request
     let productionData: any = {};
     let productionMarkdown = '';
+    let businessPlanData: any = {};
     
     if (!isHelp) {
-      // Extract production data from the conversation
+      // First extract production data from the conversation using the existing method
       productionData = await extractProductionData(threadId);
       
-      // Format the production data as markdown
+      // Then process the entire chat content with the business plan creator assistant
+      // Get all messages from the thread to provide context
+      const messages = await openai.beta.threads.messages.list(threadId);
+      const chatContent = messages.data
+        .map(msg => `${msg.role.toUpperCase()}: ${msg.content[0].type === 'text' ? msg.content[0].text.value : ''}`)
+        .join('\n\n');
+      
+      // Process the chat content to get structured business plan data
+      businessPlanData = await processWithBusinessPlanCreator(threadId, chatContent, 'production');
+      
+      // Format the production data as markdown (using the existing process)
       productionMarkdown = '## Production Process\n\n';
       
       if (productionData.processOverview) {
@@ -415,8 +426,13 @@ export async function POST(
     
     return NextResponse.json({
       message: assistantResponse,
-      production: productionMarkdown,
-      productionData
+      productionData,
+      businessPlanData, // Include the structured business plan data in the response
+      // Add the production data in the format expected by GenericQuestionnaire
+      production: {
+        content: productionMarkdown,
+        data: productionData
+      }
     });
   } catch (error) {
     console.error('Error processing production message:', error);
@@ -452,10 +468,13 @@ export async function GET(
     
     const content = businessPlan.content as BusinessPlanContent;
     
-    // Return the production data
+    // Return the production data in the format expected by GenericQuestionnaire
     return NextResponse.json({
-      production: content.operations?.production || '',
-      productionData: content.operations?.productionData || {},
+      production: {
+        content: content.operations?.production || '',
+        data: content.operations?.productionData || {}
+      },
+      productionData: content.operations?.productionData || {}
     });
   } catch (error) {
     console.error('Error retrieving production data:', error);

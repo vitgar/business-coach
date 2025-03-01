@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Send, HelpCircle, Save, RefreshCw } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { toast } from 'react-toastify';
-import LoadingIndicator from './LoadingIndicator';
+import { EnhancedLoadingIndicator } from '../generic/LoadingIndicators';
 
 /**
  * Props for the KPI Questionnaire component
@@ -331,7 +331,12 @@ const KPIQuestionnaire: React.FC<KPIQuestionnaireProps> = ({ businessPlanId, onC
   if (isDataLoading) {
     return (
       <div className="flex flex-col items-center justify-center p-8">
-        <LoadingIndicator />
+        <EnhancedLoadingIndicator 
+          isLoading={true}
+          sectionId="kpi"
+          businessPlanId={businessPlanId}
+          sectionName="Key Performance Indicators"
+        />
         <p className="mt-2 text-gray-500">Loading KPI data...</p>
       </div>
     );

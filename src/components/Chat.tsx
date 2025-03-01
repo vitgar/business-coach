@@ -6,7 +6,7 @@ import { Send } from 'lucide-react'
 import { toast } from 'react-toastify'
 import { API_ENDPOINTS, INITIAL_MESSAGES, ASSISTANT_CONFIG } from '@/config/constants'
 import ReactMarkdown from 'react-markdown'
-import LoadingIndicator from './business-plan/LoadingIndicator'
+import { EnhancedLoadingIndicator } from './generic/LoadingIndicators'
 
 interface ChatProps {
   conversationId?: string
@@ -278,7 +278,12 @@ export default function Chat({ conversationId, onConversationCreated }: ChatProp
             </div>
           ))}
           {isLoading && (
-            <LoadingIndicator type="spinner" />
+            <EnhancedLoadingIndicator 
+              isLoading={isLoading}
+              sectionId="chat"
+              businessPlanId="general"
+              sectionName="Chat"
+            />
           )}
           <div ref={messagesEndRef} />
         </div>

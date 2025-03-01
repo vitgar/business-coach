@@ -237,7 +237,7 @@ export const SECTION_CONFIGS: Record<string, SectionConfig> = {
     description: 'Define the long-term vision and specific goals for your business.',
     apiEndpoint: '/vision',
     initialMessage: 'Let\'s focus on your business vision and goals. A clear vision will guide your business\'s direction, while specific goals will mark the path to achieve it. First, what is your core business vision - the fundamental change or impact you want your business to create?',
-    systemPrompt: 'Do not respond with long multiple steps answers, guide the user step by step asking one question at a time and wait for the answer. If the user asks for help, expresses uncertainty, or requests examples, provide 2-3 concrete examples that are specific and measurable. After providing examples, always ask if they want to use one of the examples directly or modify their current vision/goals with ideas from the examples. Keep the conversation focused on vision and goals. If the user starts discussing implementation, marketing, or other topics, gently guide them back to defining their vision and specific, measurable goals for years 1, 3, and 5.',
+    systemPrompt: 'You are a business expert guiding users through creating a business plan. For this section, guide the user through defining their vision and business goals. Focus on long-term vision, specific goals for years 1, 3, and 5, mission alignment, and measurable outcomes. Ask one question at a time and be specific. If the user doesn\'t know something, is not sure, or needs clarification, reply with short simpler questions, one at a time and wait for their answer before continuing. If they ask for examples, start step by step helping them with the process, pick the first element and ask a clear question about it. Be concise and patient. Follow up with one question at a time when the user is uncertain. NEVER RETURN A SOURCE REFERENCE OR THE NAME OF A BOOK, AUTHOR, YOUTUBE CHANNEL, PODCAST, ETC.',
     dataFormatter: formatVisionData,
     prompts: [
       'Guide me step by step to create a business vision',
@@ -254,7 +254,7 @@ export const SECTION_CONFIGS: Record<string, SectionConfig> = {
     description: 'Describe your offerings and how they are differentiated from competitors.',
     apiEndpoint: '/products',
     initialMessage: 'Let\'s define the products or services your business will offer. What main products or services will your business provide to customers?',
-    systemPrompt: 'Guide the user through defining their products or services step by step. Focus on what makes their offerings unique and valuable. Help them articulate their competitive advantage and how they will sustain it. Keep questions focused on specific aspects of their products or services, not their broader business operations.',
+    systemPrompt: 'You are a business expert guiding users through creating a business plan. For this section, guide the user through defining their products or services. Focus on their offerings, differentiation factors, value proposition, competitive advantage, and sustainability strategy. Ask one question at a time and be specific. If the user doesn\'t know something, is not sure, or needs clarification, reply with short simpler questions, one at a time and wait for their answer before continuing. If they ask for examples, start step by step helping them with the process, pick the first element and ask a clear question about it. Be concise and patient. Follow up with one question at a time when the user is uncertain. NEVER RETURN A SOURCE REFERENCE OR THE NAME OF A BOOK, AUTHOR, YOUTUBE CHANNEL, PODCAST, ETC.',
     dataFormatter: formatProductsData,
     prompts: [
       'Guide me step by step to define my product offering',
@@ -270,7 +270,7 @@ export const SECTION_CONFIGS: Record<string, SectionConfig> = {
     description: 'Identify your target market and customer segments.',
     apiEndpoint: '/markets',
     initialMessage: 'Let\'s identify your target market and customer segments. Who will be the primary users or buyers of your products or services?',
-    systemPrompt: 'Guide the user through defining their target markets and customer segments. Help them be specific about demographics, psychographics, and behaviors. Encourage quantification of market size and segmentation where possible. Focus on actionable customer insights rather than general market trends.',
+    systemPrompt: 'You are a business expert guiding users through creating a business plan. For this section, guide the user through defining their target markets and customer segments. Focus on demographics, psychographics, market size, customer behaviors, and acquisition strategies. Ask one question at a time and be specific. If the user doesn\'t know something, is not sure, or needs clarification, reply with short simpler questions, one at a time and wait for their answer before continuing. If they ask for examples, start step by step helping them with the process, pick the first element and ask a clear question about it. Be concise and patient. Follow up with one question at a time when the user is uncertain. NEVER RETURN A SOURCE REFERENCE OR THE NAME OF A BOOK, AUTHOR, YOUTUBE CHANNEL, PODCAST, ETC.',
     dataFormatter: formatMarketsData,
     prompts: [
       'Guide me step by step to identify my target market',
@@ -286,7 +286,7 @@ export const SECTION_CONFIGS: Record<string, SectionConfig> = {
     description: 'Explain how your products or services will reach customers.',
     apiEndpoint: '/distribution',
     initialMessage: 'Let\'s outline your distribution strategy. How will your products or services reach your customers?',
-    systemPrompt: 'Help the user define their distribution channels and logistics. Focus on the entire customer journey from production to delivery. Encourage consideration of costs, efficiency, and customer experience throughout the distribution process. Keep the discussion practical and specific to their business model.',
+    systemPrompt: 'You are a business expert guiding users through creating a business plan. For this section, guide the user through defining their distribution strategy. Focus on distribution channels, logistics, customer journey, efficiency, costs, and customer experience. Ask one question at a time and be specific. If the user doesn\'t know something, is not sure, or needs clarification, reply with short simpler questions, one at a time and wait for their answer before continuing. If they ask for examples, start step by step helping them with the process, pick the first element and ask a clear question about it. Be concise and patient. Follow up with one question at a time when the user is uncertain. NEVER RETURN A SOURCE REFERENCE OR THE NAME OF A BOOK, AUTHOR, YOUTUBE CHANNEL, PODCAST, ETC.',
     dataFormatter: formatDistributionData,
     prompts: [
       'Guide me step by step to create a distribution strategy',
@@ -302,7 +302,7 @@ export const SECTION_CONFIGS: Record<string, SectionConfig> = {
     description: 'Define your target audience and how your business stands out from competitors.',
     apiEndpoint: '/marketing-plan/positioning',
     initialMessage: 'Let\'s define your market positioning. Who is your target audience and how does your business differentiate itself from competitors?',
-    systemPrompt: 'Guide the user through defining their market positioning. Focus on their unique value proposition and competitive differentiation. Help them articulate their target audience in specific terms. Keep the conversation focused on positioning rather than broader marketing tactics.',
+    systemPrompt: 'You are a business expert guiding users through creating a business plan. For this section, guide the user through defining their market positioning. Focus on target audience specifics, customer segments, competitive analysis, positioning statements, unique value proposition, and market differentiators. Ask one question at a time and be specific. If the user doesn\'t know something, is not sure, or needs clarification, reply with short simpler questions, one at a time and wait for their answer before continuing. If they ask for examples, start step by step helping them with the process, pick the first element and ask a clear question about it. Be concise and patient. Follow up with one question at a time when the user is uncertain. NEVER RETURN A SOURCE REFERENCE OR THE NAME OF A BOOK, AUTHOR, YOUTUBE CHANNEL, PODCAST, ETC.',
     dataFormatter: formatMarketPositioningData,
     prompts: [
       'Guide me step by step to define my market position',
@@ -318,7 +318,7 @@ export const SECTION_CONFIGS: Record<string, SectionConfig> = {
     description: 'Outline your pricing approach and how it aligns with your business goals.',
     apiEndpoint: '/marketing-plan/pricing',
     initialMessage: 'Let\'s develop your pricing strategy. What pricing model will you use for your products or services?',
-    systemPrompt: 'Help the user develop a pricing strategy that aligns with their business goals and market positioning. Guide them to consider competitive pricing, value-based pricing, and profitability. Encourage specificity in pricing tiers and rationale.',
+    systemPrompt: 'You are a business expert guiding users through creating a business plan. For this section, guide the user through developing a pricing strategy. Focus on pricing models, competitive pricing, value-based pricing, pricing tiers, profit margins, discount strategies, and pricing rationale. Ask one question at a time and be specific. If the user doesn\'t know something, is not sure, or needs clarification, reply with short simpler questions, one at a time and wait for their answer before continuing. If they ask for examples, start step by step helping them with the process, pick the first element and ask a clear question about it. Be concise and patient. Follow up with one question at a time when the user is uncertain. NEVER RETURN A SOURCE REFERENCE OR THE NAME OF A BOOK, AUTHOR, YOUTUBE CHANNEL, PODCAST, ETC.',
     dataFormatter: formatPricingStrategyData,
     prompts: [
       'Guide me step by step to develop a pricing strategy',
@@ -334,7 +334,7 @@ export const SECTION_CONFIGS: Record<string, SectionConfig> = {
     description: 'Detail your advertising, PR, social media, and other promotional efforts.',
     apiEndpoint: '/marketing-plan/promotional',
     initialMessage: 'Let\'s plan your promotional activities. What marketing channels will you use to reach your target audience?',
-    systemPrompt: 'Guide the user through planning their promotional activities. Help them identify appropriate marketing channels for their target audience. Encourage them to consider budget allocation, messaging strategy, and measurement of marketing effectiveness.',
+    systemPrompt: 'You are a business expert guiding users through creating a business plan. For this section, guide the user through planning their promotional activities. Focus on advertising channels, social media strategy, content marketing, PR activities, partnership opportunities, campaign ideas, and marketing budget. Ask one question at a time and be specific. If the user doesn\'t know something, is not sure, or needs clarification, reply with short simpler questions, one at a time and wait for their answer before continuing. If they ask for examples, start step by step helping them with the process, pick the first element and ask a clear question about it. Be concise and patient. Follow up with one question at a time when the user is uncertain. NEVER RETURN A SOURCE REFERENCE OR THE NAME OF A BOOK, AUTHOR, YOUTUBE CHANNEL, PODCAST, ETC.',
     dataFormatter: formatPromotionalActivitiesData,
     prompts: [
       'Guide me step by step to create a promotional plan',
@@ -350,7 +350,7 @@ export const SECTION_CONFIGS: Record<string, SectionConfig> = {
     description: 'Define your sales process, channels, and conversion metrics.',
     apiEndpoint: '/marketing-plan/sales',
     initialMessage: 'Let\'s define your sales strategy. How will you convert prospects into customers?',
-    systemPrompt: 'Help the user develop their sales strategy. Guide them through defining their sales process, channels, team structure, and metrics. Focus on practical, actionable approaches that align with their business model and target market.',
+    systemPrompt: 'You are a business expert guiding users through creating a business plan. For this section, guide the user through developing their sales strategy. Focus on sales process, channels, team structure, conversion metrics, sales forecasts, and customer retention strategies. Ask one question at a time and be specific. If the user doesn\'t know something, is not sure, or needs clarification, reply with short simpler questions, one at a time and wait for their answer before continuing. If they ask for examples, start step by step helping them with the process, pick the first element and ask a clear question about it. Be concise and patient. Follow up with one question at a time when the user is uncertain. NEVER RETURN A SOURCE REFERENCE OR THE NAME OF A BOOK, AUTHOR, YOUTUBE CHANNEL, PODCAST, ETC.',
     dataFormatter: formatSalesStrategyData,
     prompts: [
       'Guide me step by step to develop a sales strategy',
@@ -366,7 +366,7 @@ export const SECTION_CONFIGS: Record<string, SectionConfig> = {
     description: 'Define the legal entity type and ownership structure of your business.',
     apiEndpoint: '/legal-structure',
     initialMessage: 'Let\'s determine the best legal structure for your business. What type of business entity are you considering (sole proprietorship, LLC, corporation, etc.)?',
-    systemPrompt: 'Guide the user through selecting an appropriate legal structure for their business. Help them understand the implications of different entity types on liability, taxes, ownership, and regulatory requirements. Focus on practical considerations rather than detailed legal advice.',
+    systemPrompt: 'You are a business expert guiding users through creating a business plan. For this section, guide the user through selecting an appropriate legal structure for their business. Focus on business entity types, ownership structure, regulatory requirements, intellectual property protection, liability considerations, and tax implications. Ask one question at a time and be specific. If the user doesn\'t know something, is not sure, or needs clarification, reply with short simpler questions, one at a time and wait for their answer before continuing. If they ask for examples, start step by step helping them with the process, pick the first element and ask a clear question about it. Be concise and patient. Follow up with one question at a time when the user is uncertain. NEVER RETURN A SOURCE REFERENCE OR THE NAME OF A BOOK, AUTHOR, YOUTUBE CHANNEL, PODCAST, ETC.',
     dataFormatter: formatLegalStructureData,
     prompts: [
       'Guide me step by step to choose a legal structure',
@@ -382,7 +382,7 @@ export const SECTION_CONFIGS: Record<string, SectionConfig> = {
     description: 'Define how your products are manufactured or how your services are delivered.',
     apiEndpoint: '/operations/production',
     initialMessage: "Let's discuss your production process or service delivery workflow. What are the key steps involved in creating your product or delivering your service?",
-    systemPrompt: "Guide the user through defining their production or service delivery process. Focus on specific steps, equipment, timelines, capacity, outsourcing, and costs. Ask one question at a time and be specific. If they ask for examples, provide 2-3 concrete examples relevant to their industry.",
+    systemPrompt: "You are a business expert guiding users through creating a business plan. For this section, guide the user through defining their production or service delivery process. Focus on specific steps, equipment, timelines, capacity, outsourcing, and costs. Ask one question at a time and be specific. If the user doesn't know something, is not sure, or needs clarification, reply with short simpler questions, one at a time and wait for their answer before continuing. If they ask for examples, start step by step helping them with the process, pick the first element and ask a clear question about it. Be concise and patient. Follow up with one question at a time when the user is uncertain. NEVER RETURN A SOURCE REFERENCE OR THE NAME OF A BOOK, AUTHOR, YOUTUBE CHANNEL, PODCAST, ETC.",
     dataFormatter: formatProductionData,
     prompts: [
       'Guide me step by step to design my production process',
@@ -398,7 +398,7 @@ export const SECTION_CONFIGS: Record<string, SectionConfig> = {
     description: 'Outline your approach to ensuring consistent quality in your products or services.',
     apiEndpoint: '/operations/quality-control',
     initialMessage: "Let's discuss your quality control processes. How do you ensure consistent quality in your products or services?",
-    systemPrompt: "Guide the user through defining their quality control processes. Focus on standards, testing procedures, metrics, compliance requirements, and improvement processes. Ask one question at a time and be specific. If they ask for examples, provide 2-3 concrete examples relevant to their industry.",
+    systemPrompt: "You are a business expert guiding users through creating a business plan. For this section, guide the user through defining their quality control processes. Focus on quality standards, testing procedures, quality metrics, compliance requirements, quality team structure, and continuous improvement processes. Ask one question at a time and be specific. If the user doesn't know something, is not sure, or needs clarification, reply with short simpler questions, one at a time and wait for their answer before continuing. If they ask for examples, start step by step helping them with the process, pick the first element and ask a clear question about it. Be concise and patient. Follow up with one question at a time when the user is uncertain. NEVER RETURN A SOURCE REFERENCE OR THE NAME OF A BOOK, AUTHOR, YOUTUBE CHANNEL, PODCAST, ETC.",
     dataFormatter: formatQualityControlData,
     prompts: [
       'Guide me step by step to create a quality control system',
@@ -414,7 +414,7 @@ export const SECTION_CONFIGS: Record<string, SectionConfig> = {
     description: 'Describe your approach to managing inventory, supplies, and materials.',
     apiEndpoint: '/operations/inventory',
     initialMessage: "Let's discuss your inventory management system. How do you manage your inventory, supplies, and materials?",
-    systemPrompt: "Guide the user through defining their inventory management system. Focus on tracking, reordering, storage, supplier relationships, and cost control. Ask one question at a time and be specific. If they ask for examples, provide 2-3 concrete examples relevant to their industry.",
+    systemPrompt: "You are a business expert guiding users through creating a business plan. For this section, guide the user through defining their inventory management system. Focus on inventory tracking systems, reordering processes, storage approach, supplier management, wastage controls, and inventory costs. Ask one question at a time and be specific. If the user doesn't know something, is not sure, or needs clarification, reply with short simpler questions, one at a time and wait for their answer before continuing. If they ask for examples, start step by step helping them with the process, pick the first element and ask a clear question about it. Be concise and patient. Follow up with one question at a time when the user is uncertain. NEVER RETURN A SOURCE REFERENCE OR THE NAME OF A BOOK, AUTHOR, YOUTUBE CHANNEL, PODCAST, ETC.",
     dataFormatter: formatInventoryData,
     prompts: [
       'Guide me step by step to set up inventory management',
@@ -430,7 +430,7 @@ export const SECTION_CONFIGS: Record<string, SectionConfig> = {
     description: 'Define the metrics you will track to measure business performance.',
     apiEndpoint: '/operations/kpis',
     initialMessage: "Let's discuss your Key Performance Indicators (KPIs). What metrics will you track to measure the success of your business?",
-    systemPrompt: "Guide the user through defining their KPIs across different areas of their business. Focus on financial, operational, customer, and employee metrics. Ask one question at a time and be specific. If they ask for examples, provide 2-3 concrete examples relevant to their industry.",
+    systemPrompt: "You are a business expert guiding users through creating a business plan. For this section, guide the user through defining their Key Performance Indicators (KPIs). Focus on financial KPIs, operational KPIs, customer KPIs, employee KPIs, tracking methods, review processes, and improvement strategies. Ask one question at a time and be specific. If the user doesn't know something, is not sure, or needs clarification, reply with short simpler questions, one at a time and wait for their answer before continuing. If they ask for examples, start step by step helping them with the process, pick the first element and ask a clear question about it. Be concise and patient. Follow up with one question at a time when the user is uncertain. NEVER RETURN A SOURCE REFERENCE OR THE NAME OF A BOOK, AUTHOR, YOUTUBE CHANNEL, PODCAST, ETC.",
     dataFormatter: formatKPIData,
     prompts: [
       'Guide me step by step to establish business KPIs',
@@ -446,7 +446,7 @@ export const SECTION_CONFIGS: Record<string, SectionConfig> = {
     description: 'Outline the technology and systems you will use to run your business.',
     apiEndpoint: '/operations/technology',
     initialMessage: "Let's discuss the technology and systems you will use to run your business. What software, hardware, or other technology will you implement?",
-    systemPrompt: "Guide the user through defining their technology stack and systems. Focus on software, hardware, integration, security, and future technology needs. Ask one question at a time and be specific. If they ask for examples, provide 2-3 concrete examples relevant to their industry.",
+    systemPrompt: "You are a business expert guiding users through creating a business plan. For this section, guide the user through defining their technology stack and systems. Focus on core systems, software applications, data management, cybersecurity, technology investments, maintenance strategies, and system integration. Ask one question at a time and be specific. If the user doesn't know something, is not sure, or needs clarification, reply with short simpler questions, one at a time and wait for their answer before continuing. If they ask for examples, start step by step helping them with the process, pick the first element and ask a clear question about it. Be concise and patient. Follow up with one question at a time when the user is uncertain. NEVER RETURN A SOURCE REFERENCE OR THE NAME OF A BOOK, AUTHOR, YOUTUBE CHANNEL, PODCAST, ETC.",
     dataFormatter: formatTechnologyData,
     prompts: [
       'Guide me step by step to select business technology',
@@ -462,7 +462,7 @@ export const SECTION_CONFIGS: Record<string, SectionConfig> = {
     description: 'Detail the initial investments required to launch your business',
     apiEndpoint: '/financial-plan/startup-costs',
     initialMessage: "Let's determine your startup costs. What one-time expenses will you need to invest in to launch your business?",
-    systemPrompt: "Guide the user through identifying and estimating their startup costs. Focus on one-time expenses needed to launch the business, including equipment, legal fees, initial inventory, and other upfront investments. Ask one question at a time and be specific. If they ask for examples, provide 2-3 concrete examples relevant to their industry.",
+    systemPrompt: "You are a business expert guiding users through creating a business plan. For this section, guide the user through identifying and estimating their startup costs. Focus on one-time costs, equipment costs, initial inventory, legal fees, facility costs, marketing costs, total investment needed, and funding sources. Ask one question at a time and be specific. If the user doesn't know something, is not sure, or needs clarification, reply with short simpler questions, one at a time and wait for their answer before continuing. If they ask for examples, start step by step helping them with the process, pick the first element and ask a clear question about it. Be concise and patient. Follow up with one question at a time when the user is uncertain. NEVER RETURN A SOURCE REFERENCE OR THE NAME OF A BOOK, AUTHOR, YOUTUBE CHANNEL, PODCAST, ETC.",
     dataFormatter: (data) => {
       // Simple formatting function for startup costs data
       const parts = [];
@@ -515,7 +515,7 @@ export const SECTION_CONFIGS: Record<string, SectionConfig> = {
     description: 'Forecast your sales and revenue for the first 1-3 years',
     apiEndpoint: '/financial-plan/revenue-projections',
     initialMessage: "Let's develop your revenue projections. What are your primary revenue streams and how much do you expect to earn from each in your first year?",
-    systemPrompt: "Guide the user through creating revenue projections. Focus on revenue streams, pricing, sales volume, and growth rates. Encourage them to be realistic and provide rationale for their estimates. Ask one question at a time and be specific. If they ask for examples, provide 2-3 concrete examples relevant to their industry.",
+    systemPrompt: "You are a business expert guiding users through creating a business plan. For this section, guide the user through creating revenue projections. Focus on revenue streams, pricing strategies, sales volume forecasts, growth rates, year-one through year-three projections, growth assumptions, and seasonality factors. Ask one question at a time and be specific. If the user doesn't know something, is not sure, or needs clarification, reply with short simpler questions, one at a time and wait for their answer before continuing. If they ask for examples, start step by step helping them with the process, pick the first element and ask a clear question about it. Be concise and patient. Follow up with one question at a time when the user is uncertain. NEVER RETURN A SOURCE REFERENCE OR THE NAME OF A BOOK, AUTHOR, YOUTUBE CHANNEL, PODCAST, ETC.",
     dataFormatter: (data) => {
       // Simple formatting function for revenue projections data
       const parts = [];
@@ -560,7 +560,7 @@ export const SECTION_CONFIGS: Record<string, SectionConfig> = {
     description: 'Estimate your fixed and variable costs for the first 1-3 years',
     apiEndpoint: '/financial-plan/expense-projections',
     initialMessage: "Let's map out your expense projections. What are your main fixed and variable costs?",
-    systemPrompt: "Guide the user through creating expense projections. Help them identify fixed costs (rent, salaries, insurance) and variable costs (materials, commissions, shipping). Encourage realistic estimates and categorization. Ask one question at a time and be specific. If they ask for examples, provide 2-3 concrete examples relevant to their industry.",
+    systemPrompt: "You are a business expert guiding users through creating a business plan. For this section, guide the user through creating expense projections. Focus on fixed costs (rent, salaries, insurance), variable costs (materials, commissions, shipping), year-one through year-three expense forecasts, and cost reduction strategies. Ask one question at a time and be specific. If the user doesn't know something, is not sure, or needs clarification, reply with short simpler questions, one at a time and wait for their answer before continuing. If they ask for examples, start step by step helping them with the process, pick the first element and ask a clear question about it. Be concise and patient. Follow up with one question at a time when the user is uncertain. NEVER RETURN A SOURCE REFERENCE OR THE NAME OF A BOOK, AUTHOR, YOUTUBE CHANNEL, PODCAST, ETC.",
     dataFormatter: (data) => {
       // Simple formatting function for expense projections data
       const parts = [];
@@ -752,7 +752,19 @@ export const SECTION_CONFIGS: Record<string, SectionConfig> = {
     description: 'Define the core purpose and focus of your business',
     apiEndpoint: '/business-description',
     initialMessage: 'Let\'s develop a clear mission statement for your business. A good mission statement explains what your company does, who it serves, and what makes it unique. What is the core purpose of your business?',
-    systemPrompt: 'Guide the user in creating a concise, impactful mission statement. Help them articulate their business purpose, values, and vision in a way that resonates with customers and stakeholders. Ask questions to clarify their unique value proposition and core principles. If they ask for examples, provide 2-3 diverse examples from different industries that match their business type. Keep the conversation focused on defining their mission statement elements: purpose, values, vision, and stakeholders.',
+    systemPrompt: `REMEMBER TO STAY OPN THE TOPIC OF MISSION STATEMENT FOR A BUSINESS PLAN. 
+    NEVER RETURN A SOURCE REFERENCE OR THE TIME, FILE, NAME OF A BOOK, AUTHOR, YOUTUBE CHANNEL, PODCAST, ETC
+    You are a business expert guiding users through creating the mission statement for a business plan. 
+    After providing options, aske the user what they want to continue working on. 
+    Ask one question at a time and be specific. 
+    Do not answer anything unrelated to Mission Statement. 
+    If the user doesn\'t know something, is not sure, or needs clarification, 
+    reply with short simpler questions probably suggest and next on developing 
+    the Mission Satement and ask if they want to continue with the next step, 
+    one at a time and wait for their answer before continuing. 
+    If they ask for examples, start step by step helping them with the process,
+     pick the first element and ask a clear question about it. 
+     Be concise and patient. Follow up with one question at a time when the user is uncertain.`,
     dataFormatter: (data) => {
       // Format mission statement data into readable text
       let formattedText = '';
@@ -780,12 +792,12 @@ export const SECTION_CONFIGS: Record<string, SectionConfig> = {
       return formattedText;
     },
     prompts: [
-      "What is the core purpose of your business?",
-      "Can you guide me step by step to create a compelling mission statement?",
+      "Guide me step by step to create a compelling mission statement?",
       "I'm not sure about my core values, can you help me identify them?",
       "Show me some examples of good mission statements in my industry",
       "How do I make my mission statement stand out from competitors?"
     ]
+    
   },
   'businessModel': {
     id: 'businessModel',

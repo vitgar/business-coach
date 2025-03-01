@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Send, HelpCircle } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { toast } from 'react-toastify';
-import LoadingIndicator from '../business-plan/LoadingIndicator';
+import { EnhancedLoadingIndicator } from './LoadingIndicators';
 
 /**
  * Interface for message objects in the chat
@@ -227,7 +227,11 @@ export default function GenericQuestionnaire({
       // Handle multiple possible response formats
       let updatedData = null;
       
-      if (data[sectionId]) {
+      // Check for businessPlanData in the response first (from OPENAI_BUSINESS_PLAN_CREATOR_ID)
+      if (data.businessPlanData && Object.keys(data.businessPlanData).length > 0) {
+        console.log(`Received business plan data for ${sectionId}:`, data.businessPlanData);
+        updatedData = data.businessPlanData;
+      } else if (data[sectionId]) {
         // Format 1: Direct section data
         console.log(`Received ${sectionId} data from API:`, data[sectionId]);
         updatedData = data[sectionId];
@@ -248,13 +252,12 @@ export default function GenericQuestionnaire({
         // For string data, convert to object with content property
         const dataToFormat = typeof updatedData === 'string' ? { content: updatedData } : updatedData;
         
-        // Update formatted content
         const formatted = dataFormatter(dataToFormat);
         setFormattedContent(formatted);
       }
     } catch (error) {
-      console.error(`Error in ${sectionId} conversation:`, error);
-      toast.error('Failed to process message');
+      console.error(`Error sending ${sectionId} message:`, error);
+      toast.error('Failed to send message. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -395,8 +398,13 @@ export default function GenericQuestionnaire({
               {/* Loading indicator for messages */}
               {isLoading && (
                 <div className="flex justify-start">
-                  <div className="max-w-3/4 rounded-lg p-3 bg-gray-100">
-                    <LoadingIndicator />
+                  <div className="max-w-3/4 rounded-lg">
+                    <EnhancedLoadingIndicator 
+                      isLoading={isLoading}
+                      sectionId={sectionId}
+                      businessPlanId={businessPlanId}
+                      sectionName={title}
+                    />
                   </div>
                 </div>
               )}
@@ -473,7 +481,12 @@ export default function GenericQuestionnaire({
           <div className="flex-1 p-4 overflow-y-auto" style={{ maxHeight: '500px' }}>
             {isDataLoading ? (
               <div className="flex items-center justify-center h-full">
-                <LoadingIndicator />
+                <EnhancedLoadingIndicator 
+                  isLoading={isDataLoading}
+                  sectionId={sectionId}
+                  businessPlanId={businessPlanId}
+                  sectionName={title}
+                />
               </div>
             ) : (
               <>
