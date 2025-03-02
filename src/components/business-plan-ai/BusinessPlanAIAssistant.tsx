@@ -1,7 +1,7 @@
 'use client'
 
-import { useState } from 'react'
-import { Send, X, Lightbulb, MessageSquare, Clipboard, ArrowDown } from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
+import { Send, X, Lightbulb, MessageSquare, Clipboard, ArrowDown, ArrowRight, ChevronRight } from 'lucide-react'
 import { useBusinessPlanAI, ChatMessage, FieldSuggestion } from '@/hooks/useBusinessPlanAI'
 
 /**
@@ -14,7 +14,52 @@ interface BusinessPlanAIAssistantProps {
   className?: string;
   collapsed?: boolean;
   onApplySuggestion?: (fieldId: string, content: string) => void;
+  onSectionChange?: (sectionId: string) => void;
 }
+
+// Define the section order for navigation
+const SECTION_ORDER = [
+  'executiveSummary',
+  'companyDescription',
+  'productsAndServices',
+  'marketAnalysis',
+  'marketingStrategy',
+  'operationsPlan',
+  'organizationAndManagement',
+  'financialPlan'
+];
+
+// Define subsections for each section to enable navigation within a section
+const SECTION_SUBSECTIONS: Record<string, string[]> = {
+  executiveSummary: ['businessConcept', 'missionStatement', 'productsOverview', 'marketOpportunity', 'financialHighlights'],
+  companyDescription: ['businessStructure', 'legalStructure', 'companyHistory'],
+  // Add subsections for other sections as needed
+};
+
+// Map subfield IDs to display names
+const SUBFIELD_NAMES: Record<string, string> = {
+  businessConcept: 'Business Concept',
+  missionStatement: 'Mission Statement',
+  productsOverview: 'Products/Services Overview',
+  marketOpportunity: 'Market Opportunity',
+  financialHighlights: 'Financial Highlights',
+  businessStructure: 'Business Structure',
+  legalStructure: 'Legal Structure Details',
+  companyHistory: 'Company History',
+  // Add names for other fields as needed
+};
+
+// Map section IDs to display names
+const SECTION_NAMES: Record<string, string> = {
+  executiveSummary: 'Executive Summary',
+  companyDescription: 'Company Description',
+  productsAndServices: 'Products & Services',
+  marketAnalysis: 'Market Analysis',
+  marketingStrategy: 'Marketing Strategy',
+  operationsPlan: 'Operations Plan',
+  organizationAndManagement: 'Organization & Management',
+  financialPlan: 'Financial Plan'
+};
 
 /**
  * Business Plan AI Assistant Component
@@ -29,10 +74,19 @@ export default function BusinessPlanAIAssistant({
   sectionName,
   className = '',
   collapsed = false,
-  onApplySuggestion
+  onApplySuggestion,
+  onSectionChange
 }: BusinessPlanAIAssistantProps) {
   const [isOpen, setIsOpen] = useState(!collapsed)
   const [inputValue, setInputValue] = useState('')
+  const [showSectionPrompt, setShowSectionPrompt] = useState(false)
+  const [lastAppliedSuggestion, setLastAppliedSuggestion] = useState<{fieldId: string, content: string} | null>(null)
+  const [currentSubfield, setCurrentSubfield] = useState<string | null>(null)
+  
+  // Create a ref for the messages container to enable auto-scrolling
+  const messagesEndRef = useRef<HTMLDivElement>(null)
+  const messagesContainerRef = useRef<HTMLDivElement>(null)
+  
   const { 
     messages, 
     isLoading, 
@@ -40,7 +94,35 @@ export default function BusinessPlanAIAssistant({
     clearConversation,
     fieldSuggestions,
     applySuggestion
-  } = useBusinessPlanAI(businessPlanId, sectionId, onApplySuggestion)
+  } = useBusinessPlanAI(businessPlanId, sectionId, (fieldId, content) => {
+    if (onApplySuggestion) {
+      onApplySuggestion(fieldId, content);
+      setLastAppliedSuggestion({ fieldId, content });
+      setCurrentSubfield(fieldId);
+      setShowSectionPrompt(true);
+    }
+  })
+  
+  // Reset section prompt when section changes
+  useEffect(() => {
+    setShowSectionPrompt(false);
+    setLastAppliedSuggestion(null);
+    setCurrentSubfield(null);
+  }, [sectionId]);
+  
+  // Auto-scroll to bottom when messages change or during loading
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, isLoading, fieldSuggestions, showSectionPrompt]);
+  
+  /**
+   * Scroll to the bottom of the messages container
+   */
+  const scrollToBottom = () => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
   
   /**
    * Get suggested prompts based on section
@@ -104,6 +186,7 @@ export default function BusinessPlanAIAssistant({
     if (inputValue.trim() && !isLoading) {
       sendMessage(inputValue.trim())
       setInputValue('')
+      setShowSectionPrompt(false)
     }
   }
   
@@ -112,6 +195,7 @@ export default function BusinessPlanAIAssistant({
    */
   const handleSuggestionClick = (suggestion: string) => {
     sendMessage(suggestion)
+    setShowSectionPrompt(false)
   }
   
   /**
@@ -120,6 +204,132 @@ export default function BusinessPlanAIAssistant({
   const handleApplySuggestion = (fieldId: string, content: string) => {
     applySuggestion(fieldId, content)
   }
+  
+  /**
+   * Get the next section ID based on current section
+   */
+  const getNextSectionId = (currentSectionId: string): string | null => {
+    const currentIndex = SECTION_ORDER.indexOf(currentSectionId);
+    if (currentIndex < 0 || currentIndex >= SECTION_ORDER.length - 1) {
+      return null;
+    }
+    return SECTION_ORDER[currentIndex + 1];
+  }
+  
+  /**
+   * Handle navigation to the next section
+   */
+  const handleMoveToNextSection = () => {
+    if (!onSectionChange) return;
+    
+    const nextSectionId = getNextSectionId(sectionId);
+    if (nextSectionId) {
+      onSectionChange(nextSectionId);
+      sendMessage(`Let's move on to the ${SECTION_NAMES[nextSectionId]} section.`);
+    } else {
+      sendMessage("Great job! You've completed all sections of your business plan.");
+    }
+    setShowSectionPrompt(false);
+  }
+  
+  /**
+   * Handle staying on the current section
+   */
+  const handleStayOnCurrentSection = () => {
+    sendMessage("Let's continue working on this section.");
+    setShowSectionPrompt(false);
+  }
+  
+  /**
+   * Get the next subfield ID based on current subfield
+   */
+  const getNextSubfield = (currentFieldId: string): string | null => {
+    const subsections = SECTION_SUBSECTIONS[sectionId];
+    if (!subsections) return null;
+    
+    const currentIndex = subsections.indexOf(currentFieldId);
+    if (currentIndex < 0 || currentIndex >= subsections.length - 1) {
+      return null;
+    }
+    return subsections[currentIndex + 1];
+  }
+  
+  /**
+   * Render section navigation prompt
+   */
+  const renderSectionNavigationPrompt = () => {
+    if (!showSectionPrompt || !currentSubfield) return null;
+    
+    // Check if there's a next subfield in the current section
+    const nextSubfield = getNextSubfield(currentSubfield);
+    const nextSubfieldName = nextSubfield ? SUBFIELD_NAMES[nextSubfield] : null;
+    
+    // If no next subfield, consider next major section
+    const nextSectionId = nextSubfield ? null : getNextSectionId(sectionId);
+    const nextSectionName = nextSectionId ? SECTION_NAMES[nextSectionId] : null;
+    
+    return (
+      <div className="mt-4 border-t border-gray-200 pt-3">
+        <h4 className="text-sm font-medium text-gray-700 mb-2 flex items-center">
+          <ChevronRight className="h-4 w-4 mr-1" />
+          Great! Where would you like to go next?
+        </h4>
+        <div className="space-y-2">
+          {nextSubfieldName && (
+            <button
+              onClick={() => {
+                setShowSectionPrompt(false);
+                sendMessage(`Let's work on the ${nextSubfieldName} field now.`);
+              }}
+              className="w-full bg-blue-50 hover:bg-blue-100 text-blue-700 p-2 rounded-md text-sm flex items-center justify-between"
+            >
+              <span>Continue with {nextSubfieldName}</span>
+              <ArrowRight className="h-4 w-4" />
+            </button>
+          )}
+          
+          {nextSectionName && (
+            <button
+              onClick={handleMoveToNextSection}
+              className="w-full bg-blue-50 hover:bg-blue-100 text-blue-700 p-2 rounded-md text-sm flex items-center justify-between"
+            >
+              <span>Move to {nextSectionName} section</span>
+              <ArrowRight className="h-4 w-4" />
+            </button>
+          )}
+          
+          <button
+            onClick={handleStayOnCurrentSection}
+            className="w-full bg-gray-50 hover:bg-gray-100 text-gray-700 p-2 rounded-md text-sm"
+          >
+            Continue working on current field
+          </button>
+          
+          <div className="mt-2">
+            <div className="text-xs text-gray-500 mb-1">Or select a specific field:</div>
+            <div className="grid grid-cols-1 gap-1">
+              {SECTION_SUBSECTIONS[sectionId]?.map(fieldId => (
+                <button
+                  key={fieldId}
+                  onClick={() => {
+                    setShowSectionPrompt(false);
+                    sendMessage(`Let's work on the ${SUBFIELD_NAMES[fieldId]} field now.`);
+                  }}
+                  className={`text-xs p-1 rounded text-left ${
+                    fieldId === currentSubfield 
+                      ? 'bg-blue-100 text-blue-700' 
+                      : 'bg-gray-50 hover:bg-gray-100 text-gray-600'
+                  }`}
+                >
+                  {SUBFIELD_NAMES[fieldId]}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
   
   /**
    * Render field suggestions if available
@@ -142,7 +352,7 @@ export default function BusinessPlanAIAssistant({
                 </span>
                 <button
                   onClick={() => handleApplySuggestion(suggestion.fieldId, suggestion.content)}
-                  className="text-xs bg-blue-100 hover:bg-blue-200 text-blue-800 px-2 py-1 rounded flex items-center"
+                  className="text-xs bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded flex items-center min-w-[70px] justify-center"
                 >
                   <ArrowDown className="h-3 w-3 mr-1" />
                   Apply
@@ -188,50 +398,63 @@ export default function BusinessPlanAIAssistant({
         </button>
       </div>
       
-      {/* Messages Container */}
-      <div className="flex-grow p-3 overflow-y-auto h-[calc(100%-110px)] space-y-4 scrollbar-thin">
-        {messages.length === 0 ? (
-          <div className="text-center py-4 text-gray-500">
-            <MessageSquare className="h-12 w-12 mx-auto mb-2 opacity-50" />
-            <p className="text-sm">Ask for help with your {sectionName.toLowerCase()}</p>
-            <div className="mt-4 space-y-2">
-              {getSuggestedPrompts().map((prompt, index) => (
-                <button
-                  key={index}
-                  onClick={() => handleSuggestionClick(prompt)}
-                  className="w-full text-left p-2 border border-gray-200 rounded hover:bg-gray-50 text-sm text-gray-700"
-                >
-                  {prompt}
-                </button>
-              ))}
+      {/* Messages Container - Fixed height with overflow scroll */}
+      <div 
+        ref={messagesContainerRef}
+        className="flex-grow p-3 overflow-y-auto h-[calc(100%-120px)] space-y-4 scrollbar-thin"
+        style={{ overflowY: 'auto', display: 'flex', flexDirection: 'column' }}
+      >
+        <div className="flex-grow">
+          {messages.length === 0 ? (
+            <div className="text-center py-4 text-gray-500">
+              <MessageSquare className="h-12 w-12 mx-auto mb-2 opacity-50" />
+              <p className="text-sm">Ask for help with your {sectionName.toLowerCase()}</p>
+              <div className="mt-4 space-y-2">
+                {getSuggestedPrompts().map((prompt, index) => (
+                  <button
+                    key={index}
+                    onClick={() => handleSuggestionClick(prompt)}
+                    className="w-full text-left p-2 border border-gray-200 rounded hover:bg-gray-50 text-sm text-gray-700"
+                  >
+                    {prompt}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
-        ) : (
-          <>
-            {messages.map((message, index) => (
-              <div
-                key={index}
-                className={`p-3 rounded-lg max-w-[85%] ${
-                  message.role === 'user'
-                    ? 'bg-blue-100 text-blue-900 ml-auto'
-                    : 'bg-gray-100 text-gray-800'
-                }`}
-              >
-                {message.content}
-                {message.role === 'assistant' && index === messages.length - 1 && renderFieldSuggestions()}
-              </div>
-            ))}
-            {isLoading && (
-              <div className="bg-gray-100 text-gray-800 p-3 rounded-lg max-w-[85%]">
-                <div className="flex space-x-2">
-                  <div className="w-2 h-2 rounded-full bg-gray-400 animate-pulse"></div>
-                  <div className="w-2 h-2 rounded-full bg-gray-400 animate-pulse delay-100"></div>
-                  <div className="w-2 h-2 rounded-full bg-gray-400 animate-pulse delay-200"></div>
+          ) : (
+            <>
+              {messages.map((message, index) => (
+                <div
+                  key={index}
+                  className={`p-3 rounded-lg max-w-[85%] ${
+                    message.role === 'user'
+                      ? 'bg-blue-100 text-blue-900 ml-auto'
+                      : 'bg-gray-100 text-gray-800'
+                  }`}
+                >
+                  {message.content}
+                  {message.role === 'assistant' && index === messages.length - 1 && (
+                    <>
+                      {renderFieldSuggestions()}
+                      {showSectionPrompt && renderSectionNavigationPrompt()}
+                    </>
+                  )}
                 </div>
-              </div>
-            )}
-          </>
-        )}
+              ))}
+              {isLoading && (
+                <div className="bg-gray-100 text-gray-800 p-3 rounded-lg max-w-[85%]">
+                  <div className="flex space-x-2">
+                    <div className="w-2 h-2 rounded-full bg-gray-400 animate-pulse"></div>
+                    <div className="w-2 h-2 rounded-full bg-gray-400 animate-pulse delay-100"></div>
+                    <div className="w-2 h-2 rounded-full bg-gray-400 animate-pulse delay-200"></div>
+                  </div>
+                </div>
+              )}
+              {/* Invisible element at the bottom for auto-scrolling */}
+              <div ref={messagesEndRef} />
+            </>
+          )}
+        </div>
       </div>
       
       {/* Input Form */}

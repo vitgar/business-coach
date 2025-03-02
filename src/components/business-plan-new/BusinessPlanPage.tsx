@@ -157,7 +157,7 @@ export default function BusinessPlanPage({ businessPlanId }: { businessPlanId: s
             
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-grow h-full overflow-hidden">
               {/* Business Plan Sections Navigation - Fixed Left Sidebar */}
-              <div className="lg:col-span-3 lg:sticky lg:top-0 lg:self-start h-auto overflow-auto max-h-[calc(100vh-200px)]">
+              <div className="lg:col-span-2 lg:sticky lg:top-0 lg:self-start h-auto overflow-auto max-h-[calc(100vh-200px)]">
                 <BusinessPlanSections 
                   currentSection={currentSection}
                   onSectionChange={handleSectionChange}
@@ -166,7 +166,7 @@ export default function BusinessPlanPage({ businessPlanId }: { businessPlanId: s
               </div>
               
               {/* Content Area Grid */}
-              <div className="lg:col-span-9 grid grid-cols-1 lg:grid-cols-12 gap-6 h-full">
+              <div className="lg:col-span-10 grid grid-cols-1 lg:grid-cols-12 gap-6 h-full">
                 {/* Business Plan Editor - Scrollable Content Area */}
                 <div className="lg:col-span-8 h-[calc(100vh-220px)] overflow-y-auto">
                   <div className="bg-white rounded-lg shadow-md h-full">
@@ -186,12 +186,13 @@ export default function BusinessPlanPage({ businessPlanId }: { businessPlanId: s
                 </div>
 
                 {/* AI Assistant - Fixed Right Sidebar */}
-                <div className="lg:col-span-4 lg:sticky lg:top-0 lg:self-start h-auto max-h-[calc(100vh-200px)] overflow-hidden">
+                <div className="lg:col-span-4 h-[calc(100vh-220px)] overflow-hidden">
                   <BusinessPlanAIAssistant
                     businessPlanId={businessPlan.id}
                     sectionId={currentSection}
                     sectionName={getSectionTitle(currentSection)}
                     className="h-full"
+                    onSectionChange={handleSectionChange}
                     onApplySuggestion={(fieldId: string, content: string) => {
                       // Find the current section's data
                       const currentSectionData = businessPlan.content?.[currentSection] || {};
