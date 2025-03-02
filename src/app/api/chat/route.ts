@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server'
 import { Pinecone } from '@pinecone-database/pinecone'
 import type { ChatMessage } from '@/types/chat'
 import { ASSISTANT_CONFIG } from '@/config/constants'
+// Import API initialization to ensure development data is seeded
+import '@/app/api/_init'
 
 const pc = new Pinecone({
   apiKey: process.env.PINECONE_API_KEY!

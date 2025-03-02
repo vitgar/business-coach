@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { PrismaClient, Prisma } from '@prisma/client'
+// Import API initialization to ensure development data is seeded
+import '@/app/api/_init'
 
 // Get all conversations
 export async function GET() {

@@ -1,30 +1,10 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { Pinecone } from '@pinecone-database/pinecone'
-
-const pc = new Pinecone({
-  apiKey: process.env.PINECONE_API_KEY!
-})
-
-// Create a singleton assistant instance
-let assistant: any = null
-
-async function getOrCreateAssistant() {
-  if (!assistant) {
-    try {
-      assistant = pc.assistant("business-coach")
-    } catch (error) {
-      console.error('Error getting assistant:', error)
-      throw error
-    }
-  }
-  return assistant
-}
+// Import API initialization to ensure development data is seeded
+import '@/app/api/_init'
 
 // Helper function to generate AI response for "I'm not sure" cases
 async function generateHelp(question: string, conversationHistory: string[] = []) {
-  const businessCoach = await getOrCreateAssistant();
-
   // Define our categories for questions.
   type QuestionCategory = 'vision' | 'metrics' | 'marketing' | 'financials' | 'operations' | 'general';
 
@@ -136,28 +116,68 @@ async function generateHelp(question: string, conversationHistory: string[] = []
     nextQuestion = getStarterQuestion(category, conversationHistory);
   }
 
-  // Engage the business coach with context, so they know to guide the conversation one question at a time.
-  await businessCoach.chat({
-    messages: [
-      {
-        role: "user",
-        content: `You are an expert business coach with comprehensive knowledge of registering a business, creating a business plan, strategic planning, marketing, SEO, lead generation, customer funneling workflows, and more.
+  // Use OpenAI directly
+  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
+    },
+    body: JSON.stringify({
+      model: 'gpt-4o',
+      messages: [
+        {
+          role: "user",
+          content: `You are an expert business coach with comprehensive knowledge of registering a business, creating a business plan, strategic planning, marketing, SEO, lead generation, customer funneling workflows, and more.
 The user said: "${question}".
 Based on this, please help guide them by asking this single, focused, and friendly question: "${nextQuestion}"
 If the user shows uncertainty or asks for clarification, reply with even simpler, one-question prompts.`
-      }
-    ]
-  });
+        }
+      ],
+      temperature: 0.7,
+      max_tokens: 300
+    })
+  })
 
+  if (!response.ok) {
+    const error = await response.json()
+    console.error('OpenAI API error:', error)
+    throw new Error('Failed to get response from AI')
+  }
+
+  const data = await response.json()
+  const aiResponse = data.choices[0].message.content
+
+  // Process the response to ensure it contains only one question
+  let processedResponse = aiResponse
+  
+  // If there are multiple question marks, try to extract just the first question
+  const questionMarks = (aiResponse.match(/\?/g) || []).length
+  if (questionMarks > 1) {
+    // Find the first question mark and extract everything up to that point plus a bit more context
+    const firstQuestionMarkIndex = aiResponse.indexOf('?')
+    if (firstQuestionMarkIndex > 0) {
+      // Include the question mark and a bit more context (up to the next period or line break)
+      let endIndex = firstQuestionMarkIndex + 1
+      const nextPeriod = aiResponse.indexOf('.', endIndex)
+      const nextLineBreak = aiResponse.indexOf('\n', endIndex)
+      
+      if (nextPeriod > 0 && (nextLineBreak < 0 || nextPeriod < nextLineBreak)) {
+        endIndex = nextPeriod + 1
+      } else if (nextLineBreak > 0) {
+        endIndex = nextLineBreak
+      }
+      
+      processedResponse = aiResponse.substring(0, endIndex).trim()
+    }
+  }
+  
   // Return the chosen question.
   return `Let's start here: ${nextQuestion}`;
 }
 
-
 // Helper function to continue the help conversation
 async function continueHelp(question: string, context: string[]) {
-  const businessCoach = await getOrCreateAssistant()
-  
   // Check if the user is asking for ideas/examples
   const lastResponse = context[context.length - 1].toLowerCase()
   const askingForIdeas = lastResponse.includes('give me ideas') || 
@@ -174,11 +194,10 @@ async function continueHelp(question: string, context: string[]) {
                           lastResponse.includes('retail') ||
                           lastResponse.includes('marketing')
 
+  let promptContent = '';
+
   if (isMarketResponse) {
-    const response = await businessCoach.chat({
-      messages: [{
-        role: 'user',
-        content: `The user has identified ${lastResponse} as their target market. Previous responses: ${context.join(' | ')}
+    promptContent = `The user has identified ${lastResponse} as their target market. Previous responses: ${context.join(' | ')}
 
 Choose ONE specific problem in this market and ask about it. Pick from these examples:
 
@@ -200,17 +219,9 @@ For education:
 Response format:
 "Let's focus on a specific problem in [their chosen market]. [Describe ONE problem in detail]. Could you create a solution that [specific outcome]?"
 
-Keep it focused on ONE concrete problem they could solve.`
-      }]
-    })
-    return response.message.content
-  }
-
-  if (askingForIdeas) {
-    const response = await businessCoach.chat({
-      messages: [{
-        role: 'user',
-        content: `The user is interested in AI automation and needs specific ideas. Previous responses: ${context.join(' | ')}
+Keep it focused on ONE concrete problem they could solve.`;
+  } else if (askingForIdeas) {
+    promptContent = `The user is interested in AI automation and needs specific ideas. Previous responses: ${context.join(' | ')}
 
 Let's focus on ONE specific market segment. Choose the most relevant category and provide 3 concrete problems they could solve:
 
@@ -227,16 +238,9 @@ Response format:
 
 Which of these problems interests you most to solve?"
 
-Keep it focused on concrete problems they could start solving immediately.`
-      }]
-    })
-    return response.message.content
-  }
-
-  const response = await businessCoach.chat({
-    messages: [{
-      role: 'user',
-      content: `The user is working on this question: "${question}"
+Keep it focused on concrete problems they could start solving immediately.`;
+  } else {
+    promptContent = `The user is working on this question: "${question}"
 Previous responses: ${context.join(' | ')}
 
 Choose ONE clear next step based on their response:
@@ -260,11 +264,37 @@ Guidelines:
 - Ask only ONE question
 - Make it specific and concrete
 - Focus on problems they could solve
-- No long explanations or multiple options`
-    }]
+- No long explanations or multiple options`;
+  }
+
+  // Use OpenAI directly
+  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
+    },
+    body: JSON.stringify({
+      model: 'gpt-4o',
+      messages: [
+        {
+          role: 'user',
+          content: promptContent
+        }
+      ],
+      temperature: 0.7,
+      max_tokens: 300
+    })
   })
 
-  return response.message.content
+  if (!response.ok) {
+    const error = await response.json()
+    console.error('OpenAI API error:', error)
+    throw new Error('Failed to get response from AI')
+  }
+
+  const data = await response.json()
+  return data.choices[0].message.content
 }
 
 // Helper function to improve and structure the user's answer
@@ -277,11 +307,19 @@ async function improveAnswer(question: string, answer: string) {
     return null
   }
 
-  const businessCoach = await getOrCreateAssistant()
-  const response = await businessCoach.chat({
-    messages: [{
-      role: 'user',
-      content: `Refine this business vision answer while keeping the user's authentic voice:
+  // Use OpenAI directly
+  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
+    },
+    body: JSON.stringify({
+      model: 'gpt-4o',
+      messages: [
+        {
+          role: 'user',
+          content: `Refine this business vision answer while keeping the user's authentic voice:
 
 Question: ${question}
 Answer: ${answer}
@@ -297,10 +335,21 @@ Guidelines:
 
 Example format:
 I believe [their main point]. Through my experience with [their examples], I've seen [impact/potential]. Looking ahead, I aim to [vision/goal].`
-    }]
+        }
+      ],
+      temperature: 0.7,
+      max_tokens: 500
+    })
   })
 
-  return response.message.content
+  if (!response.ok) {
+    const error = await response.json()
+    console.error('OpenAI API error:', error)
+    throw new Error('Failed to get response from AI')
+  }
+
+  const data = await response.json()
+  return data.choices[0].message.content
 }
 
 // Define the content type to match Prisma's JSON requirements
@@ -315,6 +364,11 @@ type BusinessPlanContent = {
   }
 }
 
+/**
+ * POST /api/business-plans/[id]/vision
+ * 
+ * Handles communication with OpenAI for the vision questionnaire
+ */
 export async function POST(
   request: Request,
   { params }: { params: { id: string } }
@@ -322,61 +376,147 @@ export async function POST(
   try {
     const body = await request.json()
     const { question, answer, needsHelp, previousContext } = body
-
-    // If explicitly asking for help or if the answer indicates uncertainty
-    if (needsHelp || answer.toLowerCase().includes('i don\'t know')) {
-      // If we have previous context, continue the help conversation
-      const helpResponse = previousContext?.length > 0 
-        ? await continueHelp(question, previousContext)
-        : await generateHelp(question)
-      return NextResponse.json({ help: helpResponse })
-    }
-
-    const improvedAnswer = await improveAnswer(question, answer)
     
-    // If improveAnswer returns null, it means we detected uncertainty
-    // and should switch to help mode
-    if (improvedAnswer === null) {
-      const helpResponse = await generateHelp(question)
-      return NextResponse.json({ help: helpResponse })
-    }
-    
-    // Get the current business plan
+    // Get the business plan to include its details in the prompt
     const businessPlan = await prisma.businessPlan.findUnique({
-      where: { id: params.id }
-    })
-
-    if (!businessPlan) {
-      throw new Error('Business plan not found')
-    }
-
-    // Get current content or initialize it
-    const content = (businessPlan.content as BusinessPlanContent) || {}
-    
-    // Update the vision in the content
-    const updatedContent: BusinessPlanContent = {
-      ...content,
-      executiveSummary: {
-        ...(content.executiveSummary || {}),
-        visionAndGoals: improvedAnswer
-      }
-    }
-
-    // Update the business plan
-    const updatedPlan = await prisma.businessPlan.update({
       where: { id: params.id },
-      data: {
-        content: updatedContent
-      }
+      select: { title: true, content: true }
     })
+    
+    if (!businessPlan) {
+      return NextResponse.json(
+        { error: 'Business plan not found' },
+        { status: 404 }
+      )
+    }
+    
+    // Base system prompt for the AI
+    const systemPrompt = `You are a business expert guiding users through creating a comprehensive business plan. Use the following sections as a guide/template:
 
-    return NextResponse.json({ 
-      success: true, 
-      improvedAnswer,
-      businessPlan: updatedPlan
+Cover Page
+Table of Contents
+Executive Summary
+Company Description
+Products and Services
+Market Analysis
+Marketing and Sales Strategy
+Operations Plan
+Organization and Management
+Financial Plan
+Risk Analysis and Contingency Planning
+Implementation Timeline and Milestones
+Appendices and Supporting Documents
+Document Control and Revision History
+
+For each section, provide structured options and ask specific, step-by-step questions. When working on a section, stay strictly focused on that section and do not deviate until the user indicates they want to move on to another section. Periodically ask if the user wishes to continue with the current section or move on to another.
+
+IMPORTANT: Ask only ONE question at a time and wait for the user's response before proceeding. Never ask multiple questions in a single response. Keep questions short, clear, and focused on the element being worked on. 
+
+IMPORTANT: Do NOT use a fixed list of questions. Instead, generate questions that naturally follow from the user's previous answers. Make each question contextual and relevant to what the user has already shared.
+
+If the user asks for examples, break the process down into clear, focused steps. Be concise, patient, and methodical. NEVER provide source references or mention any external names (such as books, authors, YouTube channels, podcasts, etc.).
+
+ONLY MODIFY THE SPECIFIC SECTION THAT WE ARE WORKING ON
+
+Currently working on: Vision and Business Goals section of the Executive Summary
+Business Plan Title: ${businessPlan.title || 'New Business Plan'}
+Business Description: ${businessPlan.content || 'No description provided yet'}`
+
+    // Construct the messages array for the API
+    const messages = []
+    
+    // Add system prompt
+    messages.push({
+      role: 'system',
+      content: systemPrompt
     })
+    
+    // If we're in help mode and have previous context, add it
+    if (needsHelp && previousContext) {
+      // Add previous context as user and assistant messages
+      previousContext.forEach((ctx: string, index: number) => {
+        messages.push({
+          role: index % 2 === 0 ? 'user' : 'assistant',
+          content: ctx
+        })
+      })
+    }
+    
+    // Add the current question
+    messages.push({
+      role: 'user',
+      content: needsHelp 
+        ? `I need help with this question: ${question}`
+        : `${question}${answer ? `\n\nMy answer: ${answer}` : ''}\n\nPlease respond with ONLY ONE focused question that naturally follows from my answer. Do not jump to unrelated topics or use hardcoded questions. Make your next question contextual and relevant to what I've shared. If we've covered vision, one-year goals, three-year goals, and five-year goals, you can indicate we're finished with "Perfect! We've covered all the key aspects of your vision and goals."`
+    })
+    
+    // If the user indicates uncertainty, add a specific request for help
+    if (needsHelp && !answer) {
+      messages.push({
+        role: 'user',
+        content: "I'm not sure how to answer this question. Can you help me by providing more guidance or examples?"
+      })
+    }
+    
+    // Call OpenAI API
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o',
+        messages,
+        temperature: 0.7,
+        max_tokens: 500
+      })
+    })
+    
+    if (!response.ok) {
+      const error = await response.json()
+      console.error('OpenAI API error:', error)
+      throw new Error('Failed to get response from AI')
+    }
+    
+    const data = await response.json()
+    const aiResponse = data.choices[0].message.content
+    
+    // Process the response to ensure it contains only one question
+    let processedResponse = aiResponse
+    
+    // If there are multiple question marks, try to extract just the first question
+    const questionMarks = (aiResponse.match(/\?/g) || []).length
+    if (questionMarks > 1) {
+      // Find the first question mark and extract everything up to that point plus a bit more context
+      const firstQuestionMarkIndex = aiResponse.indexOf('?')
+      if (firstQuestionMarkIndex > 0) {
+        // Include the question mark and a bit more context (up to the next period or line break)
+        let endIndex = firstQuestionMarkIndex + 1
+        const nextPeriod = aiResponse.indexOf('.', endIndex)
+        const nextLineBreak = aiResponse.indexOf('\n', endIndex)
+        
+        if (nextPeriod > 0 && (nextLineBreak < 0 || nextPeriod < nextLineBreak)) {
+          endIndex = nextPeriod + 1
+        } else if (nextLineBreak > 0) {
+          endIndex = nextLineBreak
+        }
+        
+        processedResponse = aiResponse.substring(0, endIndex).trim()
+      }
+    }
+    
+    // Return different response formats based on the request type
+    if (needsHelp) {
+      return NextResponse.json({ help: processedResponse })
+    } else {
+      // For normal answers, return both the original and an improved version
+      return NextResponse.json({ 
+        improvedAnswer: processedResponse
+      })
+    }
   } catch (error) {
-    console.error('Error processing vision request:', error)
+    console.error('Error in vision API:', error)
     return NextResponse.json(
       { error: 'Failed to process request' },
       { status: 500 }

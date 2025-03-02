@@ -2,21 +2,32 @@
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ArrowRight, BookOpen, DollarSign, LineChart, Settings } from 'lucide-react'
+import { ArrowRight, BookOpen, DollarSign, LineChart, Settings, User } from 'lucide-react'
 import ClientLayout from '@/components/ClientLayout'
+import { useAuth } from '@/contexts/AuthContext'
 import { toast } from 'react-toastify'
 
-// Main homepage component
+/**
+ * Main homepage component
+ * 
+ * Landing page with options to start a business plan or access other features.
+ * Uses auth context to manage business creation.
+ */
 export default function Home() {
   const router = useRouter()
+  const { userId, isAuthenticated, currentBusinessId, setCurrentBusinessId } = useAuth()
 
+  // Create a new business plan and redirect to it
   const handleStartBusinessPlan = async () => {
     try {
       const response = await fetch('/api/business-plans', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-        }
+        },
+        body: JSON.stringify({
+          title: "New Business Plan"
+        })
       })
 
       if (!response.ok) {
@@ -24,10 +35,24 @@ export default function Home() {
       }
 
       const data = await response.json()
+      
+      // Update the current business ID in context
+      setCurrentBusinessId(data.id)
+      
+      // Redirect to the business plan page or dashboard
       router.push(`/business-plan/${data.id}`)
     } catch (error) {
       console.error('Error creating business plan:', error)
       toast.error('Failed to create business plan')
+    }
+  }
+
+  // Go to dashboard if already authenticated
+  const handleGetStarted = () => {
+    if (isAuthenticated && currentBusinessId) {
+      router.push('/dashboard')
+    } else {
+      handleStartBusinessPlan()
     }
   }
 
@@ -45,10 +70,10 @@ export default function Home() {
           </p>
           <div className="space-x-4">
             <button 
-              onClick={handleStartBusinessPlan}
+              onClick={handleGetStarted}
               className="bg-white text-blue-600 px-6 py-3 rounded-lg font-semibold hover:bg-blue-50 transition-colors inline-flex items-center"
             >
-              Start Your Business Plan
+              {isAuthenticated ? 'Go to Dashboard' : 'Start Your Business Plan'}
               <ArrowRight className="ml-2 h-5 w-5" />
             </button>
             <Link

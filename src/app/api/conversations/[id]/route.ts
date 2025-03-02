@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+// Import API initialization to ensure development data is seeded
+import '@/app/api/_init'
 
 export async function GET(
   request: Request,
