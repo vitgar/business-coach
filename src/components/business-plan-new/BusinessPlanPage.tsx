@@ -157,7 +157,7 @@ export default function BusinessPlanPage({ businessPlanId }: { businessPlanId: s
             
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-grow h-full overflow-hidden">
               {/* Business Plan Sections Navigation - Fixed Left Sidebar */}
-              <div className="lg:col-span-2 lg:sticky lg:top-0 lg:self-start h-auto overflow-auto max-h-[calc(100vh-200px)]">
+              <div className="lg:col-span-1 lg:sticky lg:top-0 lg:self-start h-auto overflow-auto max-h-[calc(100vh-200px)]">
                 <BusinessPlanSections 
                   currentSection={currentSection}
                   onSectionChange={handleSectionChange}
@@ -166,9 +166,9 @@ export default function BusinessPlanPage({ businessPlanId }: { businessPlanId: s
               </div>
               
               {/* Content Area Grid */}
-              <div className="lg:col-span-10 grid grid-cols-1 lg:grid-cols-12 gap-6 h-full">
+              <div className="lg:col-span-11 grid grid-cols-1 lg:grid-cols-12 gap-6 h-full">
                 {/* Business Plan Editor - Scrollable Content Area */}
-                <div className="lg:col-span-8 h-[calc(100vh-220px)] overflow-y-auto">
+                <div className="lg:col-span-8 h-[calc(100vh-220px)]">
                   <div className="bg-white rounded-lg shadow-md h-full">
                     <BusinessPlanEditor 
                       businessPlan={businessPlan}

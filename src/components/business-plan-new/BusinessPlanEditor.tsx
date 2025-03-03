@@ -188,8 +188,8 @@ export default function BusinessPlanEditor({
     const fields = getFieldDefinitions()
     
     return fields.map(field => (
-      <div key={field.id} className="mb-6">
-        <div className="flex items-center mb-1">
+      <div key={field.id} className="mb-8 pb-6 border-b border-gray-100">
+        <div className="flex items-center mb-2">
           <label htmlFor={field.id} className="block text-sm font-medium text-gray-700">
             {field.label}
           </label>
@@ -213,7 +213,7 @@ export default function BusinessPlanEditor({
               highlightedField === field.id 
                 ? 'border-green-500 bg-green-50 ring-2 ring-green-300' 
                 : 'border-gray-300'
-            } rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[150px] transition-all duration-300`}
+            } rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[100px] max-h-[250px] transition-all duration-300`}
           />
         )}
         
@@ -256,12 +256,12 @@ export default function BusinessPlanEditor({
   }
 
   return (
-    <div className="p-6">
+    <div className="p-6 h-full overflow-y-auto">
       <h2 className="text-xl font-semibold text-gray-800 mb-6">
         {getSectionTitle()}
       </h2>
       
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit} className="pb-4">
         {renderFields()}
         
         <div className="mt-6">

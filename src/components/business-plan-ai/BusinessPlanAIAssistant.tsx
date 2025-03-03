@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { Send, X, Lightbulb, MessageSquare, Clipboard, ArrowDown, ArrowRight, ChevronRight } from 'lucide-react'
+import { Send, X, Lightbulb, MessageSquare, Clipboard, ArrowDown, ArrowRight, ChevronRight, BookOpen } from 'lucide-react'
 import { useBusinessPlanAI, ChatMessage, FieldSuggestion } from '@/hooks/useBusinessPlanAI'
 
 /**
@@ -32,21 +32,73 @@ const SECTION_ORDER = [
 // Define subsections for each section to enable navigation within a section
 const SECTION_SUBSECTIONS: Record<string, string[]> = {
   executiveSummary: ['businessConcept', 'missionStatement', 'productsOverview', 'marketOpportunity', 'financialHighlights'],
-  companyDescription: ['businessStructure', 'legalStructure', 'companyHistory'],
-  // Add subsections for other sections as needed
+  companyDescription: ['businessStructure', 'legalStructure', 'ownershipDetails', 'companyHistory'],
+  productsAndServices: ['overview', 'valueProposition', 'intellectualProperty', 'futureProducts'],
+  marketAnalysis: ['industryOverview', 'targetMarket', 'marketSegmentation', 'competitiveAnalysis', 'swotAnalysis'],
+  marketingStrategy: ['branding', 'pricing', 'promotion', 'salesStrategy', 'channels', 'customerRetention'],
+  operationsPlan: ['businessModel', 'facilities', 'technology', 'productionProcess', 'qualityControl', 'logistics'],
+  organizationAndManagement: ['structure', 'managementTeam', 'advisors', 'hrPlan'],
+  financialPlan: ['projections', 'fundingNeeds', 'useOfFunds', 'breakEvenAnalysis', 'exitStrategy'],
 };
 
 // Map subfield IDs to display names
 const SUBFIELD_NAMES: Record<string, string> = {
+  // Executive Summary subsections
   businessConcept: 'Business Concept',
   missionStatement: 'Mission Statement',
   productsOverview: 'Products/Services Overview',
   marketOpportunity: 'Market Opportunity',
   financialHighlights: 'Financial Highlights',
+  managementTeam: 'Management Team',
+  milestones: 'Key Milestones',
+  
+  // Company Description subsections
   businessStructure: 'Business Structure',
   legalStructure: 'Legal Structure Details',
+  ownershipDetails: 'Ownership Details',
   companyHistory: 'Company History',
-  // Add names for other fields as needed
+  
+  // Products and Services subsections
+  overview: 'Product/Service Overview',
+  valueProposition: 'Value Proposition',
+  intellectualProperty: 'Intellectual Property',
+  futureProducts: 'Future Products/Services',
+  
+  // Market Analysis subsections
+  industryOverview: 'Industry Overview',
+  targetMarket: 'Target Market',
+  marketSegmentation: 'Market Segmentation',
+  competitiveAnalysis: 'Competitive Analysis',
+  swotAnalysis: 'SWOT Analysis',
+  
+  // Marketing Strategy subsections
+  branding: 'Branding Strategy',
+  pricing: 'Pricing Strategy',
+  promotion: 'Promotion Plan',
+  salesStrategy: 'Sales Strategy',
+  channels: 'Distribution Channels',
+  customerRetention: 'Customer Retention',
+  
+  // Operations Plan subsections
+  businessModel: 'Business Model',
+  facilities: 'Facilities & Location',
+  technology: 'Technology Requirements',
+  productionProcess: 'Production Process',
+  qualityControl: 'Quality Control',
+  logistics: 'Logistics & Supply Chain',
+  
+  // Organization & Management subsections
+  structure: 'Organizational Structure',
+  hrPlan: 'HR Plan',
+  advisors: 'Advisors & Board',
+  governance: 'Governance Structure',
+  
+  // Financial Plan subsections
+  projections: 'Financial Projections',
+  fundingNeeds: 'Funding Requirements',
+  useOfFunds: 'Use of Funds',
+  breakEvenAnalysis: 'Break-Even Analysis',
+  exitStrategy: 'Exit Strategy'
 };
 
 // Map section IDs to display names
@@ -82,6 +134,8 @@ export default function BusinessPlanAIAssistant({
   const [showSectionPrompt, setShowSectionPrompt] = useState(false)
   const [lastAppliedSuggestion, setLastAppliedSuggestion] = useState<{fieldId: string, content: string} | null>(null)
   const [currentSubfield, setCurrentSubfield] = useState<string | null>(null)
+  const [showSectionNav, setShowSectionNav] = useState(false)
+  const [selectedSection, setSelectedSection] = useState<string | null>(null)
   
   // Create a ref for the messages container to enable auto-scrolling
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -112,15 +166,25 @@ export default function BusinessPlanAIAssistant({
   
   // Auto-scroll to bottom when messages change or during loading
   useEffect(() => {
-    scrollToBottom();
-  }, [messages, isLoading, fieldSuggestions, showSectionPrompt]);
+    // Use a short timeout to ensure DOM is updated before scrolling
+    const scrollTimer = setTimeout(() => {
+      scrollToBottom();
+    }, 100);
+    
+    return () => clearTimeout(scrollTimer);
+  }, [messages, isLoading, fieldSuggestions, showSectionPrompt, showSectionNav]);
   
   /**
    * Scroll to the bottom of the messages container
    */
   const scrollToBottom = () => {
+    // Try to scroll messagesEndRef into view first
     if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    } 
+    // Fallback: directly scroll the container to the bottom
+    else if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
     }
   };
   
@@ -187,6 +251,12 @@ export default function BusinessPlanAIAssistant({
       sendMessage(inputValue.trim())
       setInputValue('')
       setShowSectionPrompt(false)
+      // Force scroll after sending message
+      setTimeout(scrollToBottom, 100)
+      // Maintain focus on the textarea
+      if (textareaRef.current) {
+        textareaRef.current.focus()
+      }
     }
   }
   
@@ -196,6 +266,9 @@ export default function BusinessPlanAIAssistant({
   const handleSuggestionClick = (suggestion: string) => {
     sendMessage(suggestion)
     setShowSectionPrompt(false)
+    setShowSectionNav(false)
+    // Force scroll after state updates
+    setTimeout(scrollToBottom, 100)
   }
   
   /**
@@ -203,6 +276,8 @@ export default function BusinessPlanAIAssistant({
    */
   const handleApplySuggestion = (fieldId: string, content: string) => {
     applySuggestion(fieldId, content)
+    // Force scroll after applying suggestion since it will show section prompt
+    setTimeout(scrollToBottom, 150)
   }
   
   /**
@@ -230,6 +305,8 @@ export default function BusinessPlanAIAssistant({
       sendMessage("Great job! You've completed all sections of your business plan.");
     }
     setShowSectionPrompt(false);
+    // Force scroll after section change
+    setTimeout(scrollToBottom, 100)
   }
   
   /**
@@ -238,6 +315,8 @@ export default function BusinessPlanAIAssistant({
   const handleStayOnCurrentSection = () => {
     sendMessage("Let's continue working on this section.");
     setShowSectionPrompt(false);
+    // Force scroll after adding new message
+    setTimeout(scrollToBottom, 100)
   }
   
   /**
@@ -335,36 +414,127 @@ export default function BusinessPlanAIAssistant({
    * Render field suggestions if available
    */
   const renderFieldSuggestions = () => {
-    if (fieldSuggestions.length === 0) return null;
+    // Disable field suggestions as requested
+    return null;
+  }
+  
+  /**
+   * Toggle section navigation visibility
+   */
+  const handleShowSectionNav = () => {
+    setShowSectionNav(!showSectionNav)
+    setSelectedSection(null)
+    setShowSectionPrompt(false)
+  }
+  
+  /**
+   * Navigate to a specific section/subsection
+   */
+  const handleNavigateToSection = (sectId: string, subsection?: string) => {
+    if (!onSectionChange) return
     
+    onSectionChange(sectId)
+    
+    if (subsection) {
+      const subfieldName = SUBFIELD_NAMES[subsection] || subsection
+      sendMessage(`Let's work on the ${SECTION_NAMES[sectId]} section, specifically the ${subfieldName} part.`)
+    } else {
+      sendMessage(`Let's work on the ${SECTION_NAMES[sectId]} section.`)
+    }
+    
+    setShowSectionNav(false)
+    setSelectedSection(null)
+    // Force scroll after navigation
+    setTimeout(scrollToBottom, 100)
+  }
+  
+  /**
+   * Render section navigation UI
+   */
+  const renderSectionNavigation = () => {
     return (
-      <div className="mt-4 border-t border-gray-200 pt-3">
+      <div className="mt-4">
         <h4 className="text-sm font-medium text-gray-700 mb-2 flex items-center">
-          <Clipboard className="h-4 w-4 mr-1" />
-          Suggestions Available
+          <ChevronRight className="h-4 w-4 mr-1" />
+          {selectedSection ? 'Choose a subsection:' : 'Choose a section to work on:'}
         </h4>
-        <div className="space-y-2">
-          {fieldSuggestions.map((suggestion, index) => (
-            <div key={index} className="bg-blue-50 p-2 rounded-md text-sm">
-              <div className="flex justify-between items-start mb-1">
-                <span className="font-medium text-blue-700">
-                  {suggestion.fieldId.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
-                </span>
-                <button
-                  onClick={() => handleApplySuggestion(suggestion.fieldId, suggestion.content)}
-                  className="text-xs bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded flex items-center min-w-[70px] justify-center"
+        <div className="space-y-3">
+          {selectedSection ? (
+            // Show subsections of selected section
+            <>
+              <div className="mb-2 flex items-center">
+                <button 
+                  onClick={() => setSelectedSection(null)}
+                  className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 px-2 py-1 rounded mr-2 flex items-center"
                 >
-                  <ArrowDown className="h-3 w-3 mr-1" />
-                  Apply
+                  <ArrowRight className="h-3 w-3 rotate-180 mr-1" />
+                  Back
                 </button>
+                <span className="text-sm font-medium">{SECTION_NAMES[selectedSection]} subsections:</span>
               </div>
-              <p className="text-blue-900 line-clamp-2">{suggestion.content}</p>
+              <div className="grid grid-cols-1 gap-1">
+                {SECTION_SUBSECTIONS[selectedSection]?.map(subsection => (
+                  <button
+                    key={subsection}
+                    onClick={() => handleNavigateToSection(selectedSection, subsection)}
+                    className="text-left p-2 border border-gray-200 rounded hover:bg-blue-50 text-sm text-gray-700"
+                  >
+                    {SUBFIELD_NAMES[subsection] || subsection.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
+                  </button>
+                ))}
+              </div>
+            </>
+          ) : (
+            // Show all available sections
+            <div className="grid grid-cols-1 gap-1">
+              {SECTION_ORDER.map(section => (
+                <button
+                  key={section}
+                  onClick={() => {
+                    if (SECTION_SUBSECTIONS[section]?.length > 0) {
+                      setSelectedSection(section)
+                    } else {
+                      handleNavigateToSection(section)
+                    }
+                  }}
+                  className={`text-left p-2 border rounded flex justify-between items-center ${
+                    section === sectionId 
+                      ? 'bg-blue-100 text-blue-700 border-blue-200' 
+                      : 'border-gray-200 hover:bg-gray-50 text-gray-700'
+                  }`}
+                >
+                  <span>{SECTION_NAMES[section]}</span>
+                  {SECTION_SUBSECTIONS[section]?.length > 0 && (
+                    <ChevronRight className="h-4 w-4" />
+                  )}
+                </button>
+              ))}
             </div>
-          ))}
+          )}
         </div>
       </div>
     )
   }
+  
+  // When component initializes, set showSectionNav to true when in empty state
+  useEffect(() => {
+    // Initialize section navigation to true in empty state
+    if (messages.length === 0) {
+      setShowSectionNav(true);
+    }
+  }, [messages.length]);
+  
+  // Add a manual scroll trigger when section navigation is toggled
+  useEffect(() => {
+    const scrollTimer = setTimeout(() => {
+      scrollToBottom();
+    }, 150); // Slightly longer delay for section navigation which adds more content
+    
+    return () => clearTimeout(scrollTimer);
+  }, [showSectionNav, selectedSection]);
+  
+  // Create a ref for the textarea
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   
   // If collapsed, show only the button to open
   if (!isOpen) {
@@ -389,20 +559,35 @@ export default function BusinessPlanAIAssistant({
           <Lightbulb className="h-5 w-5 mr-2" />
           AI Assistant: {sectionName}
         </h3>
-        <button
-          onClick={() => setIsOpen(false)}
-          className="text-white hover:text-blue-200 transition-colors"
-          aria-label="Close AI Assistant"
-        >
-          <X className="h-5 w-5" />
-        </button>
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={handleShowSectionNav}
+            className="text-white hover:text-blue-200 transition-colors"
+            aria-label="Navigate to section"
+            title="Navigate to section"
+          >
+            <BookOpen className="h-4 w-4" />
+          </button>
+          <button
+            onClick={() => setIsOpen(false)}
+            className="text-white hover:text-blue-200 transition-colors"
+            aria-label="Close AI Assistant"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
       </div>
       
       {/* Messages Container - Fixed height with overflow scroll */}
       <div 
         ref={messagesContainerRef}
         className="flex-grow p-3 overflow-y-auto h-[calc(100%-120px)] space-y-4 scrollbar-thin"
-        style={{ overflowY: 'auto', display: 'flex', flexDirection: 'column' }}
+        style={{ 
+          overflowY: 'auto', 
+          display: 'flex', 
+          flexDirection: 'column',
+          maxHeight: 'calc(100vh - 220px)'  // Ensure it doesn't grow too large
+        }}
       >
         <div className="flex-grow">
           {messages.length === 0 ? (
@@ -419,6 +604,11 @@ export default function BusinessPlanAIAssistant({
                     {prompt}
                   </button>
                 ))}
+              </div>
+              
+              {/* Show section navigation directly in empty state */}
+              <div className="mt-6 border-t border-gray-200 pt-4">
+                {renderSectionNavigation()}
               </div>
             </div>
           ) : (
@@ -450,6 +640,14 @@ export default function BusinessPlanAIAssistant({
                   </div>
                 </div>
               )}
+              
+              {/* Show section navigation if enabled */}
+              {showSectionNav && (
+                <div className="mt-4 border-t border-gray-200 pt-3">
+                  {renderSectionNavigation()}
+                </div>
+              )}
+              
               {/* Invisible element at the bottom for auto-scrolling */}
               <div ref={messagesEndRef} />
             </>
@@ -460,33 +658,50 @@ export default function BusinessPlanAIAssistant({
       {/* Input Form */}
       <form onSubmit={handleSubmit} className="p-3 border-t border-gray-200 sticky bottom-0 bg-white z-10">
         <div className="flex items-center">
-          <input
-            type="text"
+          <textarea
+            ref={textareaRef}
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             placeholder="Ask for guidance..."
             disabled={isLoading}
-            className="flex-grow py-2 px-3 border border-gray-300 rounded-l-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+            className="flex-grow py-2 px-3 border border-gray-300 rounded-l-md focus:outline-none focus:ring-1 focus:ring-blue-500 min-h-[60px] resize-y"
+            onKeyDown={(e) => {
+              // Submit on Enter without Shift key
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleSubmit(e);
+              }
+            }}
           />
           <button
             type="submit"
             disabled={isLoading || !inputValue.trim()}
-            className="bg-blue-600 text-white py-2 px-4 rounded-r-md hover:bg-blue-700 transition-colors disabled:bg-blue-300"
+            className="bg-blue-600 text-white py-2 px-4 rounded-r-md hover:bg-blue-700 transition-colors disabled:bg-blue-300 h-[60px]"
           >
             <Send className="h-5 w-5" />
           </button>
         </div>
-        {messages.length > 0 && (
-          <div className="text-xs text-right mt-1">
-            <button
-              type="button"
-              onClick={clearConversation}
-              className="text-gray-500 hover:text-gray-700"
-            >
-              Clear conversation
-            </button>
+        <div className="flex justify-between items-center text-xs mt-1">
+          <div>
+            {messages.length > 0 && (
+              <button
+                type="button"
+                onClick={clearConversation}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                Clear conversation
+              </button>
+            )}
           </div>
-        )}
+          <button
+            type="button"
+            onClick={handleShowSectionNav}
+            className="text-blue-600 hover:text-blue-800 flex items-center"
+          >
+            <BookOpen className="h-3 w-3 mr-1" /> 
+            {showSectionNav ? 'Hide section navigation' : 'Show section navigation'}
+          </button>
+        </div>
       </form>
     </div>
   )

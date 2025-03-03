@@ -27,7 +27,7 @@ interface BusinessPlanSectionsProps {
  * 
  * Provides navigation between different sections of the business plan
  * Shows visual indicators for completed and current sections
- * Designed to work in a compact sidebar layout with icons and tooltips
+ * Icon-only navigation with tooltips for maximum space efficiency
  */
 export default function BusinessPlanSections({ 
   currentSection, 
@@ -100,44 +100,67 @@ export default function BusinessPlanSections({
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-md h-full flex flex-col">
-      <div className="p-3 bg-gray-50 border-b border-gray-200 sticky top-0 z-10">
-        <h2 className="font-medium text-gray-800 text-sm">Sections</h2>
+    <div className="bg-white rounded-lg shadow-md h-full flex flex-col overflow-x-hidden">
+      <div className="py-2 px-1 bg-gray-50 border-b border-gray-200 sticky top-0 z-10 flex justify-center">
+        <span className="sr-only">Sections</span>
       </div>
       
-      <nav className="flex-grow overflow-y-auto p-2">
-        <ul className="space-y-1">
+      <nav className="flex-grow overflow-y-auto overflow-x-hidden py-2">
+        <ul className="flex flex-col items-center space-y-1">
           {sections.map((section) => {
             const isComplete = isSectionComplete(section.id)
             const isActive = currentSection === section.id
             const isHovered = hoveredSection === section.id
             
             return (
-              <li key={section.id} className="relative">
+              <li key={section.id} className="relative w-full flex justify-center">
                 <button
                   onClick={() => onSectionChange(section.id)}
                   onMouseEnter={() => setHoveredSection(section.id)}
                   onMouseLeave={() => setHoveredSection(null)}
-                  className={`w-full flex items-center justify-center p-3 rounded-md transition-all ${
+                  className={`p-2 rounded-md transition-all ${
                     isActive
                       ? 'bg-blue-50 text-blue-700'
                       : 'hover:bg-gray-100 text-gray-700'
                   }`}
                   aria-label={section.title}
+                  title={section.title}
                 >
-                  <div className="flex-shrink-0 relative">
+                  <div className="relative">
                     {section.icon}
                     {isComplete && !isActive && (
-                      <span className="absolute -top-1 -right-1 w-2 h-2 bg-green-500 rounded-full" title="Complete"></span>
+                      <span className="absolute -top-1 -right-1 w-2 h-2 bg-green-500 rounded-full" aria-hidden="true"></span>
                     )}
                   </div>
                 </button>
                 
-                {/* Tooltip */}
+                {/* Tooltip that appears to the right of the icon - positioned outside the flow */}
                 {isHovered && (
-                  <div className="absolute left-full ml-2 top-0 z-20 w-48 p-2 bg-gray-800 text-white text-sm rounded shadow-lg">
-                    <div className="font-medium mb-1">{section.title}</div>
-                    <div className="text-xs text-gray-300">{section.description}</div>
+                  <div 
+                    className="fixed ml-2 z-20 whitespace-nowrap bg-gray-800 text-white rounded py-1 px-2 shadow-lg flex flex-col items-start animate-fadeIn"
+                    style={{
+                      animationDuration: '150ms',
+                      left: 'var(--tooltip-left, auto)',
+                      top: 'var(--tooltip-top, auto)',
+                      transform: 'translateY(-50%)'
+                    }}
+                    ref={(el) => {
+                      if (el) {
+                        // Calculate position relative to the button
+                        const button = el.parentElement?.querySelector('button');
+                        if (button) {
+                          const rect = button.getBoundingClientRect();
+                          el.style.setProperty('--tooltip-left', `${rect.right + 8}px`);
+                          el.style.setProperty('--tooltip-top', `${rect.top + rect.height/2}px`);
+                        }
+                      }
+                    }}
+                  >
+                    <span className="font-medium text-sm">{section.title}</span>
+                    <span className="text-xs text-gray-300">{section.description}</span>
+                    
+                    {/* Triangle pointer */}
+                    <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1 w-0 h-0 border-t-4 border-b-4 border-r-4 border-transparent border-r-gray-800"></div>
                   </div>
                 )}
               </li>
@@ -146,7 +169,7 @@ export default function BusinessPlanSections({
         </ul>
       </nav>
       
-      <div className="p-3 bg-blue-50 border-t border-blue-100 sticky bottom-0 z-10 flex justify-center">
+      <div className="py-2 px-1 bg-blue-50 border-t border-blue-100 sticky bottom-0 z-10 flex justify-center">
         <button
           className="text-blue-700 hover:text-blue-900 rounded-full p-1"
           onMouseEnter={() => setHoveredSection('help')}
@@ -157,8 +180,27 @@ export default function BusinessPlanSections({
         </button>
         
         {hoveredSection === 'help' && (
-          <div className="absolute bottom-full mb-2 z-20 w-48 p-2 bg-gray-800 text-white text-xs rounded shadow-lg">
+          <div className="fixed mb-2 z-20 whitespace-nowrap bg-gray-800 text-white text-xs rounded py-1 px-2 shadow-lg animate-fadeIn"
+            style={{
+              animationDuration: '150ms',
+              left: 'var(--tooltip-left, auto)',
+              bottom: 'var(--tooltip-bottom, auto)'
+            }}
+            ref={(el) => {
+              if (el) {
+                // Calculate position relative to the help button
+                const button = el.parentElement?.querySelector('button');
+                if (button) {
+                  const rect = button.getBoundingClientRect();
+                  el.style.setProperty('--tooltip-left', `${rect.left - 70}px`);
+                  el.style.setProperty('--tooltip-bottom', `${window.innerHeight - rect.top + 8}px`);
+                }
+              }
+            }}
+          >
             Complete all sections to finalize your business plan.
+            {/* Triangle pointer */}
+            <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-800"></div>
           </div>
         )}
       </div>

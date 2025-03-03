@@ -23,6 +23,15 @@ const config: Config = {
           950: '#082f49',
         },
       },
+      keyframes: {
+        fadeIn: {
+          '0%': { opacity: '0' },
+          '100%': { opacity: '1' },
+        },
+      },
+      animation: {
+        fadeIn: 'fadeIn 0.2s ease-in-out',
+      },
       container: {
         center: true,
         padding: {

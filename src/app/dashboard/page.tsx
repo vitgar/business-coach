@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { 
   FileText, Target, Settings, 
-  ChevronRight, BarChart2, Users, DollarSign 
+  ChevronRight, BarChart2, Users, DollarSign,
+  MessageSquare, PlusCircle
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import BusinessSelector from '@/components/BusinessSelector'
@@ -35,6 +36,13 @@ export default function Dashboard() {
       description: 'Edit and manage your business plan',
       href: `/business-plan/${currentBusinessId}`,
       color: 'bg-blue-100 text-blue-600'
+    },
+    {
+      title: 'Business Coach Chat',
+      icon: MessageSquare,
+      description: 'Get personalized guidance through AI chat',
+      href: `/consultation`,
+      color: 'bg-indigo-100 text-indigo-600'
     },
     {
       title: 'Strategic Planning',
@@ -157,14 +165,14 @@ export default function Dashboard() {
                 <div className="text-center">
                   <h2 className="text-lg font-semibold mb-2">No Business Selected</h2>
                   <p className="text-gray-600 mb-6">
-                    Select an existing business from the sidebar or create a new one to get started.
+                    Select an existing business from the sidebar dropdown or add a new one to get started.
                   </p>
                   <button
                     onClick={() => document.querySelector<HTMLButtonElement>('.business-selector-create')?.click()}
                     className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
                   >
-                    <FileText className="h-5 w-5 mr-2" />
-                    Create New Business Plan
+                    <PlusCircle className="h-5 w-5 mr-2" />
+                    Add New Business
                   </button>
                 </div>
               </div>

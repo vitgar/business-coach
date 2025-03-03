@@ -44,6 +44,17 @@ The application uses OpenAI's API to provide AI assistance for business plan dev
    ```
 4. Restart the development server
 
+## Field Suggestions System
+
+The AI assistant provides contextual suggestions for business plan fields using a backtick-based extraction system:
+
+1. The AI wraps specific content suggestions in backticks (`) to indicate actionable content
+2. The application extracts these suggestions and presents them as clickable options
+3. Users can apply suggestions directly to the appropriate fields with a single click
+4. The system intelligently associates suggestions with the most relevant fields based on content analysis
+
+This approach provides a balance between conversational assistance and actionable content suggestions, making it easier for users to complete their business plan efficiently.
+
 ## Getting Started
 
 ### Prerequisites
