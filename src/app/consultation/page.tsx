@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import Chat from '@/components/Chat'
+import Chat from '@/components/chat/Chat'
 import Logo from '@/components/Logo'
 import ConversationList from '@/components/ConversationList'
 
@@ -45,7 +45,6 @@ export default function ConsultationPage() {
           <Chat
             key={currentConversationId || 'new'}
             conversationId={currentConversationId}
-            onConversationCreated={handleConversationCreated}
           />
         </div>
       </main>

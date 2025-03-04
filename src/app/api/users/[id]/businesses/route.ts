@@ -25,16 +25,41 @@ export async function GET(
         id: true,
         title: true,
         status: true,
-        updatedAt: true
+        updatedAt: true,
+        content: true // Include content to extract business name
       },
       orderBy: {
         updatedAt: 'desc'
       }
     })
     
+    // Transform the results to include business name if available
+    const businessSummaries = businesses.map(business => {
+      let content: any = {};
+      try {
+        // Content is stored as JSON string or JSON object depending on the ORM
+        content = typeof business.content === 'string' 
+          ? JSON.parse(business.content) 
+          : business.content;
+      } catch (e) {
+        console.error('Error parsing business content:', e);
+      }
+      
+      // Extract business name from content if available
+      const businessName = content?.coverPage?.businessName || null;
+      
+      return {
+        id: business.id,
+        title: business.title,
+        businessName: businessName,
+        status: business.status,
+        updatedAt: business.updatedAt
+      };
+    });
+    
     // If no business plans exist yet, return an empty array
     // This allows the user to create their first business plan
-    return NextResponse.json(businesses)
+    return NextResponse.json(businessSummaries)
   } catch (error) {
     console.error('Error fetching businesses:', error)
     return NextResponse.json(

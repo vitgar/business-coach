@@ -9,7 +9,9 @@ export const ASSISTANT_CONFIG = {
 }
 
 export const API_ENDPOINTS = {
-  CHAT: '/api/chat'
+  CHAT: '/api/business-coach/chat',
+  EXTRACT_ACTIONABLE: '/api/business-coach/extract-actionable',
+  SAVE_INSIGHT: '/api/business-coach/save-insight'
 }
 
 export const INITIAL_MESSAGES = {

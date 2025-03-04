@@ -194,9 +194,7 @@ export default function BusinessPlanAIAssistant({
   const getSuggestedPrompts = () => {
     const suggestionMap: Record<string, string[]> = {
       executiveSummary: [
-        "How do I write a compelling business summary?",
-        "What should I include in my mission statement?",
-        "Help me highlight my business value proposition"
+        // Help questions for executive summary have been removed at client's request
       ],
       companyDescription: [
         "What should I include in my company background?",
@@ -592,8 +590,14 @@ export default function BusinessPlanAIAssistant({
         <div className="flex-grow">
           {messages.length === 0 ? (
             <div className="text-center py-4 text-gray-500">
-              <MessageSquare className="h-12 w-12 mx-auto mb-2 opacity-50" />
-              <p className="text-sm">Ask for help with your {sectionName.toLowerCase()}</p>
+              {sectionId !== 'executiveSummary' && (
+                <>
+                  <MessageSquare className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                  <p className="text-sm">
+                    Ask for help with your {sectionName.toLowerCase()}
+                  </p>
+                </>
+              )}
               <div className="mt-4 space-y-2">
                 {getSuggestedPrompts().map((prompt, index) => (
                   <button

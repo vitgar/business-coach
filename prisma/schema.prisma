@@ -13,18 +13,23 @@ datasource db {
 
 // User model for authentication and profile management
 model User {
-  id            String    @id @default(cuid())
-  name          String?
-  email         String    @unique
-  password      String
-  image         String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  role          String    @default("user") // user, admin
-  businessPlans BusinessPlan[]
-  strategicPlans StrategicPlan[]
-  marketingPlans MarketingPlan[]
-  conversations Conversation[]
+  id              String          @id @default(cuid())
+  name            String?
+  email           String          @unique
+  password        String
+  image           String?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  role            String          @default("user") // user, admin
+  businessPlans   BusinessPlan[]
+  conversations   Conversation[]
+  strategicPlans  StrategicPlan[]
+  marketingPlans  MarketingPlan[]
+  progress        Progress[]
+  
+  // New relations for business coach features
+  actionItems     ActionItemList[]
+  businessNotes   BusinessNote[]
 }
 
 // Business Plan model with comprehensive JSON content structure
@@ -102,9 +107,34 @@ model Resource {
 model Progress {
   id          String   @id @default(cuid())
   userId      String
-  moduleType  String   // business-plan, strategic-plan, marketing-plan
-  moduleId    String   // References the specific plan ID
-  status      Int      // Percentage complete
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type        String   // "businessPlan", "marketingPlan", etc.
+  entityId    String   // ID of the entity the progress is for
+  percentage  Int
+  lastUpdated DateTime @default(now())
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+// New models for business coach features
+model ActionItemList {
+  id        String   @id @default(cuid())
+  title     String
+  items     Json     // Stores the array of action items with structure: {id, title, description, priority, estimatedTimeInMinutes}
+  itemNotes Json?    // Stores user notes for each item with structure: {itemId, note, dateAdded, completed}
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model BusinessNote {
+  id        String   @id @default(cuid())
+  title     String
+  content   String   @db.Text
+  category  String   @default("general")
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 } 
