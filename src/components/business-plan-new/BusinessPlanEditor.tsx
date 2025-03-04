@@ -118,6 +118,13 @@ export default function BusinessPlanEditor({
             placeholder: 'Provide additional details about your legal structure...'
           },
           {
+            id: 'ownershipDetails',
+            label: 'Ownership Details',
+            type: 'textarea',
+            placeholder: 'Describe the ownership structure of your company...',
+            help: 'Include information about owners, partners, shareholders, or investors and their ownership percentages'
+          },
+          {
             id: 'companyHistory',
             label: 'Company History',
             type: 'textarea',

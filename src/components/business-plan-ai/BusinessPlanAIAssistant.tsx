@@ -32,7 +32,7 @@ const SECTION_ORDER = [
 // Define subsections for each section to enable navigation within a section
 const SECTION_SUBSECTIONS: Record<string, string[]> = {
   executiveSummary: ['businessConcept', 'missionStatement', 'productsOverview', 'marketOpportunity', 'financialHighlights'],
-  companyDescription: ['businessStructure', 'legalStructure', 'ownershipDetails', 'companyHistory'],
+  companyDescription: ['legalStructure', 'ownershipDetails', 'companyHistory'],
   productsAndServices: ['overview', 'valueProposition', 'intellectualProperty', 'futureProducts'],
   marketAnalysis: ['industryOverview', 'targetMarket', 'marketSegmentation', 'competitiveAnalysis', 'swotAnalysis'],
   marketingStrategy: ['branding', 'pricing', 'promotion', 'salesStrategy', 'channels', 'customerRetention'],
@@ -192,52 +192,20 @@ export default function BusinessPlanAIAssistant({
    * Get suggested prompts based on section
    */
   const getSuggestedPrompts = () => {
+    // All help questions removed at client's request
     const suggestionMap: Record<string, string[]> = {
-      executiveSummary: [
-        // Help questions for executive summary have been removed at client's request
-      ],
-      companyDescription: [
-        "What should I include in my company background?",
-        "How do I articulate my company's mission and vision?",
-        "Help me describe my company's legal structure"
-      ],
-      productsAndServices: [
-        "How should I describe my product's features and benefits?",
-        "What makes a strong value proposition?",
-        "Help me explain my competitive advantage"
-      ],
-      marketAnalysis: [
-        "How do I identify my target market?",
-        "What should my competitor analysis include?",
-        "Help me analyze market trends for my industry"
-      ],
-      marketingStrategy: [
-        "What marketing channels should I consider?",
-        "How do I develop a pricing strategy?",
-        "Help me create a customer acquisition plan"
-      ],
-      operationsPlan: [
-        "What should I include in my operations workflow?",
-        "How do I describe my supply chain?",
-        "Help me outline my quality control process"
-      ],
-      organizationAndManagement: [
-        "How should I structure my management team?",
-        "What roles are critical for my business?",
-        "Help me create an organizational chart"
-      ],
-      financialPlan: [
-        "What financial projections should I include?",
-        "How do I calculate my startup costs?",
-        "Help me create a break-even analysis"
-      ]
+      executiveSummary: [],
+      companyDescription: [],
+      productsAndServices: [],
+      marketAnalysis: [],
+      marketingStrategy: [],
+      operationsPlan: [],
+      organizationAndManagement: [],
+      financialPlan: []
     }
     
-    return suggestionMap[sectionId] || [
-      "Help me write this section",
-      "What should I include here?",
-      "Give me examples for this section"
-    ]
+    // Return empty array for any section
+    return []
   }
   
   /**
@@ -590,25 +558,21 @@ export default function BusinessPlanAIAssistant({
         <div className="flex-grow">
           {messages.length === 0 ? (
             <div className="text-center py-4 text-gray-500">
-              {sectionId !== 'executiveSummary' && (
-                <>
-                  <MessageSquare className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                  <p className="text-sm">
-                    Ask for help with your {sectionName.toLowerCase()}
-                  </p>
-                </>
+              {/* Message icon and header text removed from all sections */}
+              {/* Only render buttons container if there are prompts (there shouldn't be any now) */}
+              {getSuggestedPrompts().length > 0 && (
+                <div className="mt-4 space-y-2">
+                  {getSuggestedPrompts().map((prompt, index) => (
+                    <button
+                      key={index}
+                      onClick={() => handleSuggestionClick(prompt)}
+                      className="w-full text-left p-2 border border-gray-200 rounded hover:bg-gray-50 text-sm text-gray-700"
+                    >
+                      {prompt}
+                    </button>
+                  ))}
+                </div>
               )}
-              <div className="mt-4 space-y-2">
-                {getSuggestedPrompts().map((prompt, index) => (
-                  <button
-                    key={index}
-                    onClick={() => handleSuggestionClick(prompt)}
-                    className="w-full text-left p-2 border border-gray-200 rounded hover:bg-gray-50 text-sm text-gray-700"
-                  >
-                    {prompt}
-                  </button>
-                ))}
-              </div>
               
               {/* Show section navigation directly in empty state */}
               <div className="mt-6 border-t border-gray-200 pt-4">
