@@ -105,26 +105,32 @@ export default function BusinessPlanSections({
         <span className="sr-only">Sections</span>
       </div>
       
-      <nav className="flex-grow overflow-y-auto overflow-x-hidden py-2">
-        <ul className="flex flex-col items-center space-y-1">
-          {sections.map((section) => {
-            const isComplete = isSectionComplete(section.id)
-            const isActive = currentSection === section.id
-            const isHovered = hoveredSection === section.id
+      <nav aria-label="Business Plan Sections" className="mb-4">
+        <h2 className="sr-only">Business Plan Navigation</h2>
+        
+        {/* Changed from vertical to horizontal layout */}
+        <ul className="flex flex-row space-x-2 overflow-x-auto py-2 px-1 justify-center items-center relative">
+          {sections.map(section => {
+            const isActive = currentSection === section.id;
+            const isHovered = hoveredSection === section.id;
+            const isComplete = isSectionComplete(section.id);
             
             return (
-              <li key={section.id} className="relative w-full flex justify-center">
+              <li key={section.id} className="relative">
                 <button
                   onClick={() => onSectionChange(section.id)}
                   onMouseEnter={() => setHoveredSection(section.id)}
                   onMouseLeave={() => setHoveredSection(null)}
-                  className={`p-2 rounded-md transition-all ${
-                    isActive
-                      ? 'bg-blue-50 text-blue-700'
-                      : 'hover:bg-gray-100 text-gray-700'
-                  }`}
-                  aria-label={section.title}
-                  title={section.title}
+                  className={`
+                    w-10 h-10 flex items-center justify-center rounded-full transition-colors duration-200
+                    ${isActive 
+                      ? 'bg-blue-600 text-white' 
+                      : isComplete 
+                        ? 'bg-green-50 text-green-600 hover:bg-green-100' 
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }
+                  `}
+                  aria-current={isActive ? 'page' : undefined}
                 >
                   <div className="relative">
                     {section.icon}
@@ -134,15 +140,14 @@ export default function BusinessPlanSections({
                   </div>
                 </button>
                 
-                {/* Tooltip that appears to the right of the icon - positioned outside the flow */}
+                {/* Tooltip that now appears below the icon */}
                 {isHovered && (
                   <div 
-                    className="fixed ml-2 z-20 whitespace-nowrap bg-gray-800 text-white rounded py-1 px-2 shadow-lg flex flex-col items-start animate-fadeIn"
+                    className="fixed z-20 whitespace-nowrap bg-gray-800 text-white rounded py-1 px-2 shadow-lg flex flex-col items-start animate-fadeIn"
                     style={{
                       animationDuration: '150ms',
                       left: 'var(--tooltip-left, auto)',
                       top: 'var(--tooltip-top, auto)',
-                      transform: 'translateY(-50%)'
                     }}
                     ref={(el) => {
                       if (el) {
@@ -150,8 +155,9 @@ export default function BusinessPlanSections({
                         const button = el.parentElement?.querySelector('button');
                         if (button) {
                           const rect = button.getBoundingClientRect();
-                          el.style.setProperty('--tooltip-left', `${rect.right + 8}px`);
-                          el.style.setProperty('--tooltip-top', `${rect.top + rect.height/2}px`);
+                          // Center the tooltip below the button
+                          el.style.setProperty('--tooltip-left', `${rect.left + rect.width/2 - el.offsetWidth/2}px`);
+                          el.style.setProperty('--tooltip-top', `${rect.bottom + 8}px`);
                         }
                       }
                     }}
@@ -159,51 +165,52 @@ export default function BusinessPlanSections({
                     <span className="font-medium text-sm">{section.title}</span>
                     <span className="text-xs text-gray-300">{section.description}</span>
                     
-                    {/* Triangle pointer */}
-                    <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1 w-0 h-0 border-t-4 border-b-4 border-r-4 border-transparent border-r-gray-800"></div>
+                    {/* Triangle pointer now points up instead of left */}
+                    <div className="absolute left-1/2 top-0 -translate-y-1 -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent border-b-gray-800"></div>
                   </div>
                 )}
               </li>
             )
           })}
+          
+          {/* Help button moved to right side of top navigation */}
+          <li className="absolute right-2">
+            <button
+              className="text-blue-700 hover:text-blue-900 rounded-full p-1 bg-blue-50"
+              onMouseEnter={() => setHoveredSection('help')}
+              onMouseLeave={() => setHoveredSection(null)}
+              title="Help"
+            >
+              <Info className="h-4 w-4" />
+            </button>
+            
+            {hoveredSection === 'help' && (
+              <div className="fixed z-20 whitespace-nowrap bg-gray-800 text-white text-xs rounded py-1 px-2 shadow-lg animate-fadeIn"
+                style={{
+                  animationDuration: '150ms',
+                  left: 'var(--tooltip-left, auto)',
+                  top: 'var(--tooltip-top, auto)'
+                }}
+                ref={(el) => {
+                  if (el) {
+                    // Calculate position relative to the help button
+                    const button = el.parentElement?.querySelector('button');
+                    if (button) {
+                      const rect = button.getBoundingClientRect();
+                      el.style.setProperty('--tooltip-left', `${rect.left - 150}px`);
+                      el.style.setProperty('--tooltip-top', `${rect.bottom + 8}px`);
+                    }
+                  }
+                }}
+              >
+                Complete all sections to finalize your business plan.
+                {/* Triangle pointer */}
+                <div className="absolute top-0 right-4 -translate-y-1 w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent border-b-gray-800"></div>
+              </div>
+            )}
+          </li>
         </ul>
       </nav>
-      
-      <div className="py-2 px-1 bg-blue-50 border-t border-blue-100 sticky bottom-0 z-10 flex justify-center">
-        <button
-          className="text-blue-700 hover:text-blue-900 rounded-full p-1"
-          onMouseEnter={() => setHoveredSection('help')}
-          onMouseLeave={() => setHoveredSection(null)}
-          title="Help"
-        >
-          <Info className="h-4 w-4" />
-        </button>
-        
-        {hoveredSection === 'help' && (
-          <div className="fixed mb-2 z-20 whitespace-nowrap bg-gray-800 text-white text-xs rounded py-1 px-2 shadow-lg animate-fadeIn"
-            style={{
-              animationDuration: '150ms',
-              left: 'var(--tooltip-left, auto)',
-              bottom: 'var(--tooltip-bottom, auto)'
-            }}
-            ref={(el) => {
-              if (el) {
-                // Calculate position relative to the help button
-                const button = el.parentElement?.querySelector('button');
-                if (button) {
-                  const rect = button.getBoundingClientRect();
-                  el.style.setProperty('--tooltip-left', `${rect.left - 70}px`);
-                  el.style.setProperty('--tooltip-bottom', `${window.innerHeight - rect.top + 8}px`);
-                }
-              }
-            }}
-          >
-            Complete all sections to finalize your business plan.
-            {/* Triangle pointer */}
-            <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-800"></div>
-          </div>
-        )}
-      </div>
     </div>
   )
 } 

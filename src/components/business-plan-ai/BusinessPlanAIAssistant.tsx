@@ -13,6 +13,7 @@ interface BusinessPlanAIAssistantProps {
   sectionName: string;
   className?: string;
   collapsed?: boolean;
+  businessPlan?: any;
   onApplySuggestion?: (fieldId: string, content: string) => void;
   onSectionChange?: (sectionId: string) => void;
 }
@@ -126,6 +127,7 @@ export default function BusinessPlanAIAssistant({
   sectionName,
   className = '',
   collapsed = false,
+  businessPlan,
   onApplySuggestion,
   onSectionChange
 }: BusinessPlanAIAssistantProps) {
@@ -141,13 +143,17 @@ export default function BusinessPlanAIAssistant({
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const messagesContainerRef = useRef<HTMLDivElement>(null)
   
+  // Get current section data if available
+  const currentSectionData = businessPlan?.content?.[sectionId] || {};
+  
   const { 
     messages, 
     isLoading, 
-    sendMessage, 
+    sendMessage,
     clearConversation,
     fieldSuggestions,
-    applySuggestion
+    applySuggestion,
+    setMessages
   } = useBusinessPlanAI(businessPlanId, sectionId, (fieldId, content) => {
     if (onApplySuggestion) {
       onApplySuggestion(fieldId, content);
@@ -156,6 +162,32 @@ export default function BusinessPlanAIAssistant({
       setShowSectionPrompt(true);
     }
   })
+  
+  // Initialize the conversation with context if there's existing data and no messages yet
+  useEffect(() => {
+    if (messages.length === 0 && Object.keys(currentSectionData).length > 0) {
+      // Filter out empty values and create formatted data summary
+      const existingData = Object.entries(currentSectionData)
+        .filter(([key, value]) => value && typeof value === 'string' && value.trim() !== '')
+        .map(([key, value]) => {
+          const fieldName = SUBFIELD_NAMES[key] || key;
+          return `**${fieldName}**: ${typeof value === 'string' ? value.substring(0, 150) + (value.length > 150 ? '...' : '') : JSON.stringify(value)}`;
+        });
+      
+      if (existingData.length > 0) {
+        // Create a more distinctive initial message
+        const initialMessage: ChatMessage = {
+          role: 'assistant',
+          content: `📋 **I've analyzed your existing ${sectionName} content:**\n\n${existingData.join('\n\n')}\n\n💡 How would you like to improve or expand on this content? I can help refine specific sections or suggest additions.`
+        };
+        
+        // Use a custom initial message instead of sending an actual AI request
+        setTimeout(() => {
+          setMessages([initialMessage]);
+        }, 500);
+      }
+    }
+  }, [sectionId, currentSectionData, messages.length, sectionName, setMessages]);
   
   // Reset section prompt when section changes
   useEffect(() => {
@@ -213,26 +245,50 @@ export default function BusinessPlanAIAssistant({
    */
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (inputValue.trim() && !isLoading) {
-      sendMessage(inputValue.trim())
-      setInputValue('')
-      setShowSectionPrompt(false)
-      // Force scroll after sending message
-      setTimeout(scrollToBottom, 100)
-      // Maintain focus on the textarea
-      if (textareaRef.current) {
-        textareaRef.current.focus()
-      }
+    if (!inputValue.trim() || isLoading) return
+    
+    // Debug logging to verify data
+    console.log('[BusinessPlanAI] Sending message with section data:', {
+      sectionId,
+      dataAvailable: Object.keys(currentSectionData).length > 0,
+      keys: Object.keys(currentSectionData)
+    });
+    
+    // Send the message with current section data
+    sendMessage(inputValue, currentSectionData)
+    setInputValue('')
+    
+    // Hide the section prompt if it was showing
+    setShowSectionPrompt(false)
+    
+    // Reset the section navigation state
+    if (showSectionNav) {
+      setShowSectionNav(false)
+      setSelectedSection(null)
+    }
+    
+    // Force scroll after sending message
+    setTimeout(scrollToBottom, 100)
+    
+    // Maintain focus on the textarea
+    if (textareaRef.current) {
+      textareaRef.current.focus()
     }
   }
   
   /**
-   * Handle clicking a suggestion prompt
+   * Handle clicking on a suggested prompt
    */
   const handleSuggestionClick = (suggestion: string) => {
-    sendMessage(suggestion)
+    // Send the suggestion as a message with current section data
+    sendMessage(suggestion, currentSectionData)
+    
+    // Hide the section prompt if it was showing
     setShowSectionPrompt(false)
+    
+    // Reset section navigation if open
     setShowSectionNav(false)
+    
     // Force scroll after state updates
     setTimeout(scrollToBottom, 100)
   }
@@ -380,8 +436,32 @@ export default function BusinessPlanAIAssistant({
    * Render field suggestions if available
    */
   const renderFieldSuggestions = () => {
-    // Disable field suggestions as requested
-    return null;
+    if (fieldSuggestions.length === 0) return null;
+    
+    return (
+      <div className="mt-4 border-t border-gray-200 pt-3">
+        <h4 className="text-sm font-medium text-gray-700 mb-2 flex items-center">
+          <ChevronRight className="h-4 w-4 mr-1" />
+          Suggested content to apply:
+        </h4>
+        <div className="space-y-2">
+          {fieldSuggestions.map((suggestion, index) => (
+            <div key={index} className="rounded-md border border-blue-100 bg-blue-50 p-3">
+              <div className="text-sm text-blue-700 mb-1 font-medium">
+                {SUBFIELD_NAMES[suggestion.fieldId] || suggestion.fieldId}
+              </div>
+              <div className="text-sm text-gray-700 mb-2">{suggestion.content}</div>
+              <button
+                onClick={() => handleApplySuggestion(suggestion.fieldId, suggestion.content)}
+                className="text-xs bg-blue-100 hover:bg-blue-200 text-blue-700 px-2 py-1 rounded"
+              >
+                Apply to field
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
   }
   
   /**
@@ -584,11 +664,11 @@ export default function BusinessPlanAIAssistant({
               {messages.map((message, index) => (
                 <div
                   key={index}
-                  className={`p-3 rounded-lg max-w-[85%] ${
+                  className={`p-2 rounded-lg max-w-[85%] ${
                     message.role === 'user'
                       ? 'bg-blue-100 text-blue-900 ml-auto'
                       : 'bg-gray-100 text-gray-800'
-                  }`}
+                  } ${index > 0 ? 'mt-2' : ''}`}
                 >
                   {message.content}
                   {message.role === 'assistant' && index === messages.length - 1 && (
@@ -600,7 +680,7 @@ export default function BusinessPlanAIAssistant({
                 </div>
               ))}
               {isLoading && (
-                <div className="bg-gray-100 text-gray-800 p-3 rounded-lg max-w-[85%]">
+                <div className="bg-gray-100 text-gray-800 p-2 rounded-lg max-w-[85%] mt-2">
                   <div className="flex space-x-2">
                     <div className="w-2 h-2 rounded-full bg-gray-400 animate-pulse"></div>
                     <div className="w-2 h-2 rounded-full bg-gray-400 animate-pulse delay-100"></div>

@@ -47,8 +47,9 @@ export function useBusinessPlanAI(
    * Send a message to the AI assistant
    * 
    * @param message - User's message text
+   * @param currentSectionData - Current data for the active section (if available)
    */
-  const sendMessage = async (message: string) => {
+  const sendMessage = async (message: string, currentSectionData?: any) => {
     setIsLoading(true)
     
     try {
@@ -67,6 +68,7 @@ export function useBusinessPlanAI(
           sectionId,
           message,
           conversationHistory: newMessages,
+          businessPlanData: currentSectionData // Pass the current section data to the API
         }),
       })
       
@@ -112,7 +114,32 @@ export function useBusinessPlanAI(
     let backtickMatch
     
     while ((backtickMatch = backtickPattern.exec(content)) !== null) {
-      const extractedContent = backtickMatch[1].trim()
+      let extractedContent = backtickMatch[1].trim()
+      
+      // Check if the extracted content starts with a known section prefix
+      // and set an initial fieldId based on that
+      let initialFieldId = 'content'
+      const prefixFieldMap: Record<string, string> = {
+        'ownership details:': 'ownershipDetails',
+        'business structure:': 'businessStructure',
+        'legal structure:': 'legalStructure',
+        'company history:': 'companyHistory',
+        'mission statement:': 'missionStatement',
+        'business concept:': 'businessConcept',
+        'products overview:': 'productsOverview',
+        'market opportunity:': 'marketOpportunity',
+        'financial highlights:': 'financialHighlights'
+      }
+      
+      // Check for prefixes (case insensitive)
+      const lowerContent = extractedContent.toLowerCase()
+      for (const [prefix, fieldId] of Object.entries(prefixFieldMap)) {
+        if (lowerContent.startsWith(prefix)) {
+          console.log(`[Field Suggestion Debug] Found prefix "${prefix}" in backtick content`);
+          initialFieldId = fieldId
+          break
+        }
+      }
       
       // Only add meaningful suggestions that are more than a few words
       // Enhanced validation to filter out incomplete suggestions
@@ -126,7 +153,7 @@ export function useBusinessPlanAI(
         console.log(`[Field Suggestion Debug] Valid suggestion: "${extractedContent.substring(0, 50)}..."`);
         
         backtickSuggestions.push({
-          fieldId: 'content', // Default field ID
+          fieldId: initialFieldId, // Use the detected field ID or default to 'content'
           content: extractedContent
         })
       } else {
@@ -148,9 +175,10 @@ export function useBusinessPlanAI(
         { fieldId: 'financialHighlights', pattern: /financial highlights?[:\s]+([\s\S]+?)(?=\n\n|\n[#*]|$)/i },
       ],
       companyDescription: [
-        { fieldId: 'businessStructure', pattern: /business structure[:\s]+([\s\S]+?)(?=\n\n|\n[#*]|$)/i },
-        { fieldId: 'legalStructure', pattern: /legal structure[:\s]+([\s\S]+?)(?=\n\n|\n[#*]|$)/i },
-        { fieldId: 'companyHistory', pattern: /company history[:\s]+([\s\S]+?)(?=\n\n|\n[#*]|$)/i },
+        { fieldId: 'businessStructure', pattern: /business structure:?\s+([\s\S]+?)(?=\n\n|\n[#*]|$)/i },
+        { fieldId: 'legalStructure', pattern: /legal structure:?\s+([\s\S]+?)(?=\n\n|\n[#*]|$)/i },
+        { fieldId: 'ownershipDetails', pattern: /ownership details:?\s+([\s\S]+?)(?=\n\n|\n[#*]|$)/i },
+        { fieldId: 'companyHistory', pattern: /company history:?\s+([\s\S]+?)(?=\n\n|\n[#*]|$)/i },
       ],
       // Add patterns for other sections as needed
     }
@@ -313,13 +341,38 @@ export function useBusinessPlanAI(
         console.log(`[Field Suggestion Debug] Assigned to: ${inferredFieldId} - Reason: ${inferenceReason}`);
         console.log(`[Field Suggestion Debug] Content snippet: "${content.substring(0, 100)}..."`);
       } else if (sectionId === 'companyDescription') {
-        if (content.includes('structure') && content.includes('legal')) {
-          inferredFieldId = 'legalStructure'
-        } else if (content.includes('structure')) {
-          inferredFieldId = 'businessStructure'
+        // Improve the logic for differentiating legal structure vs business structure
+        let inferenceReason = '';
+        
+        if (content.includes('structure') && (content.includes('legal') || content.includes('llc') || content.includes('corporation') || 
+            content.includes('incorporated') || content.includes('partnership') || content.includes('sole proprietor'))) {
+          inferredFieldId = 'legalStructure';
+          inferenceReason = 'contains "legal structure" or specific legal entity terms';
+        } else if (content.includes('business format') || content.includes('entity type') || content.includes('legal entity')) {
+          inferredFieldId = 'legalStructure';
+          inferenceReason = 'contains specific legal entity terminology';
+        } else if (content.includes('structure') && !content.includes('legal')) {
+          inferredFieldId = 'businessStructure';
+          inferenceReason = 'contains "structure" without "legal"';
+        } else if (content.includes('organizational') || content.includes('departments') || content.includes('hierarchy')) {
+          inferredFieldId = 'businessStructure';
+          inferenceReason = 'contains organizational terms';
+        } else if (content.includes('ownership') || content.includes('owner') || content.includes('shareholder') || 
+                 content.includes('stakeholder') || content.includes('equity') || content.includes('stock') || 
+                 content.includes('shares') || content.includes('voting rights') || content.includes('investors')) {
+          inferredFieldId = 'ownershipDetails';
+          inferenceReason = 'contains ownership or shareholder terms';
         } else if (content.includes('history')) {
-          inferredFieldId = 'companyHistory'
+          inferredFieldId = 'companyHistory';
+          inferenceReason = 'contains "history"';
+        } else if (content.includes('founded') || content.includes('established') || content.includes('began') || 
+                  content.includes('started') || content.includes('inception')) {
+          inferredFieldId = 'companyHistory';
+          inferenceReason = 'contains company origin terms';
         }
+        
+        console.log(`[Field Suggestion Debug] Assigned to: ${inferredFieldId} - Reason: ${inferenceReason}`);
+        console.log(`[Field Suggestion Debug] Content snippet: "${content.substring(0, 100)}..."`);
       }
       
       // Add the suggestion to the appropriate field
@@ -358,14 +411,41 @@ export function useBusinessPlanAI(
   }
   
   /**
-   * Apply a suggestion to a specific form field
+   * Apply a field suggestion to update the business plan
    * 
    * @param fieldId - ID of the field to apply the suggestion to
    * @param content - Content to apply to the field
    */
   const applySuggestion = (fieldId: string, content: string) => {
+    // Strip out any field prefixes like "Ownership Details:" from the content
+    let cleanedContent = content;
+    
+    // List of possible prefixes to clean
+    const prefixes = [
+      'Ownership Details:',
+      'Business Structure:',
+      'Legal Structure:',
+      'Company History:',
+      'Mission Statement:',
+      'Business Concept:',
+      'Products Overview:',
+      'Market Opportunity:',
+      'Financial Highlights:'
+    ];
+    
+    // Check for and remove any matching prefix (case insensitive)
+    for (const prefix of prefixes) {
+      const regexPattern = new RegExp(`^\\s*${prefix}\\s*`, 'i');
+      if (regexPattern.test(cleanedContent)) {
+        console.log(`[Apply Suggestion] Removing prefix "${prefix}" from content`);
+        cleanedContent = cleanedContent.replace(regexPattern, '');
+        break;
+      }
+    }
+    
     if (onSuggestionApplied) {
-      onSuggestionApplied(fieldId, content)
+      console.log(`[Apply Suggestion] Applying cleaned content to field "${fieldId}"`);
+      onSuggestionApplied(fieldId, cleanedContent);
     }
   }
   
@@ -377,8 +457,10 @@ export function useBusinessPlanAI(
     setFieldSuggestions([])
   }
   
+  // Return the hook interface
   return {
     messages,
+    setMessages, // Expose setMessages function for direct manipulation
     isLoading,
     sendMessage,
     clearConversation,

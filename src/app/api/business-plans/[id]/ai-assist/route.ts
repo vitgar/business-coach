@@ -5,49 +5,24 @@ import { prisma } from '@/lib/prisma'
  * Section-specific instructions for the AI assistant
  */
 const SECTION_INSTRUCTIONS: Record<string, string> = {
-  executiveSummary: `You are an expert business plan consultant helping with an Executive Summary. 
-  Focus on concise overview of business concept, mission, value proposition, and key financial highlights.
-  Keep suggestions practical and action-oriented.
+  executiveSummary: `For the Executive Summary section, focus on helping the user craft a compelling overview of their business. 
+When providing suggestions for specific fields, format them like this:
+- Business Concept: \`Your suggested business concept text\`
+- Mission Statement: \`Your suggested mission statement text\`
+- Products Overview: \`Your suggested products overview text\`
+- Market Opportunity: \`Your suggested market opportunity text\`
+- Financial Highlights: \`Your suggested financial highlights text\`
+
+IMPORTANT: The user's system will automatically remove these prefixes (like "Business Concept:") when applying the suggestion, so there's no need to repeat this information in the actual content suggestion.`,
   
-  When helping with Market Opportunity specifically:
-  - Guide users to identify their target market size
-  - Help articulate market trends and growth potential
-  - Clarify competitive landscape and market gaps
-  - Quantify the opportunity where possible with numbers and percentages
-  
-  CRITICAL INSTRUCTION - STEP-BY-STEP APPROACH:
-  1. Ask only ONE specific question at a time
-  2. Wait for the user's answer
-  3. Acknowledge their answer
-  4. Only then ask ONE follow-up question
-  5. DO NOT provide multiple questions in a single response
-  6. DO NOT suggest answers until the user has provided their own input
-  7. DO NOT make assumptions about their business without asking first
-  
-  Example of the correct interaction pattern:
-  
-  YOU: "Let's focus on your target market. What specific industry or industries does your business primarily serve?"
-  USER: "We serve the healthcare and insurance industries."
-  YOU: "Thank you. Within healthcare and insurance, what size of organizations do you primarily target - small, medium, or enterprise-level clients?"
-  USER: "Mostly medium-sized healthcare providers with 50-200 employees."
-  YOU: "Great. Based on what you've shared, here's a market opportunity statement you could use: \`Our solution targets the $4.2 billion healthcare management software market, specifically focusing on medium-sized providers with 50-200 employees, a segment growing at 12% annually and underserved by current solutions.\`"
-  
-  Remember to wrap your specific content suggestions in backticks. Only provide suggestions after collecting sufficient information through your step-by-step questions.`,
-  
-  companyDescription: `You are a business identity specialist helping with a Company Description.
-  Guide the user to articulate their business structure, history, mission, and vision.
-  Emphasize uniqueness and competitive advantages.
-  
-  CRITICAL INSTRUCTION - STEP-BY-STEP APPROACH:
-  1. Ask only ONE specific question at a time
-  2. Wait for the user's answer
-  3. Acknowledge their answer
-  4. Only then ask ONE follow-up question
-  5. DO NOT provide multiple questions in a single response
-  6. DO NOT suggest answers until the user has provided their own input
-  7. DO NOT make assumptions about their business without asking first
-  
-  Remember to wrap your specific content suggestions in backticks. For example: "Here's a company mission statement you could use: \`Our mission is to empower small businesses through innovative technology solutions that simplify operations, enhance customer relationships, and accelerate growth in an increasingly digital marketplace.\`"`,
+  companyDescription: `For the Company Description section, help the user describe their company structure and background.
+When providing suggestions for specific fields, format them like this:
+- Business Structure: \`Your suggested business structure text\`
+- Legal Structure: \`Your suggested legal structure text\`
+- Ownership Details: \`Your suggested ownership details text\`
+- Company History: \`Your suggested company history text\`
+
+IMPORTANT: The user's system will automatically remove these prefixes (like "Business Structure:") when applying the suggestion, so there's no need to repeat this information in the actual content suggestion.`,
   
   productsAndServices: `You are a product development expert helping with Products & Services.
   Focus on clear descriptions, features, benefits, pricing, intellectual property, and product lifecycle.
@@ -184,7 +159,24 @@ When suggesting specific content for a business plan field, always wrap the actu
 For example: "Here's a suggestion for your mission statement: \`Our mission is to revolutionize...\`"
 This helps the system identify and extract your suggestions accurately.
 
-If the user has shared business plan content, use it for context: ${JSON.stringify(businessPlanData || {})}`
+SECTION-SPECIFIC FORMATTING:
+1. For Company Description section:
+   - When suggesting legal structure content, always prefix with "Legal Structure:" before your backtick suggestion
+   - When suggesting business structure content, always prefix with "Business Structure:" before your backtick suggestion
+   - When suggesting ownership details content, always prefix with "Ownership Details:" before your backtick suggestion
+   - When suggesting company history content, always prefix with "Company History:" before your backtick suggestion
+
+CONTEXT HANDLING INSTRUCTIONS - CRITICAL:
+1. I will provide you with the user's existing business plan data for this section.
+2. ALWAYS begin your first response by explicitly acknowledging the existing content you see.
+3. Even if the user's message doesn't mention their existing content, YOU MUST reference what they already have.
+4. NEVER ask for information they've already provided in their existing content.
+5. Reference specific details from their content when making suggestions.
+6. Provide suggestions that build upon and enhance their existing content rather than starting from scratch.
+7. If they have well-developed content already, focus on refinement rather than major changes.
+8. If you don't see any existing content for a section or field, you may ask for initial information.
+
+Here is the user's existing business plan content for context (JSON format): ${JSON.stringify(businessPlanData || {})}`
     },
     ...formattedHistory
   ];
@@ -254,10 +246,10 @@ export async function POST(
     }
     
     // Extract the current section content if available
-    const currentContent = businessPlan.content && 
-      (businessPlan.content as any)[sectionId] ? 
+    const currentContent = businessPlanData || 
+      (businessPlan.content && (businessPlan.content as any)[sectionId] ? 
       (businessPlan.content as any)[sectionId] : 
-      {};
+      {});
     
     // Generate AI response using OpenAI
     const aiResponse = await generateAIResponse(

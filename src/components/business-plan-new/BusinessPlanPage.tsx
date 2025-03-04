@@ -155,59 +155,58 @@ export default function BusinessPlanPage({ businessPlanId }: { businessPlanId: s
               savingStatus={savingStatus}
             />
             
+            {/* Business Plan Sections Navigation - Now at the top */}
+            <div className="mb-4">
+              <BusinessPlanSections 
+                currentSection={currentSection}
+                onSectionChange={handleSectionChange}
+                businessPlan={businessPlan}
+              />
+            </div>
+            
+            {/* Content Area Grid - Now has no left sidebar, only editor and AI assistant */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-grow h-full overflow-hidden">
-              {/* Business Plan Sections Navigation - Fixed Left Sidebar */}
-              <div className="lg:col-span-1 lg:sticky lg:top-0 lg:self-start h-auto overflow-auto max-h-[calc(100vh-200px)]">
-                <BusinessPlanSections 
-                  currentSection={currentSection}
-                  onSectionChange={handleSectionChange}
-                  businessPlan={businessPlan}
-                />
-              </div>
-              
-              {/* Content Area Grid */}
-              <div className="lg:col-span-11 grid grid-cols-1 lg:grid-cols-12 gap-6 h-full">
-                {/* Business Plan Editor - Scrollable Content Area */}
-                <div className="lg:col-span-8 h-[calc(100vh-220px)]">
-                  <div className="bg-white rounded-lg shadow-md h-full">
-                    <BusinessPlanEditor 
-                      businessPlan={businessPlan}
-                      currentSection={currentSection}
-                      onSave={(sectionData) => handleSaveChanges(currentSection, sectionData)}
-                    />
-                    
-                    {/* Business Plan Controls */}
-                    <BusinessPlanControls 
-                      businessPlan={businessPlan}
-                      savingStatus={savingStatus}
-                      onSave={() => handleSaveChanges(currentSection, businessPlan.content?.[currentSection])}
-                    />
-                  </div>
-                </div>
-
-                {/* AI Assistant - Fixed Right Sidebar */}
-                <div className="lg:col-span-4 h-[calc(100vh-220px)] overflow-hidden">
-                  <BusinessPlanAIAssistant
-                    businessPlanId={businessPlan.id}
-                    sectionId={currentSection}
-                    sectionName={getSectionTitle(currentSection)}
-                    className="h-full"
-                    onSectionChange={handleSectionChange}
-                    onApplySuggestion={(fieldId: string, content: string) => {
-                      // Find the current section's data
-                      const currentSectionData = businessPlan.content?.[currentSection] || {};
-                      
-                      // Create updated section data with the suggestion
-                      const updatedSectionData = {
-                        ...currentSectionData,
-                        [fieldId]: content
-                      };
-                      
-                      // Save the changes
-                      handleSaveChanges(currentSection, updatedSectionData);
-                    }}
+              {/* Business Plan Editor - Scrollable Content Area - Made narrower */}
+              <div className="lg:col-span-7 h-[calc(100vh-280px)]">
+                <div className="bg-white rounded-lg shadow-md h-full">
+                  <BusinessPlanEditor 
+                    businessPlan={businessPlan}
+                    currentSection={currentSection}
+                    onSave={(sectionData) => handleSaveChanges(currentSection, sectionData)}
+                  />
+                  
+                  {/* Business Plan Controls */}
+                  <BusinessPlanControls 
+                    businessPlan={businessPlan}
+                    savingStatus={savingStatus}
+                    onSave={() => handleSaveChanges(currentSection, businessPlan.content?.[currentSection])}
                   />
                 </div>
+              </div>
+
+              {/* AI Assistant - Made wider */}
+              <div className="lg:col-span-5 h-[calc(100vh-280px)] overflow-hidden">
+                <BusinessPlanAIAssistant
+                  businessPlanId={businessPlan.id}
+                  sectionId={currentSection}
+                  sectionName={getSectionTitle(currentSection)}
+                  className="h-full"
+                  businessPlan={businessPlan}
+                  onSectionChange={handleSectionChange}
+                  onApplySuggestion={(fieldId: string, content: string) => {
+                    // Find the current section's data
+                    const currentSectionData = businessPlan.content?.[currentSection] || {};
+                    
+                    // Create updated section data with the suggestion
+                    const updatedSectionData = {
+                      ...currentSectionData,
+                      [fieldId]: content
+                    };
+                    
+                    // Save the changes
+                    handleSaveChanges(currentSection, updatedSectionData);
+                  }}
+                />
               </div>
             </div>
           </div>
