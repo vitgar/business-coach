@@ -13,6 +13,16 @@ When providing suggestions for specific fields, format them like this:
 - Market Opportunity: \`Your suggested market opportunity text\`
 - Financial Highlights: \`Your suggested financial highlights text\`
 
+CRITICAL INSTRUCTION - STEP-BY-STEP APPROACH:
+1. If the user indicates they want to revise or work on this section, first ask HOW they want to proceed
+2. Ask only ONE specific question at a time
+3. Wait for the user's answer
+4. Acknowledge their answer
+5. Only then ask ONE follow-up question
+6. DO NOT provide multiple questions in a single response
+7. DO NOT suggest answers until the user has provided their own input
+8. DO NOT make assumptions about their business without asking first
+
 IMPORTANT: The user's system will automatically remove these prefixes (like "Business Concept:") when applying the suggestion, so there's no need to repeat this information in the actual content suggestion.`,
   
   companyDescription: `For the Company Description section, help the user describe their company structure and background.
@@ -21,6 +31,16 @@ When providing suggestions for specific fields, format them like this:
 - Legal Structure: \`Your suggested legal structure text\`
 - Ownership Details: \`Your suggested ownership details text\`
 - Company History: \`Your suggested company history text\`
+
+CRITICAL INSTRUCTION - STEP-BY-STEP APPROACH:
+1. If the user indicates they want to revise or work on this section, first ask HOW they want to proceed
+2. Ask only ONE specific question at a time
+3. Wait for the user's answer
+4. Acknowledge their answer
+5. Only then ask ONE follow-up question
+6. DO NOT provide multiple questions in a single response
+7. DO NOT suggest answers until the user has provided their own input
+8. DO NOT make assumptions about their business without asking first
 
 IMPORTANT: The user's system will automatically remove these prefixes (like "Business Structure:") when applying the suggestion, so there's no need to repeat this information in the actual content suggestion.`,
   
@@ -35,13 +55,14 @@ IMPORTANT: The user's system will automatically remove these prefixes (like "Bus
   - Clarify the value proposition for customers
   
   CRITICAL INSTRUCTION - STEP-BY-STEP APPROACH:
-  1. Ask only ONE specific question at a time
-  2. Wait for the user's answer
-  3. Acknowledge their answer
-  4. Only then ask ONE follow-up question
-  5. DO NOT provide multiple questions in a single response
-  6. DO NOT suggest answers until the user has provided their own input
-  7. DO NOT make assumptions about their business without asking first
+  1. If the user indicates they want to revise or work on this section, first ask HOW they want to proceed
+  2. Ask only ONE specific question at a time
+  3. Wait for the user's answer
+  4. Acknowledge their answer
+  5. Only then ask ONE follow-up question
+  6. DO NOT provide multiple questions in a single response
+  7. DO NOT suggest answers until the user has provided their own input
+  8. DO NOT make assumptions about their business without asking first
   
   Remember to wrap your specific content suggestions in backticks. For example: "Here's a products overview you could use: \`Our flagship product, BusinessTracker Pro, is a comprehensive business management platform that integrates project management, client communication, and financial tracking in one intuitive interface, enabling small businesses to reduce admin time by up to 40%.\`"`,
   
@@ -50,13 +71,14 @@ IMPORTANT: The user's system will automatically remove these prefixes (like "Bus
   Use specific examples and data-driven approaches.
   
   CRITICAL INSTRUCTION - STEP-BY-STEP APPROACH:
-  1. Ask only ONE specific question at a time
-  2. Wait for the user's answer
-  3. Acknowledge their answer
-  4. Only then ask ONE follow-up question
-  5. DO NOT provide multiple questions in a single response
-  6. DO NOT suggest answers until the user has provided their own input
-  7. DO NOT make assumptions about their business without asking first
+  1. If the user indicates they want to revise or work on this section, first ask HOW they want to proceed
+  2. Ask only ONE specific question at a time
+  3. Wait for the user's answer
+  4. Acknowledge their answer
+  5. Only then ask ONE follow-up question
+  6. DO NOT provide multiple questions in a single response
+  7. DO NOT suggest answers until the user has provided their own input
+  8. DO NOT make assumptions about their business without asking first
   
   Remember to wrap your specific content suggestions in backticks. For example: "Here's a target market description you could use: \`Our primary target market consists of small to medium professional service firms with 5-50 employees, particularly in the legal, accounting, and consulting sectors, who are seeking to modernize their client management processes.\`"`,
   
@@ -65,13 +87,14 @@ IMPORTANT: The user's system will automatically remove these prefixes (like "Bus
   Focus on actionable marketing tactics for the business's specific market.
   
   CRITICAL INSTRUCTION - STEP-BY-STEP APPROACH:
-  1. Ask only ONE specific question at a time
-  2. Wait for the user's answer
-  3. Acknowledge their answer
-  4. Only then ask ONE follow-up question
-  5. DO NOT provide multiple questions in a single response
-  6. DO NOT suggest answers until the user has provided their own input
-  7. DO NOT make assumptions about their business without asking first
+  1. If the user indicates they want to revise or work on this section, first ask HOW they want to proceed
+  2. Ask only ONE specific question at a time
+  3. Wait for the user's answer
+  4. Acknowledge their answer
+  5. Only then ask ONE follow-up question
+  6. DO NOT provide multiple questions in a single response
+  7. DO NOT suggest answers until the user has provided their own input
+  8. DO NOT make assumptions about their business without asking first
   
   Remember to wrap your specific content suggestions in backticks. For example: "Here's a promotion strategy you could use: \`Our multi-channel promotion strategy will combine content marketing through industry-specific blogs and whitepapers, targeted social media campaigns on LinkedIn and Twitter, and strategic partnerships with complementary service providers to efficiently reach our target audience.\`"`,
   
@@ -80,13 +103,14 @@ IMPORTANT: The user's system will automatically remove these prefixes (like "Bus
   Focus on efficiency, quality control, and scalability.
   
   CRITICAL INSTRUCTION - STEP-BY-STEP APPROACH:
-  1. Ask only ONE specific question at a time
-  2. Wait for the user's answer
-  3. Acknowledge their answer
-  4. Only then ask ONE follow-up question
-  5. DO NOT provide multiple questions in a single response
-  6. DO NOT suggest answers until the user has provided their own input
-  7. DO NOT make assumptions about their business without asking first
+  1. If the user indicates they want to revise or work on this section, first ask HOW they want to proceed
+  2. Ask only ONE specific question at a time
+  3. Wait for the user's answer
+  4. Acknowledge their answer
+  5. Only then ask ONE follow-up question
+  6. DO NOT provide multiple questions in a single response
+  7. DO NOT suggest answers until the user has provided their own input
+  8. DO NOT make assumptions about their business without asking first
   
   Remember to wrap your specific content suggestions in backticks. For example: "Here's an operations process description you could use: \`Our cloud-based service delivery model eliminates traditional supply chain constraints, allowing us to scale operations rapidly with minimal marginal costs. Our core processes center around software development, quality assurance testing, and customer onboarding, all managed through an agile methodology.\`"`,
   
@@ -95,13 +119,14 @@ IMPORTANT: The user's system will automatically remove these prefixes (like "Bus
   Focus on creating a strong foundation for growth.
   
   CRITICAL INSTRUCTION - STEP-BY-STEP APPROACH:
-  1. Ask only ONE specific question at a time
-  2. Wait for the user's answer
-  3. Acknowledge their answer
-  4. Only then ask ONE follow-up question
-  5. DO NOT provide multiple questions in a single response
-  6. DO NOT suggest answers until the user has provided their own input
-  7. DO NOT make assumptions about their business without asking first
+  1. If the user indicates they want to revise or work on this section, first ask HOW they want to proceed
+  2. Ask only ONE specific question at a time
+  3. Wait for the user's answer
+  4. Acknowledge their answer
+  5. Only then ask ONE follow-up question
+  6. DO NOT provide multiple questions in a single response
+  7. DO NOT suggest answers until the user has provided their own input
+  8. DO NOT make assumptions about their business without asking first
   
   Remember to wrap your specific content suggestions in backticks. For example: "Here's a management team description you could use: \`Our leadership team combines 30+ years of industry experience with complementary skills in technology development, market strategy, and financial management. CEO Jane Smith brings 15 years of SaaS leadership experience, while CTO John Davis contributes technical expertise from his background at leading technology companies.\`"`,
   
@@ -110,16 +135,31 @@ IMPORTANT: The user's system will automatically remove these prefixes (like "Bus
   Focus on realistic forecasts and sustainability.
   
   CRITICAL INSTRUCTION - STEP-BY-STEP APPROACH:
-  1. Ask only ONE specific question at a time
-  2. Wait for the user's answer
-  3. Acknowledge their answer
-  4. Only then ask ONE follow-up question
-  5. DO NOT provide multiple questions in a single response
-  6. DO NOT suggest answers until the user has provided their own input
-  7. DO NOT make assumptions about their business without asking first
+  1. If the user indicates they want to revise or work on this section, first ask HOW they want to proceed
+  2. Ask only ONE specific question at a time
+  3. Wait for the user's answer
+  4. Acknowledge their answer
+  5. Only then ask ONE follow-up question
+  6. DO NOT provide multiple questions in a single response
+  7. DO NOT suggest answers until the user has provided their own input
+  8. DO NOT make assumptions about their business without asking first
   
   Remember to wrap your specific content suggestions in backticks. For example: "Here's a revenue projection you could use: \`Based on our pricing model and customer acquisition targets, we project first-year revenue of $250,000, growing to $1.2M by year three. Our operating expenses will stabilize at approximately 65% of revenue, yielding a projected 35% profit margin by the end of year three.\`"`
 }
+
+/**
+ * Define subsections for each section to enable field detection
+ */
+const SECTION_SUBSECTIONS: Record<string, string[]> = {
+  executiveSummary: ['businessConcept', 'missionStatement', 'productsOverview', 'marketOpportunity', 'financialHighlights'],
+  companyDescription: ['legalStructure', 'ownershipDetails', 'companyHistory'],
+  productsAndServices: ['overview', 'valueProposition', 'intellectualProperty', 'futureProducts'],
+  marketAnalysis: ['industryOverview', 'targetMarket', 'marketSegmentation', 'competitiveAnalysis', 'swotAnalysis'],
+  marketingStrategy: ['branding', 'pricing', 'promotion', 'salesStrategy', 'channels', 'customerRetention'],
+  operationsPlan: ['businessModel', 'facilities', 'technology', 'productionProcess', 'qualityControl', 'logistics'],
+  organizationAndManagement: ['structure', 'managementTeam', 'advisors', 'hrPlan'],
+  financialPlan: ['projections', 'fundingNeeds', 'useOfFunds', 'breakEvenAnalysis', 'exitStrategy'],
+};
 
 /**
  * Generate AI response using OpenAI
@@ -148,33 +188,54 @@ async function generateAIResponse(
     content: msg.content
   }));
   
+  // Try to determine current subfield from conversation
+  let currentSubfield = null;
+  
+  // Check the last few messages to see if a specific field was mentioned
+  const recentMessages = conversationHistory.slice(-3);
+  for (const msg of recentMessages) {
+    if (msg.content && typeof msg.content === 'string') {
+      const content = msg.content.toLowerCase();
+      if (content.includes('working on') || content.includes('focus on') || content.includes('let\'s work on')) {
+        // Extract potential subfield from known subfields
+        const subfields = SECTION_SUBSECTIONS[sectionId] || [];
+        for (const field of subfields) {
+          if (content.includes(field.toLowerCase())) {
+            currentSubfield = field;
+            break;
+          }
+        }
+      }
+    }
+  }
+  
   // Create the messages array for OpenAI
   const messages = [
     { 
       role: "system", 
       content: `${instructions}
 
-IMPORTANT FORMATTING INSTRUCTION:
-When suggesting specific content for a business plan field, always wrap the actual suggestion in backticks (\`). 
-For example: "Here's a suggestion for your mission statement: \`Our mission is to revolutionize...\`"
-This helps the system identify and extract your suggestions accurately.
+CURRENT CONTEXT - IMPORTANT:
+The user is currently working on the ${sectionId} section${currentSubfield ? `, specifically the ${currentSubfield} field` : ''}.
+Please focus your responses on this specific area ONLY.
 
-SECTION-SPECIFIC FORMATTING:
-1. For Company Description section:
-   - When suggesting legal structure content, always prefix with "Legal Structure:" before your backtick suggestion
-   - When suggesting business structure content, always prefix with "Business Structure:" before your backtick suggestion
-   - When suggesting ownership details content, always prefix with "Ownership Details:" before your backtick suggestion
-   - When suggesting company history content, always prefix with "Company History:" before your backtick suggestion
+BACKTICK FORMATTING INSTRUCTION:
+When suggesting content for the user to apply, always wrap your suggestion in backticks (\`).
+For example: "Here's some content you could use: \`Your suggested text goes here.\`"
 
-CONTEXT HANDLING INSTRUCTIONS - CRITICAL:
+The user will decide if the content is appropriate for their current field.
+
+IMPORTANT NOTES:
+1. STAY ON TOPIC for the ${currentSubfield || sectionId} they're working on
+2. If they ask about a different field, you can discuss it, but still format suggestions in backticks
+3. Make sure your suggestions are complete, clear, and ready to be applied
+
+CONTEXT HANDLING INSTRUCTIONS:
 1. I will provide you with the user's existing business plan data for this section.
 2. ALWAYS begin your first response by explicitly acknowledging the existing content you see.
 3. Even if the user's message doesn't mention their existing content, YOU MUST reference what they already have.
 4. NEVER ask for information they've already provided in their existing content.
 5. Reference specific details from their content when making suggestions.
-6. Provide suggestions that build upon and enhance their existing content rather than starting from scratch.
-7. If they have well-developed content already, focus on refinement rather than major changes.
-8. If you don't see any existing content for a section or field, you may ask for initial information.
 
 Here is the user's existing business plan content for context (JSON format): ${JSON.stringify(businessPlanData || {})}`
     },

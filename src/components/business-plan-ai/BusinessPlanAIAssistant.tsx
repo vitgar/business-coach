@@ -4,6 +4,11 @@ import { useState, useEffect, useRef } from 'react'
 import { Send, X, Lightbulb, MessageSquare, Clipboard, ArrowDown, ArrowRight, ChevronRight, BookOpen } from 'lucide-react'
 import { useBusinessPlanAI, ChatMessage, FieldSuggestion } from '@/hooks/useBusinessPlanAI'
 
+// Extended field suggestion with optional display field ID
+interface ExtendedFieldSuggestion extends FieldSuggestion {
+  displayFieldId?: string;
+}
+
 /**
  * Business Plan AI Assistant Props Interface
  */
@@ -297,9 +302,22 @@ export default function BusinessPlanAIAssistant({
    * Handle applying a suggestion to a form field
    */
   const handleApplySuggestion = (fieldId: string, content: string) => {
-    applySuggestion(fieldId, content)
+    // Always use the current context for applying suggestions
+    const targetFieldId = currentSubfield || fieldId;
+    
+    // Log the field that we're applying this suggestion to
+    console.log(`[Apply Suggestion] Applying suggestion to field: ${targetFieldId}`);
+    
+    // Apply the suggestion to the specified field
+    applySuggestion(targetFieldId, content);
+    
+    // Set the current subfield to track what we just applied
+    setCurrentSubfield(targetFieldId);
+    setLastAppliedSuggestion({ fieldId: targetFieldId, content });
+    setShowSectionPrompt(true);
+    
     // Force scroll after applying suggestion since it will show section prompt
-    setTimeout(scrollToBottom, 150)
+    setTimeout(scrollToBottom, 150);
   }
   
   /**
@@ -436,7 +454,25 @@ export default function BusinessPlanAIAssistant({
    * Render field suggestions if available
    */
   const renderFieldSuggestions = () => {
-    if (fieldSuggestions.length === 0) return null;
+    console.log(`[Suggestions Debug] All suggestions:`, fieldSuggestions);
+    console.log(`[Suggestions Debug] Current subfield:`, currentSubfield);
+    
+    if (fieldSuggestions.length === 0) {
+      console.log('[Suggestions Debug] No suggestions available');
+      return null;
+    }
+    
+    // Simplified approach: Map ALL extracted backtick content to the current field
+    const targetFieldId = currentSubfield || sectionId;
+    
+    // Map all suggestions to the current field/section
+    let mappedSuggestions = fieldSuggestions.map(suggestion => ({
+      ...suggestion,
+      // Override the original fieldId with the current field/section
+      displayFieldId: targetFieldId
+    }));
+    
+    console.log(`[Suggestions Debug] Mapped ${mappedSuggestions.length} suggestions to field: ${targetFieldId}`);
     
     return (
       <div className="mt-4 border-t border-gray-200 pt-3">
@@ -445,20 +481,26 @@ export default function BusinessPlanAIAssistant({
           Suggested content to apply:
         </h4>
         <div className="space-y-2">
-          {fieldSuggestions.map((suggestion, index) => (
-            <div key={index} className="rounded-md border border-blue-100 bg-blue-50 p-3">
-              <div className="text-sm text-blue-700 mb-1 font-medium">
-                {SUBFIELD_NAMES[suggestion.fieldId] || suggestion.fieldId}
+          {mappedSuggestions.map((suggestion, index) => {
+            // Always use the current field/section for display and application
+            const displayFieldId = suggestion.displayFieldId;
+            const fieldName = SUBFIELD_NAMES[displayFieldId] || displayFieldId;
+            
+            return (
+              <div key={index} className="rounded-md border border-blue-100 bg-blue-50 p-3">
+                <div className="text-sm text-blue-700 mb-1 font-medium">
+                  {fieldName}
+                </div>
+                <div className="text-sm text-gray-700 mb-2">{suggestion.content}</div>
+                <button
+                  onClick={() => handleApplySuggestion(displayFieldId, suggestion.content)}
+                  className="text-xs bg-blue-100 hover:bg-blue-200 text-blue-700 px-2 py-1 rounded"
+                >
+                  Apply to field
+                </button>
               </div>
-              <div className="text-sm text-gray-700 mb-2">{suggestion.content}</div>
-              <button
-                onClick={() => handleApplySuggestion(suggestion.fieldId, suggestion.content)}
-                className="text-xs bg-blue-100 hover:bg-blue-200 text-blue-700 px-2 py-1 rounded"
-              >
-                Apply to field
-              </button>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     );
@@ -479,12 +521,23 @@ export default function BusinessPlanAIAssistant({
   const handleNavigateToSection = (sectId: string, subsection?: string) => {
     if (!onSectionChange) return
     
+    // Clear previous state
+    setCurrentSubfield(null);
+    
     onSectionChange(sectId)
     
     if (subsection) {
       const subfieldName = SUBFIELD_NAMES[subsection] || subsection
+      
+      // Set the current subfield with explicit logging
+      console.log(`[Navigation] Setting current subfield to: "${subsection}" (${subfieldName})`);
+      setCurrentSubfield(subsection);
+      
       sendMessage(`Let's work on the ${SECTION_NAMES[sectId]} section, specifically the ${subfieldName} part.`)
     } else {
+      console.log(`[Navigation] Clearing current subfield (working on whole section)`);
+      setCurrentSubfield(null);
+      
       sendMessage(`Let's work on the ${SECTION_NAMES[sectId]} section.`)
     }
     
