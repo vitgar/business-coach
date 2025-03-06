@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { BookOpen, Building, Users, LineChart, TrendingUp, ShoppingBag, Truck, FileText, Info } from 'lucide-react'
 
 /**
@@ -100,115 +100,59 @@ export default function BusinessPlanSections({
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-md h-full flex flex-col overflow-x-hidden">
-      <div className="py-2 px-1 bg-gray-50 border-b border-gray-200 sticky top-0 z-10 flex justify-center">
-        <span className="sr-only">Sections</span>
-      </div>
-      
-      <nav aria-label="Business Plan Sections" className="mb-4">
+    <div className="bg-white rounded-md h-full">
+      <nav aria-label="Business Plan Sections">
         <h2 className="sr-only">Business Plan Navigation</h2>
         
-        {/* Changed from vertical to horizontal layout */}
-        <ul className="flex flex-row space-x-2 overflow-x-auto py-2 px-1 justify-center items-center relative">
+        {/* Horizontal compact layout with smaller icons */}
+        <ul className="flex flex-row space-x-1 overflow-x-auto py-1 items-center justify-start">
           {sections.map(section => {
             const isActive = currentSection === section.id;
             const isHovered = hoveredSection === section.id;
             const isComplete = isSectionComplete(section.id);
             
             return (
-              <li key={section.id} className="relative">
+              <li key={section.id} className="flex-shrink-0">
                 <button
                   onClick={() => onSectionChange(section.id)}
                   onMouseEnter={() => setHoveredSection(section.id)}
                   onMouseLeave={() => setHoveredSection(null)}
                   className={`
-                    w-10 h-10 flex items-center justify-center rounded-full transition-colors duration-200
+                    w-8 h-8 flex items-center justify-center rounded-md text-xs transition-colors
                     ${isActive 
                       ? 'bg-blue-600 text-white' 
                       : isComplete 
                         ? 'bg-green-50 text-green-600 hover:bg-green-100' 
-                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
                     }
                   `}
                   aria-current={isActive ? 'page' : undefined}
+                  title={section.title}
                 >
                   <div className="relative">
-                    {section.icon}
+                    {React.cloneElement(section.icon, { className: 'h-4 w-4' })}
                     {isComplete && !isActive && (
-                      <span className="absolute -top-1 -right-1 w-2 h-2 bg-green-500 rounded-full" aria-hidden="true"></span>
+                      <span className="absolute -top-1 -right-1 w-1.5 h-1.5 bg-green-500 rounded-full" aria-hidden="true"></span>
                     )}
                   </div>
                 </button>
                 
-                {/* Tooltip that now appears below the icon */}
+                {/* Simplified tooltip */}
                 {isHovered && (
                   <div 
-                    className="fixed z-20 whitespace-nowrap bg-gray-800 text-white rounded py-1 px-2 shadow-lg flex flex-col items-start animate-fadeIn"
+                    className="absolute z-20 bg-gray-800 text-white text-xs rounded py-1 px-2 shadow-lg mt-1"
                     style={{
-                      animationDuration: '150ms',
-                      left: 'var(--tooltip-left, auto)',
-                      top: 'var(--tooltip-top, auto)',
-                    }}
-                    ref={(el) => {
-                      if (el) {
-                        // Calculate position relative to the button
-                        const button = el.parentElement?.querySelector('button');
-                        if (button) {
-                          const rect = button.getBoundingClientRect();
-                          // Center the tooltip below the button
-                          el.style.setProperty('--tooltip-left', `${rect.left + rect.width/2 - el.offsetWidth/2}px`);
-                          el.style.setProperty('--tooltip-top', `${rect.bottom + 8}px`);
-                        }
-                      }
+                      left: '50%',
+                      transform: 'translateX(-50%)'
                     }}
                   >
-                    <span className="font-medium text-sm">{section.title}</span>
-                    <span className="text-xs text-gray-300">{section.description}</span>
-                    
-                    {/* Triangle pointer now points up instead of left */}
-                    <div className="absolute left-1/2 top-0 -translate-y-1 -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent border-b-gray-800"></div>
+                    <div className="font-medium mb-0.5">{section.title}</div>
+                    <div className="text-gray-300 text-xs">{section.description}</div>
                   </div>
                 )}
               </li>
             )
           })}
-          
-          {/* Help button moved to right side of top navigation */}
-          <li className="absolute right-2">
-            <button
-              className="text-blue-700 hover:text-blue-900 rounded-full p-1 bg-blue-50"
-              onMouseEnter={() => setHoveredSection('help')}
-              onMouseLeave={() => setHoveredSection(null)}
-              title="Help"
-            >
-              <Info className="h-4 w-4" />
-            </button>
-            
-            {hoveredSection === 'help' && (
-              <div className="fixed z-20 whitespace-nowrap bg-gray-800 text-white text-xs rounded py-1 px-2 shadow-lg animate-fadeIn"
-                style={{
-                  animationDuration: '150ms',
-                  left: 'var(--tooltip-left, auto)',
-                  top: 'var(--tooltip-top, auto)'
-                }}
-                ref={(el) => {
-                  if (el) {
-                    // Calculate position relative to the help button
-                    const button = el.parentElement?.querySelector('button');
-                    if (button) {
-                      const rect = button.getBoundingClientRect();
-                      el.style.setProperty('--tooltip-left', `${rect.left - 150}px`);
-                      el.style.setProperty('--tooltip-top', `${rect.bottom + 8}px`);
-                    }
-                  }
-                }}
-              >
-                Complete all sections to finalize your business plan.
-                {/* Triangle pointer */}
-                <div className="absolute top-0 right-4 -translate-y-1 w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent border-b-gray-800"></div>
-              </div>
-            )}
-          </li>
         </ul>
       </nav>
     </div>

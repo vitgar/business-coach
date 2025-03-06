@@ -143,10 +143,23 @@ export default function BusinessPlanAIAssistant({
   const [currentSubfield, setCurrentSubfield] = useState<string | null>(null)
   const [showSectionNav, setShowSectionNav] = useState(false)
   const [selectedSection, setSelectedSection] = useState<string | null>(null)
+  // Add state for compact mode
+  const [isCompactMode, setIsCompactMode] = useState(window.innerHeight < 800)
   
-  // Create a ref for the messages container to enable auto-scrolling
+  // Create refs for the component
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const messagesContainerRef = useRef<HTMLDivElement>(null)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+  
+  // Add resize listener for responsive behavior
+  useEffect(() => {
+    const handleResize = () => {
+      setIsCompactMode(window.innerHeight < 800);
+    };
+    
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
   
   // Get current section data if available
   const currentSectionData = businessPlan?.content?.[sectionId] || {};
@@ -632,178 +645,164 @@ export default function BusinessPlanAIAssistant({
     return () => clearTimeout(scrollTimer);
   }, [showSectionNav, selectedSection]);
   
-  // Create a ref for the textarea
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-  
-  // If collapsed, show only the button to open
-  if (!isOpen) {
-    return (
-      <div className="sticky top-4 right-4 z-10 flex justify-end">
-        <button
-          onClick={() => setIsOpen(true)}
-          className="bg-blue-600 text-white rounded-full p-3 shadow-lg hover:bg-blue-700 transition-colors"
-          aria-label="Open AI Assistant"
-        >
-          <MessageSquare className="h-6 w-6" />
-        </button>
-      </div>
-    )
-  }
-  
+  // Modify the render function to include the compact mode class
   return (
-    <div className={`flex flex-col border border-gray-200 rounded-lg bg-white shadow-md h-full ${className}`}>
-      {/* Header */}
-      <div className="bg-blue-600 text-white p-3 flex justify-between items-center sticky top-0 z-10">
-        <h3 className="font-medium flex items-center">
-          <Lightbulb className="h-5 w-5 mr-2" />
-          AI Assistant: {sectionName}
-        </h3>
-        <div className="flex items-center space-x-2">
-          <button
-            onClick={handleShowSectionNav}
-            className="text-white hover:text-blue-200 transition-colors"
-            aria-label="Navigate to section"
-            title="Navigate to section"
+    <div className={`flex flex-col bg-white border rounded-lg shadow-sm ${isCompactMode ? 'compact-assistant' : ''} ${className}`}>
+      {/* Header - make more compact when in compact mode */}
+      <div className={`flex items-center justify-between border-b ${isCompactMode ? 'p-2' : 'p-3'}`}>
+        <div className="flex items-center">
+          <MessageSquare className={`text-blue-500 ${isCompactMode ? 'h-4 w-4 mr-1' : 'h-5 w-5 mr-2'}`} />
+          <h3 className={`font-medium ${isCompactMode ? 'text-sm' : 'text-base'}`}>
+            AI Assistant: {sectionName}
+          </h3>
+        </div>
+        
+        <div className="flex space-x-1">
+          {/* Add button to toggle compact mode */}
+          <button 
+            onClick={() => setIsCompactMode(!isCompactMode)}
+            className="text-gray-500 hover:text-gray-700 p-1"
+            title={isCompactMode ? "Expand view" : "Compact view"}
           >
-            <BookOpen className="h-4 w-4" />
+            {isCompactMode ? 
+              <ArrowDown className="h-4 w-4" /> : 
+              <ArrowRight className="h-4 w-4" />
+            }
           </button>
-          <button
-            onClick={() => setIsOpen(false)}
-            className="text-white hover:text-blue-200 transition-colors"
-            aria-label="Close AI Assistant"
+          <button 
+            onClick={() => setIsOpen(!isOpen)}
+            className="text-gray-500 hover:text-gray-700 p-1"
           >
-            <X className="h-5 w-5" />
+            {isOpen ? <X className="h-4 w-4" /> : <MessageSquare className="h-4 w-4" />}
           </button>
         </div>
       </div>
       
-      {/* Messages Container - Fixed height with overflow scroll */}
-      <div 
-        ref={messagesContainerRef}
-        className="flex-grow p-3 overflow-y-auto h-[calc(100%-120px)] space-y-4 scrollbar-thin"
-        style={{ 
-          overflowY: 'auto', 
-          display: 'flex', 
-          flexDirection: 'column',
-          maxHeight: 'calc(100vh - 220px)'  // Ensure it doesn't grow too large
-        }}
-      >
-        <div className="flex-grow">
-          {messages.length === 0 ? (
-            <div className="text-center py-4 text-gray-500">
-              {/* Message icon and header text removed from all sections */}
-              {/* Only render buttons container if there are prompts (there shouldn't be any now) */}
-              {getSuggestedPrompts().length > 0 && (
-                <div className="mt-4 space-y-2">
-                  {getSuggestedPrompts().map((prompt, index) => (
-                    <button
-                      key={index}
-                      onClick={() => handleSuggestionClick(prompt)}
-                      className="w-full text-left p-2 border border-gray-200 rounded hover:bg-gray-50 text-sm text-gray-700"
-                    >
-                      {prompt}
-                    </button>
-                  ))}
-                </div>
-              )}
-              
-              {/* Show section navigation directly in empty state */}
-              <div className="mt-6 border-t border-gray-200 pt-4">
-                {renderSectionNavigation()}
-              </div>
-            </div>
-          ) : (
-            <>
-              {messages.map((message, index) => (
-                <div
-                  key={index}
-                  className={`p-2 rounded-lg max-w-[85%] ${
-                    message.role === 'user'
-                      ? 'bg-blue-100 text-blue-900 ml-auto'
-                      : 'bg-gray-100 text-gray-800'
-                  } ${index > 0 ? 'mt-2' : ''}`}
-                >
-                  {message.content}
-                  {message.role === 'assistant' && index === messages.length - 1 && (
-                    <>
-                      {renderFieldSuggestions()}
-                      {showSectionPrompt && renderSectionNavigationPrompt()}
-                    </>
+      {/* Adjust the message container max-height based on compact mode */}
+      {isOpen && (
+        <>
+          <div 
+            ref={messagesContainerRef} 
+            className={`flex-grow overflow-y-auto p-3 ${isCompactMode ? 'max-h-[250px]' : 'max-h-[350px]'}`}
+          >
+            <div className="flex-grow">
+              {messages.length === 0 ? (
+                <div className="text-center py-4 text-gray-500">
+                  {/* Message icon and header text removed from all sections */}
+                  {/* Only render buttons container if there are prompts (there shouldn't be any now) */}
+                  {getSuggestedPrompts().length > 0 && (
+                    <div className="mt-4 space-y-2">
+                      {getSuggestedPrompts().map((prompt, index) => (
+                        <button
+                          key={index}
+                          onClick={() => handleSuggestionClick(prompt)}
+                          className="w-full text-left p-2 border border-gray-200 rounded hover:bg-gray-50 text-sm text-gray-700"
+                        >
+                          {prompt}
+                        </button>
+                      ))}
+                    </div>
                   )}
-                </div>
-              ))}
-              {isLoading && (
-                <div className="bg-gray-100 text-gray-800 p-2 rounded-lg max-w-[85%] mt-2">
-                  <div className="flex space-x-2">
-                    <div className="w-2 h-2 rounded-full bg-gray-400 animate-pulse"></div>
-                    <div className="w-2 h-2 rounded-full bg-gray-400 animate-pulse delay-100"></div>
-                    <div className="w-2 h-2 rounded-full bg-gray-400 animate-pulse delay-200"></div>
+                  
+                  {/* Show section navigation directly in empty state */}
+                  <div className="mt-6 border-t border-gray-200 pt-4">
+                    {renderSectionNavigation()}
                   </div>
                 </div>
+              ) : (
+                <>
+                  {messages.map((message, index) => (
+                    <div
+                      key={index}
+                      className={`p-2 rounded-lg max-w-[85%] ${
+                        message.role === 'user'
+                          ? 'bg-blue-100 text-blue-900 ml-auto'
+                          : 'bg-gray-100 text-gray-800'
+                      } ${index > 0 ? 'mt-2' : ''}`}
+                    >
+                      {message.content}
+                      {message.role === 'assistant' && index === messages.length - 1 && (
+                        <>
+                          {renderFieldSuggestions()}
+                          {showSectionPrompt && renderSectionNavigationPrompt()}
+                        </>
+                      )}
+                    </div>
+                  ))}
+                  {isLoading && (
+                    <div className="bg-gray-100 text-gray-800 p-2 rounded-lg max-w-[85%] mt-2">
+                      <div className="flex space-x-2">
+                        <div className="w-2 h-2 rounded-full bg-gray-400 animate-pulse"></div>
+                        <div className="w-2 h-2 rounded-full bg-gray-400 animate-pulse delay-100"></div>
+                        <div className="w-2 h-2 rounded-full bg-gray-400 animate-pulse delay-200"></div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Show section navigation if enabled */}
+                  {showSectionNav && (
+                    <div className="mt-4 border-t border-gray-200 pt-3">
+                      {renderSectionNavigation()}
+                    </div>
+                  )}
+                  
+                  {/* Invisible element at the bottom for auto-scrolling */}
+                  <div ref={messagesEndRef} />
+                </>
               )}
-              
-              {/* Show section navigation if enabled */}
-              {showSectionNav && (
-                <div className="mt-4 border-t border-gray-200 pt-3">
-                  {renderSectionNavigation()}
-                </div>
-              )}
-              
-              {/* Invisible element at the bottom for auto-scrolling */}
-              <div ref={messagesEndRef} />
-            </>
-          )}
-        </div>
-      </div>
-      
-      {/* Input Form */}
-      <form onSubmit={handleSubmit} className="p-3 border-t border-gray-200 sticky bottom-0 bg-white z-10">
-        <div className="flex items-center">
-          <textarea
-            ref={textareaRef}
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            placeholder="Ask for guidance..."
-            disabled={isLoading}
-            className="flex-grow py-2 px-3 border border-gray-300 rounded-l-md focus:outline-none focus:ring-1 focus:ring-blue-500 min-h-[60px] resize-y"
-            onKeyDown={(e) => {
-              // Submit on Enter without Shift key
-              if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                handleSubmit(e);
-              }
-            }}
-          />
-          <button
-            type="submit"
-            disabled={isLoading || !inputValue.trim()}
-            className="bg-blue-600 text-white py-2 px-4 rounded-r-md hover:bg-blue-700 transition-colors disabled:bg-blue-300 h-[60px]"
-          >
-            <Send className="h-5 w-5" />
-          </button>
-        </div>
-        <div className="flex justify-between items-center text-xs mt-1">
-          <div>
-            {messages.length > 0 && (
+            </div>
+          </div>
+          
+          {/* Input area - make more compact when needed */}
+          <div className={`border-t ${isCompactMode ? 'p-2' : 'p-3'}`}>
+            <form onSubmit={handleSubmit} className="flex items-center">
+              <textarea
+                ref={textareaRef}
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                placeholder="Ask for guidance..."
+                disabled={isLoading}
+                className="flex-grow py-2 px-3 border border-gray-300 rounded-l-md focus:outline-none focus:ring-1 focus:ring-blue-500 min-h-[60px] resize-y"
+                onKeyDown={(e) => {
+                  // Submit on Enter without Shift key
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSubmit(e);
+                  }
+                }}
+              />
+              <button
+                type="submit"
+                disabled={isLoading || !inputValue.trim()}
+                className="bg-blue-600 text-white py-2 px-4 rounded-r-md hover:bg-blue-700 transition-colors disabled:bg-blue-300 h-[60px]"
+              >
+                <Send className="h-5 w-5" />
+              </button>
+            </form>
+            <div className="flex justify-between items-center text-xs mt-1">
+              <div>
+                {messages.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={clearConversation}
+                    className="text-gray-500 hover:text-gray-700"
+                  >
+                    Clear conversation
+                  </button>
+                )}
+              </div>
               <button
                 type="button"
-                onClick={clearConversation}
-                className="text-gray-500 hover:text-gray-700"
+                onClick={handleShowSectionNav}
+                className="text-blue-600 hover:text-blue-800 flex items-center"
               >
-                Clear conversation
+                <BookOpen className="h-3 w-3 mr-1" /> 
+                {showSectionNav ? 'Hide section navigation' : 'Show section navigation'}
               </button>
-            )}
+            </div>
           </div>
-          <button
-            type="button"
-            onClick={handleShowSectionNav}
-            className="text-blue-600 hover:text-blue-800 flex items-center"
-          >
-            <BookOpen className="h-3 w-3 mr-1" /> 
-            {showSectionNav ? 'Hide section navigation' : 'Show section navigation'}
-          </button>
-        </div>
-      </form>
+        </>
+      )}
     </div>
   )
 } 
