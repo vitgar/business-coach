@@ -142,9 +142,9 @@ export default function BusinessPlanAIAssistant({
   const [lastAppliedSuggestion, setLastAppliedSuggestion] = useState<{fieldId: string, content: string} | null>(null)
   const [currentSubfield, setCurrentSubfield] = useState<string | null>(null)
   const [showSectionNav, setShowSectionNav] = useState(false)
-  const [selectedSection, setSelectedSection] = useState<string | null>(null)
   // Add state for compact mode
   const [isCompactMode, setIsCompactMode] = useState(window.innerHeight < 800)
+  const [selectedSection, setSelectedSection] = useState<string | null>(null)
   
   // Create refs for the component
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -182,32 +182,6 @@ export default function BusinessPlanAIAssistant({
     }
   })
   
-  // Initialize the conversation with context if there's existing data and no messages yet
-  useEffect(() => {
-    if (messages.length === 0 && Object.keys(currentSectionData).length > 0) {
-      // Filter out empty values and create formatted data summary
-      const existingData = Object.entries(currentSectionData)
-        .filter(([key, value]) => value && typeof value === 'string' && value.trim() !== '')
-        .map(([key, value]) => {
-          const fieldName = SUBFIELD_NAMES[key] || key;
-          return `**${fieldName}**: ${typeof value === 'string' ? value.substring(0, 150) + (value.length > 150 ? '...' : '') : JSON.stringify(value)}`;
-        });
-      
-      if (existingData.length > 0) {
-        // Create a more distinctive initial message
-        const initialMessage: ChatMessage = {
-          role: 'assistant',
-          content: `📋 **I've analyzed your existing ${sectionName} content:**\n\n${existingData.join('\n\n')}\n\n💡 How would you like to improve or expand on this content? I can help refine specific sections or suggest additions.`
-        };
-        
-        // Use a custom initial message instead of sending an actual AI request
-        setTimeout(() => {
-          setMessages([initialMessage]);
-        }, 500);
-      }
-    }
-  }, [sectionId, currentSectionData, messages.length, sectionName, setMessages]);
-  
   // Reset section prompt when section changes
   useEffect(() => {
     setShowSectionPrompt(false);
@@ -225,18 +199,158 @@ export default function BusinessPlanAIAssistant({
     return () => clearTimeout(scrollTimer);
   }, [messages, isLoading, fieldSuggestions, showSectionPrompt, showSectionNav]);
   
+  // Add an effect to scroll when messages change
+  useEffect(() => {
+    // Only scroll if there are messages
+    if (messages.length > 0) {
+      console.log('[Message Update] Messages changed, scrolling to bottom');
+      // Use a timeout to ensure the DOM has updated
+      setTimeout(scrollToBottom, 200);
+    }
+  }, [messages]);
+  
+  // Add an effect to scroll when field suggestions change
+  useEffect(() => {
+    // Only scroll if there are field suggestions
+    if (fieldSuggestions.length > 0) {
+      console.log('[Suggestions Update] Suggestions changed, scrolling to bottom');
+      // Use a timeout to ensure the DOM has updated with the new suggestions
+      setTimeout(scrollToBottom, 200);
+    }
+  }, [fieldSuggestions]);
+  
+  // Add effect to scroll to the section navigation menu on initial page load
+  useEffect(() => {
+    // This effect runs once on component mount
+    console.log('[Initial Load] Component mounted, ensuring section menu is visible');
+    
+    // Wait for DOM to be fully rendered
+    const initialScrollTimer = setTimeout(() => {
+      // If there are no messages, we're in the empty state with the section menu
+      if (messages.length === 0) {
+        console.log('[Initial Load] Empty state detected, scrolling to section menu');
+        
+        // Try to find and scroll to the section navigation
+        const sectionNavElement = document.querySelector('.border-t.border-gray-200.pt-2');
+        if (sectionNavElement) {
+          console.log('[Initial Load] Found section navigation element, scrolling into view');
+          sectionNavElement.scrollIntoView({ behavior: 'auto', block: 'center' });
+        } else {
+          console.log('[Initial Load] Section navigation element not found, using fallback scrolling');
+          // Fallback: scroll the container to show as much content as possible
+          if (messagesContainerRef.current) {
+            messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight / 2;
+          }
+        }
+      }
+    }, 500); // Longer delay to ensure everything is rendered
+    
+    return () => clearTimeout(initialScrollTimer);
+  }, []); // Empty dependency array means this runs once on mount
+  
   /**
    * Scroll to the bottom of the messages container
+   * Enhanced with multiple fallback methods to ensure reliable scrolling
    */
   const scrollToBottom = () => {
-    // Try to scroll messagesEndRef into view first
+    console.log('[Scroll Debug] Attempting to scroll to bottom');
+    
+    // Try multiple approaches to ensure reliable scrolling
+    
+    // Method 1: Use the messagesEndRef if available
     if (messagesEndRef.current) {
+      console.log('[Scroll Debug] Using messagesEndRef.scrollIntoView()');
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
-    } 
-    // Fallback: directly scroll the container to the bottom
-    else if (messagesContainerRef.current) {
-      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
     }
+    
+    // Method 2: Use the messagesContainer if available
+    if (messagesContainerRef.current) {
+      console.log('[Scroll Debug] Using messagesContainerRef.scrollTop');
+      const container = messagesContainerRef.current;
+      container.scrollTop = container.scrollHeight;
+    }
+    
+    // Method 3: Fallback to window scrolling if all else fails
+    setTimeout(() => {
+      if (messagesEndRef.current) {
+        console.log('[Scroll Debug] Final fallback - direct scrollIntoView');
+        messagesEndRef.current.scrollIntoView({ block: 'end' });
+        window.scrollTo(0, document.body.scrollHeight);
+      }
+    }, 100);
+  };
+  
+  /**
+   * Process chat message text to make subsection names clickable
+   * This allows users to navigate directly to subsections by clicking on them in the chat
+   */
+  const processMessageWithSubsectionLinks = (messageText: string) => {
+    // Regular expression to find subsection references with bullet points
+    const subsectionPattern = /• ([^•\n]+)/g;
+    const parts = [];
+    let lastIndex = 0;
+    let match;
+    
+    // Clone the text so we can search in it
+    const text = messageText;
+    
+    // Look for subsection patterns in the text
+    while ((match = subsectionPattern.exec(text)) !== null) {
+      // Add the text before the match
+      if (match.index > lastIndex) {
+        parts.push(<span key={`text-${lastIndex}`}>{text.substring(lastIndex, match.index)}</span>);
+      }
+      
+      // Extract the subsection name without the bullet
+      const subsectionName = match[1].trim();
+      
+      // Find the corresponding subsection ID
+      let subsectionId = null;
+      for (const [id, name] of Object.entries(SUBFIELD_NAMES)) {
+        if (name === subsectionName) {
+          subsectionId = id;
+          break;
+        }
+      }
+      
+      // If we found a matching subsection ID, make it a clickable link
+      if (subsectionId) {
+        // Find the parent section ID
+        let parentSectionId = sectionId; // Default to current section
+        for (const [sectId, subsections] of Object.entries(SECTION_SUBSECTIONS)) {
+          if (subsections.includes(subsectionId)) {
+            parentSectionId = sectId;
+            break;
+          }
+        }
+        
+        parts.push(
+          <span key={`bullet-${match.index}`}>• </span>
+        );
+        
+        parts.push(
+          <button
+            key={`link-${match.index}`}
+            onClick={() => handleNavigateToSection(parentSectionId, subsectionId)}
+            className="inline text-blue-600 hover:underline"
+          >
+            {subsectionName}
+          </button>
+        );
+      } else {
+        // If no matching subsection, leave the text as-is
+        parts.push(<span key={`text-${match.index}`}>{match[0]}</span>);
+      }
+      
+      lastIndex = match.index + match[0].length;
+    }
+    
+    // Add any remaining text
+    if (lastIndex < text.length) {
+      parts.push(<span key={`text-${lastIndex}`}>{text.substring(lastIndex)}</span>);
+    }
+    
+    return <>{parts}</>;
   };
   
   /**
@@ -283,7 +397,6 @@ export default function BusinessPlanAIAssistant({
     // Reset the section navigation state
     if (showSectionNav) {
       setShowSectionNav(false)
-      setSelectedSection(null)
     }
     
     // Force scroll after sending message
@@ -800,7 +913,22 @@ export default function BusinessPlanAIAssistant({
       console.log(`[Navigation Debug] Clearing current subfield (working on whole section)`);
       setCurrentSubfield(null);
       
-      sendMessage(`Let's work on the ${SECTION_NAMES[sectId]} section.`)
+      // Show subsections in the chat when a section is selected without specifying a subsection
+      const subsectionList = SECTION_SUBSECTIONS[sectId] || [];
+      if (subsectionList.length > 0) {
+        // Format the subsections into a bulleted list for the chat
+        const formattedSubsections = subsectionList
+          .map(sub => `• ${SUBFIELD_NAMES[sub] || sub}`)
+          .join('\n');
+        
+        // Send a message showing the available subsections for this section
+        sendMessage(
+          `Let's work on the ${SECTION_NAMES[sectId]} section. This section contains the following subsections:\n\n${formattedSubsections}\n\nWhich part would you like to focus on first?`
+        );
+      } else {
+        // If no subsections are defined, just use the original message
+        sendMessage(`Let's work on the ${SECTION_NAMES[sectId]} section.`);
+      }
     }
     
     // Clear any active suggestions
@@ -808,13 +936,29 @@ export default function BusinessPlanAIAssistant({
     
     // Close section navigation after selecting a section
     setShowSectionNav(false);
+    // Also reset selectedSection when navigating to a section
     setSelectedSection(null);
     
     // Log post-navigation state
     console.log(`[Navigation Debug] POST-NAVIGATION - Current subfield: ${subsection || 'none'}, Section ID: ${sectId}`);
     
-    // Force scroll after state updates
-    setTimeout(scrollToBottom, 100);
+    // Force scroll after state updates with longer delay to ensure UI has updated
+    setTimeout(() => {
+      // First try to scroll the main messages container to the bottom
+      scrollToBottom();
+      
+      // Then make sure the content is visible by scrolling the entire chat into view
+      if (messagesContainerRef.current) {
+        messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+      }
+      
+      // As a final fallback, ensure the messages end ref is in view
+      if (messagesEndRef.current) {
+        messagesEndRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
+      }
+      
+      console.log(`[Navigation Debug] Scrolled to bottom after section selection`);
+    }, 300); // Longer delay to ensure the new content has rendered
   }
   
   /**
@@ -822,31 +966,31 @@ export default function BusinessPlanAIAssistant({
    */
   const renderSectionNavigation = () => {
     return (
-      <div className="mt-4">
-        <h4 className="text-sm font-medium text-gray-700 mb-2 flex items-center">
-          <ChevronRight className="h-4 w-4 mr-1" />
+      <div className="mt-2">
+        <h4 className="text-xs font-medium text-gray-700 mb-1 flex items-center">
+          <ChevronRight className="h-3 w-3 mr-1" />
           {selectedSection ? 'Choose a subsection:' : 'Choose a section to work on:'}
         </h4>
-        <div className="space-y-3">
+        <div className="space-y-1">
           {selectedSection ? (
             // Show subsections of selected section
             <>
-              <div className="mb-2 flex items-center">
+              <div className="mb-1 flex items-center">
                 <button 
                   onClick={() => setSelectedSection(null)}
-                  className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 px-2 py-1 rounded mr-2 flex items-center"
+                  className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 px-1 py-1 rounded mr-1 flex items-center"
                 >
                   <ArrowRight className="h-3 w-3 rotate-180 mr-1" />
                   Back
                 </button>
-                <span className="text-sm font-medium">{SECTION_NAMES[selectedSection]} subsections:</span>
+                <span className="text-xs font-medium">{SECTION_NAMES[selectedSection]} subsections:</span>
               </div>
               <div className="grid grid-cols-1 gap-1">
                 {SECTION_SUBSECTIONS[selectedSection]?.map(subsection => (
                   <button
                     key={subsection}
                     onClick={() => handleNavigateToSection(selectedSection, subsection)}
-                    className="text-left p-2 border border-gray-200 rounded hover:bg-blue-50 text-sm text-gray-700"
+                    className="text-left p-1 border border-gray-200 rounded hover:bg-blue-50 text-xs text-gray-700"
                   >
                     {SUBFIELD_NAMES[subsection] || subsection.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
                   </button>
@@ -854,8 +998,8 @@ export default function BusinessPlanAIAssistant({
               </div>
             </>
           ) : (
-            // Show all available sections
-            <div className="grid grid-cols-1 gap-1">
+            // Show all available sections in a grid layout
+            <div className="grid grid-cols-2 gap-1">
               {SECTION_ORDER.map(section => (
                 <button
                   key={section}
@@ -866,7 +1010,7 @@ export default function BusinessPlanAIAssistant({
                       handleNavigateToSection(section)
                     }
                   }}
-                  className={`text-left p-2 border rounded flex justify-between items-center ${
+                  className={`text-left p-1 border rounded flex justify-between items-center text-xs ${
                     section === sectionId 
                       ? 'bg-blue-100 text-blue-700 border-blue-200' 
                       : 'border-gray-200 hover:bg-gray-50 text-gray-700'
@@ -874,7 +1018,7 @@ export default function BusinessPlanAIAssistant({
                 >
                   <span>{SECTION_NAMES[section]}</span>
                   {SECTION_SUBSECTIONS[section]?.length > 0 && (
-                    <ChevronRight className="h-4 w-4" />
+                    <ChevronRight className="h-3 w-3" />
                   )}
                 </button>
               ))}
@@ -890,6 +1034,14 @@ export default function BusinessPlanAIAssistant({
     // Initialize section navigation to true in empty state
     if (messages.length === 0) {
       setShowSectionNav(true);
+      
+      // Scroll to make section navigation visible after a slight delay
+      setTimeout(() => {
+        if (messagesContainerRef.current) {
+          // Set initial scroll position to show the navigation menu
+          messagesContainerRef.current.scrollTop = 0;
+        }
+      }, 50);
     }
   }, [messages.length]);
   
@@ -903,15 +1055,24 @@ export default function BusinessPlanAIAssistant({
   }, [showSectionNav, selectedSection]);
   
   // Modify the render function to include the compact mode class
-    return (
+  return (
     <div className={`flex flex-col bg-white border rounded-lg shadow-sm ${isCompactMode ? 'compact-assistant' : ''} ${className}`}>
+      {/* Add custom styles for the empty state */}
+      <style jsx>{`
+        .empty-state-container {
+          display: flex;
+          flex-direction: column;
+          justify-content: flex-start;
+        }
+      `}</style>
+      
       {/* Header - make more compact when in compact mode */}
       <div className={`flex items-center justify-between border-b ${isCompactMode ? 'p-2' : 'p-3'}`}>
         <div className="flex items-center">
           <MessageSquare className={`text-blue-500 ${isCompactMode ? 'h-4 w-4 mr-1' : 'h-5 w-5 mr-2'}`} />
           <h3 className={`font-medium ${isCompactMode ? 'text-sm' : 'text-base'}`}>
-          AI Assistant: {sectionName}
-        </h3>
+            AI Assistant: {sectionName}
+          </h3>
         </div>
         
         <div className="flex space-x-1">
@@ -938,128 +1099,121 @@ export default function BusinessPlanAIAssistant({
       {/* Adjust the message container max-height based on compact mode */}
       {isOpen && (
         <>
-      <div 
-        ref={messagesContainerRef}
-            className={`flex-grow overflow-y-auto p-3 ${isCompactMode ? 'max-h-[250px]' : 'max-h-[350px]'}`}
-      >
-        <div className="flex-grow">
-          {messages.length === 0 ? (
-            <div className="text-center py-4 text-gray-500">
-              {/* Message icon and header text removed from all sections */}
-              {/* Only render buttons container if there are prompts (there shouldn't be any now) */}
-              {getSuggestedPrompts().length > 0 && (
-                <div className="mt-4 space-y-2">
-                  {getSuggestedPrompts().map((prompt, index) => (
-                    <button
-                      key={index}
-                      onClick={() => handleSuggestionClick(prompt)}
-                      className="w-full text-left p-2 border border-gray-200 rounded hover:bg-gray-50 text-sm text-gray-700"
-                    >
-                      {prompt}
-                    </button>
-                  ))}
-                </div>
-              )}
-              
-              {/* Show section navigation directly in empty state */}
-              <div className="mt-6 border-t border-gray-200 pt-4">
-                {renderSectionNavigation()}
-              </div>
-            </div>
-          ) : (
-            <>
-              {messages.map((message, index) => (
-                <div
-                  key={index}
-                  className={`p-2 rounded-lg max-w-[85%] ${
-                    message.role === 'user'
-                      ? 'bg-blue-100 text-blue-900 ml-auto'
-                      : 'bg-gray-100 text-gray-800'
-                  } ${index > 0 ? 'mt-2' : ''}`}
-                >
-                  {message.content}
-                  {message.role === 'assistant' && index === messages.length - 1 && (
-                    <>
-                      {renderFieldSuggestions()}
-                      {showSectionPrompt && renderSectionNavigationPrompt()}
-                    </>
-                  )}
-                </div>
-              ))}
-              {isLoading && (
-                <div className="bg-gray-100 text-gray-800 p-2 rounded-lg max-w-[85%] mt-2">
-                  <div className="flex space-x-2">
-                    <div className="w-2 h-2 rounded-full bg-gray-400 animate-pulse"></div>
-                    <div className="w-2 h-2 rounded-full bg-gray-400 animate-pulse delay-100"></div>
-                    <div className="w-2 h-2 rounded-full bg-gray-400 animate-pulse delay-200"></div>
+          <div 
+            ref={messagesContainerRef}
+            className={`flex-grow overflow-y-auto p-3 ${
+              isCompactMode ? 'max-h-[350px]' : 'max-h-[450px]'
+            } ${
+              messages.length === 0 ? 'min-h-[200px] empty-state-container' : ''
+            }`}
+          >
+            <div className="flex-grow">
+              {messages.length === 0 ? (
+                <div className="text-center py-2 text-gray-500">
+                  {/* Render section navigation immediately in empty state, without any messages */}
+                  <div className="mt-1">
+                    {renderSectionNavigation()}
                   </div>
                 </div>
+              ) : (
+                <>
+                  <div className="flex flex-col space-y-4">
+                    {messages.map((message, index) => (
+                      <div
+                        key={index}
+                        className={`flex ${
+                          message.role === 'user' ? 'justify-end' : 'justify-start'
+                        }`}
+                      >
+                        <div
+                          className={`p-3 rounded-lg max-w-[85%] ${
+                            message.role === 'user'
+                              ? 'bg-blue-600 text-white'
+                              : 'bg-gray-200 text-gray-800'
+                          }`}
+                        >
+                          <div className="whitespace-pre-wrap">
+                            {message.role === 'assistant' 
+                              ? processMessageWithSubsectionLinks(message.content)
+                              : message.content
+                            }
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                    <div ref={messagesEndRef} />
+                  </div>
+                  {isLoading && (
+                    <div className="bg-gray-100 text-gray-800 p-2 rounded-lg max-w-[85%] mt-2">
+                      <div className="flex space-x-2">
+                        <div className="w-2 h-2 rounded-full bg-gray-400 animate-pulse"></div>
+                        <div className="w-2 h-2 rounded-full bg-gray-400 animate-pulse delay-100"></div>
+                        <div className="w-2 h-2 rounded-full bg-gray-400 animate-pulse delay-200"></div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Show section navigation if enabled */}
+                  {showSectionNav && (
+                    <div className="mt-2 border-t border-gray-200 pt-2">
+                      {renderSectionNavigation()}
+                    </div>
+                  )}
+                </>
               )}
-              
-              {/* Show section navigation if enabled */}
-              {showSectionNav && (
-                <div className="mt-4 border-t border-gray-200 pt-3">
-                  {renderSectionNavigation()}
-                </div>
-              )}
-              
-              {/* Invisible element at the bottom for auto-scrolling */}
-              <div ref={messagesEndRef} />
-            </>
-          )}
-        </div>
-      </div>
-      
+            </div>
+          </div>
+          
           {/* Input area - make more compact when needed */}
-          <div className={`border-t ${isCompactMode ? 'p-2' : 'p-3'}`}>
+          <div className={`border-t ${isCompactMode ? 'p-2 mt-2' : 'p-3 mt-3'}`}>
             <form onSubmit={handleSubmit} className="flex items-center">
-          <textarea
-            ref={textareaRef}
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            placeholder="Ask for guidance..."
-            disabled={isLoading}
-            className="flex-grow py-2 px-3 border border-gray-300 rounded-l-md focus:outline-none focus:ring-1 focus:ring-blue-500 min-h-[60px] resize-y"
-            onKeyDown={(e) => {
-              // Submit on Enter without Shift key
-              if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                handleSubmit(e);
-              }
-            }}
-          />
-          <button
-            type="submit"
-            disabled={isLoading || !inputValue.trim()}
-            className="bg-blue-600 text-white py-2 px-4 rounded-r-md hover:bg-blue-700 transition-colors disabled:bg-blue-300 h-[60px]"
-          >
-            <Send className="h-5 w-5" />
-          </button>
+              <textarea
+                ref={textareaRef}
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                placeholder="Ask for guidance..."
+                disabled={isLoading}
+                className="flex-grow py-2 px-3 border border-gray-300 rounded-l-md focus:outline-none focus:ring-1 focus:ring-blue-500 min-h-[60px] resize-y"
+                onKeyDown={(e) => {
+                  // Submit on Enter without Shift key
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSubmit(e);
+                  }
+                }}
+              />
+              <button
+                type="submit"
+                disabled={isLoading || !inputValue.trim()}
+                className="bg-blue-600 text-white py-2 px-4 rounded-r-md hover:bg-blue-700 transition-colors disabled:bg-blue-300 h-[60px]"
+              >
+                <Send className="h-5 w-5" />
+              </button>
             </form>
-        <div className="flex justify-between items-center text-xs mt-1">
-          <div>
-            {messages.length > 0 && (
+            <div className="flex justify-between items-center text-xs mt-1">
+              <div>
+                {messages.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={clearConversation}
+                    className="text-gray-500 hover:text-gray-700"
+                  >
+                    Clear conversation
+                  </button>
+                )}
+              </div>
               <button
                 type="button"
-                onClick={clearConversation}
-                className="text-gray-500 hover:text-gray-700"
+                onClick={handleShowSectionNav}
+                className="text-blue-600 hover:text-blue-800 flex items-center"
               >
-                Clear conversation
+                <BookOpen className="h-3 w-3 mr-1" /> 
+                {showSectionNav ? 'Hide section navigation' : 'Show section navigation'}
               </button>
-            )}
-          </div>
-          <button
-            type="button"
-            onClick={handleShowSectionNav}
-            className="text-blue-600 hover:text-blue-800 flex items-center"
-          >
-            <BookOpen className="h-3 w-3 mr-1" /> 
-            {showSectionNav ? 'Hide section navigation' : 'Show section navigation'}
-          </button>
-        </div>
+            </div>
           </div>
         </>
       )}
     </div>
-  )
-} 
+  );
+}
