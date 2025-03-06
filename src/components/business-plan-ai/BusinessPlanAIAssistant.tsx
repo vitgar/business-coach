@@ -166,12 +166,13 @@ export default function BusinessPlanAIAssistant({
   
   const { 
     messages, 
+    setMessages,
     isLoading, 
     sendMessage,
     clearConversation,
     fieldSuggestions,
     applySuggestion,
-    setMessages
+    setFieldSuggestions
   } = useBusinessPlanAI(businessPlanId, sectionId, (fieldId, content) => {
     if (onApplySuggestion) {
       onApplySuggestion(fieldId, content);
@@ -312,24 +313,75 @@ export default function BusinessPlanAIAssistant({
   }
   
   /**
-   * Handle applying a suggestion to a form field
+   * Handle applying a suggestion to a field
    */
   const handleApplySuggestion = (fieldId: string, content: string) => {
-    // Always use the current context for applying suggestions
-    const targetFieldId = currentSubfield || fieldId;
+    if (!onApplySuggestion) return
     
-    // Log the field that we're applying this suggestion to
-    console.log(`[Apply Suggestion] Applying suggestion to field: ${targetFieldId}`);
+    console.log(`[Apply Suggestion Debug] Applying suggestion to field: ${fieldId}`);
+    console.log(`[Apply Suggestion Debug] Current section: ${sectionId}, Current subfield: ${currentSubfield}`);
     
-    // Apply the suggestion to the specified field
-    applySuggestion(targetFieldId, content);
+    // Executive Summary field normalization
+    let normalizedFieldId = fieldId;
     
-    // Set the current subfield to track what we just applied
-    setCurrentSubfield(targetFieldId);
-    setLastAppliedSuggestion({ fieldId: targetFieldId, content });
+    if (sectionId === 'executiveSummary') {
+      const lowerId = fieldId.toLowerCase();
+      
+      // Business Concept normalization
+      if (lowerId === 'businessconcept' || 
+          lowerId === 'business concept' || 
+          lowerId.includes('business') && lowerId.includes('concept')) {
+        normalizedFieldId = 'businessConcept';
+        console.log(`[Apply Suggestion Debug] Normalized Business Concept field ID to: ${normalizedFieldId}`);
+      }
+      
+      // Mission Statement normalization
+      else if (lowerId === 'missionstatement' || 
+               lowerId === 'mission statement' || 
+               (lowerId.includes('mission') && lowerId.includes('statement'))) {
+        normalizedFieldId = 'missionStatement';
+        console.log(`[Apply Suggestion Debug] Normalized Mission Statement field ID to: ${normalizedFieldId}`);
+      }
+      
+      // Products Overview normalization
+      else if (lowerId.includes('product') && 
+               (lowerId.includes('service') || lowerId.includes('overview'))) {
+        normalizedFieldId = 'productsOverview';
+        console.log(`[Apply Suggestion Debug] Normalized Products Overview field ID to: ${normalizedFieldId}`);
+      }
+      
+      // Market Opportunity normalization
+      else if (lowerId === 'marketopportunity' || 
+               lowerId === 'market opportunity' || 
+               (lowerId.includes('market') && lowerId.includes('opportunit'))) {
+        normalizedFieldId = 'marketOpportunity';
+        console.log(`[Apply Suggestion Debug] Normalized Market Opportunity field ID to: ${normalizedFieldId}`);
+      }
+      
+      // Financial Highlights normalization
+      else if (lowerId === 'financialhighlights' || 
+               lowerId === 'financial highlights' || 
+               (lowerId.includes('financial') && lowerId.includes('highlight'))) {
+        normalizedFieldId = 'financialHighlights';
+        console.log(`[Apply Suggestion Debug] Normalized Financial Highlights field ID to: ${normalizedFieldId}`);
+      }
+      
+      // If current subfield is set and fieldId is generic 'content', use the current subfield
+      else if (lowerId === 'content' && currentSubfield) {
+        normalizedFieldId = currentSubfield;
+        console.log(`[Apply Suggestion Debug] Using current subfield ${currentSubfield} for generic content`);
+      }
+    }
+    
+    // Apply the suggestion with the normalized field ID
+    onApplySuggestion(normalizedFieldId, content);
+    
+    // Update state tracking
+    setCurrentSubfield(normalizedFieldId);
+    setLastAppliedSuggestion({ fieldId: normalizedFieldId, content });
     setShowSectionPrompt(true);
     
-    // Force scroll after applying suggestion since it will show section prompt
+    // Force scroll after applying suggestion
     setTimeout(scrollToBottom, 150);
   }
   
@@ -467,51 +519,204 @@ export default function BusinessPlanAIAssistant({
    * Render field suggestions if available
    */
   const renderFieldSuggestions = () => {
-    console.log(`[Suggestions Debug] All suggestions:`, fieldSuggestions);
-    console.log(`[Suggestions Debug] Current subfield:`, currentSubfield);
+    if (!fieldSuggestions || fieldSuggestions.length === 0) return null
     
-    if (fieldSuggestions.length === 0) {
-      console.log('[Suggestions Debug] No suggestions available');
-      return null;
+    console.log('[Suggestion Debug] Current subfield:', currentSubfield)
+    console.log('[Suggestion Debug] Available suggestions:', fieldSuggestions.map(s => s.fieldId))
+    
+    /**
+     * Enhanced field ID normalization with specialized Market Opportunity handling
+     */
+    const normalizeFieldId = (id: string): string => {
+      const lowerId = id.toLowerCase();
+      
+      // EXECUTIVE SUMMARY FIELD MAPPINGS
+      // These should follow the same pattern for all Executive Summary fields
+      
+      // Handle Business Concept field
+      if (lowerId === 'businessconcept' || lowerId === 'business concept') {
+        console.log(`[Suggestion Debug] Normalizing Business Concept field ID: ${id} -> businessConcept`);
+        return 'businessConcept';
+      }
+      
+      // Handle Mission Statement field
+      if (lowerId === 'missionstatement' || lowerId === 'mission statement') {
+        console.log(`[Suggestion Debug] Normalizing Mission Statement field ID: ${id} -> missionStatement`);
+        return 'missionStatement';
+      }
+      
+      // Handle Products/Services Overview field
+      if (lowerId.includes('product') && 
+          (lowerId.includes('service') || lowerId.includes('overview'))) {
+        console.log(`[Suggestion Debug] Normalizing Products/Services field ID: ${id} -> productsOverview`);
+        return 'productsOverview';
+      }
+      
+      // Handle Market Opportunity field - using same pattern as other fields
+      if (lowerId === 'marketopportunity' || 
+          lowerId === 'market opportunity' || 
+          (lowerId.includes('market') && lowerId.includes('opportunit'))) {
+        console.log(`[Suggestion Debug] Normalizing Market Opportunity field ID: ${id} -> marketOpportunity`);
+        return 'marketOpportunity';
+      }
+      
+      // Handle Financial Highlights field
+      if (lowerId === 'financialhighlights' || 
+          lowerId === 'financial highlights' || 
+          (lowerId.includes('financial') && lowerId.includes('highlight'))) {
+        console.log(`[Suggestion Debug] Normalizing Financial Highlights field ID: ${id} -> financialHighlights`);
+        return 'financialHighlights';
+      }
+      
+      // Handle content field mapping based on context
+      if (lowerId === 'content' && currentSubfield) {
+        console.log(`[Suggestion Debug] Mapping generic 'content' to ${currentSubfield} based on context`);
+        return currentSubfield;
+      }
+      
+      return id;
+    };
+    
+    // Only show suggestions for the current subfield if one is selected
+    let filteredSuggestions = fieldSuggestions
+    
+    /**
+     * MARKET OPPORTUNITY SPECIAL HANDLING
+     * Check if we're in a context where we should prioritize or explicitly show Market Opportunity content
+     */
+    const shouldIncludeMarketOpportunity = currentSubfield === 'marketOpportunity' || 
+      (sectionId === 'executiveSummary' && 
+       fieldSuggestions.some(s => s.fieldId === 'marketOpportunity' || 
+                                  s.fieldId === 'market opportunity' || 
+                                  s.fieldId.toLowerCase().includes('market')));
+    
+    if (shouldIncludeMarketOpportunity) {
+      console.log('[Market Opportunity Debug] Detected Market Opportunity context, prioritizing those suggestions');
+      
+      // If we're on Market Opportunity subfield, filter to only those suggestions
+      if (currentSubfield === 'marketOpportunity') {
+        const marketSuggestions = fieldSuggestions.filter(s => 
+          s.fieldId === 'marketOpportunity' || 
+          s.fieldId === 'market opportunity' ||
+          s.fieldId.toLowerCase().includes('market') ||
+          s.fieldId === 'content' // Include generic content suggestions which we'll normalize later
+        );
+        
+        if (marketSuggestions.length > 0) {
+          filteredSuggestions = marketSuggestions;
+          console.log(`[Market Opportunity Debug] Filtered to ${filteredSuggestions.length} suggestions for Market Opportunity`);
+        } else {
+          // If no specific market suggestions, include generic content suggestions
+          filteredSuggestions = fieldSuggestions.filter(s => s.fieldId === 'content');
+          console.log(`[Market Opportunity Debug] No specific Market Opportunity suggestions, using ${filteredSuggestions.length} generic content suggestions`);
+        }
+      } 
+      // Otherwise, include Market Opportunity suggestions along with others for the current subfield
+      else if (currentSubfield) {
+        const marketOpportunitySuggestions = fieldSuggestions.filter(s => 
+          s.fieldId === 'marketOpportunity' || 
+          s.fieldId === 'market opportunity' ||
+          s.fieldId.toLowerCase().includes('market'));
+          
+        const otherSuggestions = fieldSuggestions.filter(s => {
+          const normalizedSuggestionId = normalizeFieldId(s.fieldId);
+          const normalizedCurrentSubfield = normalizeFieldId(currentSubfield);
+          return normalizedSuggestionId === normalizedCurrentSubfield;
+        });
+        
+        // Combine both sets, putting Market Opportunity first
+        filteredSuggestions = [...marketOpportunitySuggestions, ...otherSuggestions];
+        console.log(`[Market Opportunity Debug] Combined ${marketOpportunitySuggestions.length} Market Opportunity suggestions with ${otherSuggestions.length} ${currentSubfield} suggestions`);
+      }
+    }
+    // Standard filtering logic for other contexts
+    else if (currentSubfield) {
+      console.log(`[Suggestion Debug] Filtering suggestions for subfield: ${currentSubfield}`)
+      
+      // Add enhanced debugging for field matching
+      filteredSuggestions = fieldSuggestions.filter(suggestion => {
+        const normalizedSuggestionId = normalizeFieldId(suggestion.fieldId);
+        const normalizedCurrentSubfield = normalizeFieldId(currentSubfield);
+        
+        const isMatch = normalizedSuggestionId === normalizedCurrentSubfield;
+        console.log(`[Suggestion Debug] Comparing ${suggestion.fieldId} (${normalizedSuggestionId}) with ${currentSubfield} (${normalizedCurrentSubfield}): ${isMatch ? 'MATCH' : 'NO MATCH'}`);
+        
+        return isMatch;
+      });
+      
+      console.log(`[Suggestion Debug] Filtered to ${filteredSuggestions.length} suggestions`)
     }
     
-    // Simplified approach: Map ALL extracted backtick content to the current field
-    const targetFieldId = currentSubfield || sectionId;
-    
-    // Map all suggestions to the current field/section
-    let mappedSuggestions = fieldSuggestions.map(suggestion => ({
-      ...suggestion,
-      // Override the original fieldId with the current field/section
-      displayFieldId: targetFieldId
-    }));
-    
-    console.log(`[Suggestions Debug] Mapped ${mappedSuggestions.length} suggestions to field: ${targetFieldId}`);
+    // Map suggestions to include displayFieldId for consistent handling
+    const mappedSuggestions: ExtendedFieldSuggestion[] = filteredSuggestions.map(suggestion => {
+      // First normalize the field ID if needed
+      let normalizedFieldId = normalizeFieldId(suggestion.fieldId);
+      
+      // Special case for Market Opportunity: ensure it's properly mapped
+      if (suggestion.fieldId.toLowerCase().includes('market') || 
+          (currentSubfield && currentSubfield.toLowerCase().includes('market'))) {
+        normalizedFieldId = 'marketOpportunity';
+        console.log(`[Suggestion Mapping] Ensuring Market Opportunity is properly mapped: ${suggestion.fieldId} -> ${normalizedFieldId}`);
+      }
+      
+      // Return the suggestion with normalized display field ID
+      return {
+        ...suggestion,
+        displayFieldId: normalizedFieldId === 'content' ? (currentSubfield || normalizedFieldId) : normalizedFieldId
+      };
+    });
     
     return (
-      <div className="mt-4 border-t border-gray-200 pt-3">
-        <h4 className="text-sm font-medium text-gray-700 mb-2 flex items-center">
-          <ChevronRight className="h-4 w-4 mr-1" />
-          Suggested content to apply:
+      <div className="space-y-4">
+        <h4 className="text-sm font-medium text-zinc-300">
+          Suggestions
         </h4>
         <div className="space-y-2">
           {mappedSuggestions.map((suggestion, index) => {
-            // Always use the current field/section for display and application
-            const displayFieldId = suggestion.displayFieldId;
-            const fieldName = SUBFIELD_NAMES[displayFieldId] || displayFieldId;
+            // Get the appropriate field ID for display and application
+            let fieldIdToUse = suggestion.displayFieldId || suggestion.fieldId;
+            
+            // Handle special case for Market Opportunity explicitly
+            if (fieldIdToUse.toLowerCase().includes('market') && 
+                (fieldIdToUse.toLowerCase().includes('opportunit') || 
+                 fieldIdToUse === 'market' || 
+                 fieldIdToUse === 'opportunity')) {
+              fieldIdToUse = 'marketOpportunity';
+              console.log(`[Suggestion Rendering] Using explicit marketOpportunity ID for: ${suggestion.fieldId}`);
+            }
+            
+            // Special case for productsOverview
+            let fieldName = '';
+            if (fieldIdToUse === 'productsOverview') {
+              fieldName = 'Products/Services Overview';
+            } else if (fieldIdToUse === 'marketOpportunity') {
+              fieldName = 'Market Opportunity';
+            } else {
+              fieldName = SUBFIELD_NAMES[fieldIdToUse] || fieldIdToUse;
+            }
+            
+            // Don't render suggestions that might not apply to the current context
+            // (except for Market Opportunity which we handle specially)
+            if (currentSubfield && 
+                fieldIdToUse !== currentSubfield && 
+                fieldIdToUse !== 'marketOpportunity') {
+              console.log(`[Suggestion Rendering] Skipping suggestion with field ID ${fieldIdToUse} that doesn't match current subfield ${currentSubfield}`);
+              return null;
+            }
             
             return (
-              <div key={index} className="rounded-md border border-blue-100 bg-blue-50 p-3">
-                <div className="text-sm text-blue-700 mb-1 font-medium">
+            <div key={index} className="rounded-md border border-blue-100 bg-blue-50 p-3">
+              <div className="text-sm text-blue-700 mb-1 font-medium">
                   {fieldName}
-                </div>
-                <div className="text-sm text-gray-700 mb-2">{suggestion.content}</div>
-                <button
-                  onClick={() => handleApplySuggestion(displayFieldId, suggestion.content)}
-                  className="text-xs bg-blue-100 hover:bg-blue-200 text-blue-700 px-2 py-1 rounded"
-                >
-                  Apply to field
-                </button>
               </div>
+              <div className="text-sm text-gray-700 mb-2">{suggestion.content}</div>
+              <button
+                  onClick={() => handleApplySuggestion(fieldIdToUse, suggestion.content)}
+                className="text-xs bg-blue-100 hover:bg-blue-200 text-blue-700 px-2 py-1 rounded"
+              >
+                Apply to field
+              </button>
+            </div>
             );
           })}
         </div>
@@ -534,6 +739,41 @@ export default function BusinessPlanAIAssistant({
   const handleNavigateToSection = (sectId: string, subsection?: string) => {
     if (!onSectionChange) return
     
+    // Log pre-navigation state
+    console.log(`[Navigation Debug] PRE-NAVIGATION - Current subfield: ${currentSubfield}, Section ID: ${sectionId}`);
+    console.log(`[Navigation Debug] NAVIGATING TO - Section: ${sectId}, Subsection: ${subsection || 'none'}`);
+    
+    // MARKET OPPORTUNITY SPECIAL HANDLING
+    // Check multiple variations and patterns to ensure Market Opportunity is correctly identified
+    const isMarketOpportunitySubsection = subsection && (
+      // Direct match
+      subsection === 'marketOpportunity' ||
+      subsection === 'marketopportunity' ||
+      subsection === 'Market Opportunity' ||
+      
+      // Content-based identification
+      (subsection.toLowerCase().includes('market') && 
+       (subsection.toLowerCase().includes('opportunit') || 
+        subsection.toLowerCase().includes('analysis'))) ||
+      
+      // Partial matches
+      subsection === 'market' || 
+      subsection === 'opportunity'
+    );
+    
+    // Fix for Market Opportunity field
+    if (isMarketOpportunitySubsection) {
+      subsection = 'marketOpportunity';
+      console.log(`[Market Opportunity Debug] FIXING Market Opportunity field ID to: ${subsection}`);
+    }
+    // Fix for Products Services Overview field
+    else if (subsection === 'Products Services Overview' || 
+          subsection === 'ProductsServicesOverview' || 
+          subsection === 'productsServicesOverview') {
+      subsection = 'productsOverview';
+      console.log(`[Navigation Debug] FIXING Products Services Overview field ID to: ${subsection}`);
+    }
+    
     // Clear previous state
     setCurrentSubfield(null);
     
@@ -543,21 +783,38 @@ export default function BusinessPlanAIAssistant({
       const subfieldName = SUBFIELD_NAMES[subsection] || subsection
       
       // Set the current subfield with explicit logging
-      console.log(`[Navigation] Setting current subfield to: "${subsection}" (${subfieldName})`);
+      console.log(`[Navigation Debug] Setting current subfield to: "${subsection}" (${subfieldName})`);
       setCurrentSubfield(subsection);
       
-      sendMessage(`Let's work on the ${SECTION_NAMES[sectId]} section, specifically the ${subfieldName} part.`)
+      // Log the field map for debugging
+      console.log('[Navigation Debug] Current SUBFIELD_NAMES:', SUBFIELD_NAMES);
+      
+      // Special handling for Market Opportunity to ensure consistent messaging to AI
+      if (subsection === 'marketOpportunity') {
+        console.log(`[Market Opportunity Debug] Sending specialized Market Opportunity prompt to AI`);
+        sendMessage(`Let's work on the ${SECTION_NAMES[sectId]} section, specifically the Market Opportunity part.`);
+      } else {
+        sendMessage(`Let's work on the ${SECTION_NAMES[sectId]} section, specifically the ${subfieldName} part.`);
+      }
     } else {
-      console.log(`[Navigation] Clearing current subfield (working on whole section)`);
+      console.log(`[Navigation Debug] Clearing current subfield (working on whole section)`);
       setCurrentSubfield(null);
       
       sendMessage(`Let's work on the ${SECTION_NAMES[sectId]} section.`)
     }
     
-    setShowSectionNav(false)
-    setSelectedSection(null)
-    // Force scroll after navigation
-    setTimeout(scrollToBottom, 100)
+    // Clear any active suggestions
+    setFieldSuggestions([]);
+    
+    // Close section navigation after selecting a section
+    setShowSectionNav(false);
+    setSelectedSection(null);
+    
+    // Log post-navigation state
+    console.log(`[Navigation Debug] POST-NAVIGATION - Current subfield: ${subsection || 'none'}, Section ID: ${sectId}`);
+    
+    // Force scroll after state updates
+    setTimeout(scrollToBottom, 100);
   }
   
   /**
@@ -646,20 +903,20 @@ export default function BusinessPlanAIAssistant({
   }, [showSectionNav, selectedSection]);
   
   // Modify the render function to include the compact mode class
-  return (
+    return (
     <div className={`flex flex-col bg-white border rounded-lg shadow-sm ${isCompactMode ? 'compact-assistant' : ''} ${className}`}>
       {/* Header - make more compact when in compact mode */}
       <div className={`flex items-center justify-between border-b ${isCompactMode ? 'p-2' : 'p-3'}`}>
         <div className="flex items-center">
           <MessageSquare className={`text-blue-500 ${isCompactMode ? 'h-4 w-4 mr-1' : 'h-5 w-5 mr-2'}`} />
           <h3 className={`font-medium ${isCompactMode ? 'text-sm' : 'text-base'}`}>
-            AI Assistant: {sectionName}
-          </h3>
+          AI Assistant: {sectionName}
+        </h3>
         </div>
         
         <div className="flex space-x-1">
           {/* Add button to toggle compact mode */}
-          <button 
+          <button
             onClick={() => setIsCompactMode(!isCompactMode)}
             className="text-gray-500 hover:text-gray-700 p-1"
             title={isCompactMode ? "Expand view" : "Compact view"}
@@ -669,7 +926,7 @@ export default function BusinessPlanAIAssistant({
               <ArrowRight className="h-4 w-4" />
             }
           </button>
-          <button 
+          <button
             onClick={() => setIsOpen(!isOpen)}
             className="text-gray-500 hover:text-gray-700 p-1"
           >
@@ -681,125 +938,125 @@ export default function BusinessPlanAIAssistant({
       {/* Adjust the message container max-height based on compact mode */}
       {isOpen && (
         <>
-          <div 
-            ref={messagesContainerRef} 
+      <div 
+        ref={messagesContainerRef}
             className={`flex-grow overflow-y-auto p-3 ${isCompactMode ? 'max-h-[250px]' : 'max-h-[350px]'}`}
-          >
-            <div className="flex-grow">
-              {messages.length === 0 ? (
-                <div className="text-center py-4 text-gray-500">
-                  {/* Message icon and header text removed from all sections */}
-                  {/* Only render buttons container if there are prompts (there shouldn't be any now) */}
-                  {getSuggestedPrompts().length > 0 && (
-                    <div className="mt-4 space-y-2">
-                      {getSuggestedPrompts().map((prompt, index) => (
-                        <button
-                          key={index}
-                          onClick={() => handleSuggestionClick(prompt)}
-                          className="w-full text-left p-2 border border-gray-200 rounded hover:bg-gray-50 text-sm text-gray-700"
-                        >
-                          {prompt}
-                        </button>
-                      ))}
-                    </div>
+      >
+        <div className="flex-grow">
+          {messages.length === 0 ? (
+            <div className="text-center py-4 text-gray-500">
+              {/* Message icon and header text removed from all sections */}
+              {/* Only render buttons container if there are prompts (there shouldn't be any now) */}
+              {getSuggestedPrompts().length > 0 && (
+                <div className="mt-4 space-y-2">
+                  {getSuggestedPrompts().map((prompt, index) => (
+                    <button
+                      key={index}
+                      onClick={() => handleSuggestionClick(prompt)}
+                      className="w-full text-left p-2 border border-gray-200 rounded hover:bg-gray-50 text-sm text-gray-700"
+                    >
+                      {prompt}
+                    </button>
+                  ))}
+                </div>
+              )}
+              
+              {/* Show section navigation directly in empty state */}
+              <div className="mt-6 border-t border-gray-200 pt-4">
+                {renderSectionNavigation()}
+              </div>
+            </div>
+          ) : (
+            <>
+              {messages.map((message, index) => (
+                <div
+                  key={index}
+                  className={`p-2 rounded-lg max-w-[85%] ${
+                    message.role === 'user'
+                      ? 'bg-blue-100 text-blue-900 ml-auto'
+                      : 'bg-gray-100 text-gray-800'
+                  } ${index > 0 ? 'mt-2' : ''}`}
+                >
+                  {message.content}
+                  {message.role === 'assistant' && index === messages.length - 1 && (
+                    <>
+                      {renderFieldSuggestions()}
+                      {showSectionPrompt && renderSectionNavigationPrompt()}
+                    </>
                   )}
-                  
-                  {/* Show section navigation directly in empty state */}
-                  <div className="mt-6 border-t border-gray-200 pt-4">
-                    {renderSectionNavigation()}
+                </div>
+              ))}
+              {isLoading && (
+                <div className="bg-gray-100 text-gray-800 p-2 rounded-lg max-w-[85%] mt-2">
+                  <div className="flex space-x-2">
+                    <div className="w-2 h-2 rounded-full bg-gray-400 animate-pulse"></div>
+                    <div className="w-2 h-2 rounded-full bg-gray-400 animate-pulse delay-100"></div>
+                    <div className="w-2 h-2 rounded-full bg-gray-400 animate-pulse delay-200"></div>
                   </div>
                 </div>
-              ) : (
-                <>
-                  {messages.map((message, index) => (
-                    <div
-                      key={index}
-                      className={`p-2 rounded-lg max-w-[85%] ${
-                        message.role === 'user'
-                          ? 'bg-blue-100 text-blue-900 ml-auto'
-                          : 'bg-gray-100 text-gray-800'
-                      } ${index > 0 ? 'mt-2' : ''}`}
-                    >
-                      {message.content}
-                      {message.role === 'assistant' && index === messages.length - 1 && (
-                        <>
-                          {renderFieldSuggestions()}
-                          {showSectionPrompt && renderSectionNavigationPrompt()}
-                        </>
-                      )}
-                    </div>
-                  ))}
-                  {isLoading && (
-                    <div className="bg-gray-100 text-gray-800 p-2 rounded-lg max-w-[85%] mt-2">
-                      <div className="flex space-x-2">
-                        <div className="w-2 h-2 rounded-full bg-gray-400 animate-pulse"></div>
-                        <div className="w-2 h-2 rounded-full bg-gray-400 animate-pulse delay-100"></div>
-                        <div className="w-2 h-2 rounded-full bg-gray-400 animate-pulse delay-200"></div>
-                      </div>
-                    </div>
-                  )}
-                  
-                  {/* Show section navigation if enabled */}
-                  {showSectionNav && (
-                    <div className="mt-4 border-t border-gray-200 pt-3">
-                      {renderSectionNavigation()}
-                    </div>
-                  )}
-                  
-                  {/* Invisible element at the bottom for auto-scrolling */}
-                  <div ref={messagesEndRef} />
-                </>
               )}
-            </div>
-          </div>
-          
+              
+              {/* Show section navigation if enabled */}
+              {showSectionNav && (
+                <div className="mt-4 border-t border-gray-200 pt-3">
+                  {renderSectionNavigation()}
+                </div>
+              )}
+              
+              {/* Invisible element at the bottom for auto-scrolling */}
+              <div ref={messagesEndRef} />
+            </>
+          )}
+        </div>
+      </div>
+      
           {/* Input area - make more compact when needed */}
           <div className={`border-t ${isCompactMode ? 'p-2' : 'p-3'}`}>
             <form onSubmit={handleSubmit} className="flex items-center">
-              <textarea
-                ref={textareaRef}
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                placeholder="Ask for guidance..."
-                disabled={isLoading}
-                className="flex-grow py-2 px-3 border border-gray-300 rounded-l-md focus:outline-none focus:ring-1 focus:ring-blue-500 min-h-[60px] resize-y"
-                onKeyDown={(e) => {
-                  // Submit on Enter without Shift key
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    handleSubmit(e);
-                  }
-                }}
-              />
-              <button
-                type="submit"
-                disabled={isLoading || !inputValue.trim()}
-                className="bg-blue-600 text-white py-2 px-4 rounded-r-md hover:bg-blue-700 transition-colors disabled:bg-blue-300 h-[60px]"
-              >
-                <Send className="h-5 w-5" />
-              </button>
+          <textarea
+            ref={textareaRef}
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            placeholder="Ask for guidance..."
+            disabled={isLoading}
+            className="flex-grow py-2 px-3 border border-gray-300 rounded-l-md focus:outline-none focus:ring-1 focus:ring-blue-500 min-h-[60px] resize-y"
+            onKeyDown={(e) => {
+              // Submit on Enter without Shift key
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleSubmit(e);
+              }
+            }}
+          />
+          <button
+            type="submit"
+            disabled={isLoading || !inputValue.trim()}
+            className="bg-blue-600 text-white py-2 px-4 rounded-r-md hover:bg-blue-700 transition-colors disabled:bg-blue-300 h-[60px]"
+          >
+            <Send className="h-5 w-5" />
+          </button>
             </form>
-            <div className="flex justify-between items-center text-xs mt-1">
-              <div>
-                {messages.length > 0 && (
-                  <button
-                    type="button"
-                    onClick={clearConversation}
-                    className="text-gray-500 hover:text-gray-700"
-                  >
-                    Clear conversation
-                  </button>
-                )}
-              </div>
+        <div className="flex justify-between items-center text-xs mt-1">
+          <div>
+            {messages.length > 0 && (
               <button
                 type="button"
-                onClick={handleShowSectionNav}
-                className="text-blue-600 hover:text-blue-800 flex items-center"
+                onClick={clearConversation}
+                className="text-gray-500 hover:text-gray-700"
               >
-                <BookOpen className="h-3 w-3 mr-1" /> 
-                {showSectionNav ? 'Hide section navigation' : 'Show section navigation'}
+                Clear conversation
               </button>
-            </div>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={handleShowSectionNav}
+            className="text-blue-600 hover:text-blue-800 flex items-center"
+          >
+            <BookOpen className="h-3 w-3 mr-1" /> 
+            {showSectionNav ? 'Hide section navigation' : 'Show section navigation'}
+          </button>
+        </div>
           </div>
         </>
       )}

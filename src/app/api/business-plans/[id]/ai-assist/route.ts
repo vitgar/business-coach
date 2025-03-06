@@ -13,6 +13,14 @@ When providing suggestions for specific fields, format them like this:
 - Market Opportunity: \`Your suggested market opportunity text\`
 - Financial Highlights: \`Your suggested financial highlights text\`
 
+CRITICAL FORMATTING INSTRUCTIONS:
+1. ALWAYS enclose your actual content suggestions in backticks (\`) as shown above
+2. For "Market Opportunity" field specifically, use the exact format:
+   "Here's a market opportunity suggestion: \`The market for your business represents...\`" 
+3. NEVER provide Market Opportunity content without enclosing it in backticks
+4. ALWAYS wrap ALL field content in backticks, especially Market Opportunity
+5. DO NOT use variations like "Market Opportunity section of your Executive Summary" without backticks
+
 CRITICAL INSTRUCTION - STEP-BY-STEP APPROACH:
 1. If the user indicates they want to revise or work on this section, first ask HOW they want to proceed
 2. Ask only ONE specific question at a time
@@ -219,9 +227,28 @@ CURRENT CONTEXT - IMPORTANT:
 The user is currently working on the ${sectionId} section${currentSubfield ? `, specifically the ${currentSubfield} field` : ''}.
 Please focus your responses on this specific area ONLY.
 
-BACKTICK FORMATTING INSTRUCTION:
-When suggesting content for the user to apply, always wrap your suggestion in backticks (\`).
+BACKTICK FORMATTING INSTRUCTION - CRITICAL:
+When suggesting content for the user to apply, you MUST ALWAYS wrap your suggestion ONLY in backticks (\`).
+NEVER use double quotes (") for content suggestions as they will NOT be extracted.
+
 For example: "Here's some content you could use: \`Your suggested text goes here.\`"
+
+For the Executive Summary, use ONLY these exact formats for each field:
+- Business Concept: \`Your suggested business concept text\`
+- Mission Statement: \`Your suggested mission statement text\`
+- Products Overview: \`Your suggested products overview text\`
+- Market Opportunity: \`Your suggested market opportunity text\`
+- Financial Highlights: \`Your suggested financial highlights text\`
+
+THIS IS ABSOLUTELY CRITICAL FOR MARKET OPPORTUNITY AND FINANCIAL HIGHLIGHTS:
+- The system ONLY extracts content inside backticks (\`) not inside quotes (")
+- ALWAYS use: "Here's a Market Opportunity suggestion: \`Your content here...\`"
+- ALWAYS use: "Here's a Financial Highlights suggestion: \`Your content here...\`"
+- NEVER use: "Here's a suggestion: "Your content here...""
+- ONLY the content inside backticks (\`) will be extracted as a suggestion
+
+This formatting structure is critical - ALWAYS wrap your suggestions in backticks, 
+and ALWAYS use these exact field names.
 
 The user will decide if the content is appropriate for their current field.
 
@@ -229,6 +256,7 @@ IMPORTANT NOTES:
 1. STAY ON TOPIC for the ${currentSubfield || sectionId} they're working on
 2. If they ask about a different field, you can discuss it, but still format suggestions in backticks
 3. Make sure your suggestions are complete, clear, and ready to be applied
+4. ALL FIELD CONTENT SUGGESTIONS MUST BE WRAPPED IN BACKTICKS
 
 CONTEXT HANDLING INSTRUCTIONS:
 1. I will provide you with the user's existing business plan data for this section.
