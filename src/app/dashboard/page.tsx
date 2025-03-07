@@ -38,6 +38,13 @@ export default function Dashboard() {
       color: 'bg-blue-100 text-blue-600'
     },
     {
+      title: 'Basic Business Plan',
+      icon: FileText,
+      description: 'Create a simple business plan with AI assistance',
+      href: `/basic-business-plan`,
+      color: 'bg-green-100 text-green-600'
+    },
+    {
       title: 'Business Coach Chat',
       icon: MessageSquare,
       description: 'Get personalized guidance through AI chat',

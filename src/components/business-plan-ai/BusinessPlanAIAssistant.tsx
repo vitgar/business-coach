@@ -254,15 +254,35 @@ export default function BusinessPlanAIAssistant({
     e.preventDefault()
     if (!inputValue.trim() || isLoading) return
     
+    // Create a more comprehensive context object with relevant data from other sections
+    const contextData: Record<string, any> = {
+      currentSection: {
+        ...currentSectionData
+      }
+    };
+    
+    // Add cross-sectional context for specific section relationships
+    if (sectionId === 'companyDescription' && currentSubfield === 'legalStructure') {
+      // When working on Legal Structure, include the Business Structure information
+      const businessStructureData = businessPlan?.content?.companyDescription?.businessStructure;
+      if (businessStructureData) {
+        contextData.relatedSections = {
+          businessStructure: businessStructureData
+        };
+        console.log('[Context] Adding Business Structure data to Legal Structure context');
+      }
+    }
+    
     // Debug logging to verify data
     console.log('[BusinessPlanAI] Sending message with section data:', {
       sectionId,
-      dataAvailable: Object.keys(currentSectionData).length > 0,
-      keys: Object.keys(currentSectionData)
+      currentSubfield,
+      dataAvailable: Object.keys(contextData).length > 0,
+      contextKeys: Object.keys(contextData)
     });
     
-    // Send the message with current section data
-    sendMessage(inputValue, currentSectionData)
+    // Send the message with enriched context data
+    sendMessage(inputValue, contextData)
     setInputValue('')
     
     // Hide the section prompt if it was showing
@@ -284,57 +304,73 @@ export default function BusinessPlanAIAssistant({
   }
   
   /**
-   * Handle clicking on a suggested prompt
+   * Handle suggestion click
    */
   const handleSuggestionClick = (suggestion: string) => {
+    // Check if the suggestion includes working on a specific field
+    if (suggestion.toLowerCase().includes("let's work on") || 
+        suggestion.toLowerCase().includes("specifically")) {
+      
+      // Try to detect which subfield is being requested
+      const subfieldMatch = SECTION_SUBSECTIONS[sectionId]?.find(subfieldId => 
+        suggestion.toLowerCase().includes(SUBFIELD_NAMES[subfieldId]?.toLowerCase() || subfieldId.toLowerCase())
+      );
+      
+      if (subfieldMatch) {
+        console.log(`[Navigation] Detected work request for subfield: ${subfieldMatch}`);
+        setCurrentSubfield(subfieldMatch);
+      }
+    }
+    
     // Send the suggestion as a message with current section data
-    sendMessage(suggestion, currentSectionData)
+    const contextData: Record<string, any> = {
+      currentSection: {
+        ...currentSectionData
+      }
+    };
+    
+    // Add related sections data if working on Legal Structure
+    if (suggestion.toLowerCase().includes("legal structure") && 
+        businessPlan?.content?.companyDescription?.businessStructure) {
+      contextData.relatedSections = {
+        businessStructure: businessPlan.content.companyDescription.businessStructure
+      };
+      console.log('[Context] Adding Business Structure data for Legal Structure request');
+    }
+    
+    sendMessage(suggestion, contextData);
     
     // Hide the section prompt if it was showing
-    setShowSectionPrompt(false)
+    setShowSectionPrompt(false);
     
     // Reset section navigation if open
-    setShowSectionNav(false)
+    setShowSectionNav(false);
     
     // Force scroll after state updates
-    setTimeout(scrollToBottom, 100)
+    setTimeout(scrollToBottom, 100);
   }
   
   /**
    * Handle applying a suggestion to a form field
    */
   const handleApplySuggestion = (fieldId: string, content: string) => {
-    // Handle the case when the fieldId is generic 'content'
-    let targetFieldId = fieldId;
-    
-    // For generic 'content' suggestions, use the currently selected field if available
-    if (targetFieldId === 'content') {
-      if (currentSubfield) {
-        targetFieldId = currentSubfield;
-        console.log(`[Apply Suggestion] Using current subfield (${currentSubfield}) for content suggestion`);
-      } else {
-        // Default to a section-specific field if no current subfield
-        if (sectionId === 'executiveSummary') {
-          targetFieldId = 'businessConcept';
-        } else {
-          // Use first subfield of current section
-          const firstSubfield = SECTION_SUBSECTIONS[sectionId]?.[0];
-          if (firstSubfield) {
-            targetFieldId = firstSubfield;
-          }
-        }
-        console.log(`[Apply Suggestion] No current subfield, defaulting to ${targetFieldId}`);
-      }
+    // CRITICAL: ONLY apply to the current field the user is working on
+    // Ignore the provided fieldId and ALWAYS use currentSubfield
+    if (!currentSubfield) {
+      console.error("[CRITICAL ERROR] Cannot apply suggestion - no current field selected");
+      return; // Prevent application if no field is selected
     }
     
+    // Always use the current subfield - NO EXCEPTIONS
+    const targetFieldId = currentSubfield;
+    
     // Log the field that we're applying this suggestion to
-    console.log(`[Apply Suggestion] Applying suggestion to field: ${targetFieldId}`);
+    console.log(`[Apply Suggestion] ONLY applying to current field: ${targetFieldId}`);
     
     // Apply the suggestion to the specified field
     applySuggestion(targetFieldId, content);
     
     // Set the current subfield to track what we just applied
-    setCurrentSubfield(targetFieldId);
     setLastAppliedSuggestion({ fieldId: targetFieldId, content });
     
     // Show section prompt AND section navigation
@@ -417,7 +453,7 @@ export default function BusinessPlanAIAssistant({
     
     return (
       <div className="mt-2 border-t border-gray-200 pt-2">
-        <div className="text-xs text-gray-600 mb-1">
+        <div className="text-sm text-gray-600 mb-1">
           {currentFieldName 
             ? `Updated: ${currentFieldName}` 
             : 'Section updated successfully'}
@@ -425,7 +461,7 @@ export default function BusinessPlanAIAssistant({
         <div className="flex space-x-2">
           <button
             onClick={handleStayOnCurrentSection}
-            className="flex-1 bg-gray-50 hover:bg-gray-100 text-gray-700 p-1 rounded-md text-xs"
+            className="flex-1 bg-gray-50 hover:bg-gray-100 text-gray-700 p-2 rounded-md text-sm"
           >
             Continue with current field
           </button>
@@ -433,7 +469,7 @@ export default function BusinessPlanAIAssistant({
           {showSectionNav ? (
             <button
               onClick={() => setShowSectionNav(false)}
-              className="flex-1 bg-blue-50 hover:bg-blue-100 text-blue-700 p-1 rounded-md text-xs"
+              className="flex-1 bg-blue-50 hover:bg-blue-100 text-blue-700 p-2 rounded-md text-sm"
             >
               Hide section menu
             </button>
@@ -443,7 +479,7 @@ export default function BusinessPlanAIAssistant({
                 setShowSectionNav(true);
                 setSelectedSection(null);
               }}
-              className="flex-1 bg-blue-50 hover:bg-blue-100 text-blue-700 p-1 rounded-md text-xs"
+              className="flex-1 bg-blue-50 hover:bg-blue-100 text-blue-700 p-2 rounded-md text-sm"
             >
               Select different section
             </button>
@@ -465,92 +501,96 @@ export default function BusinessPlanAIAssistant({
       return null;
     }
     
-    // Map suggestions to specific fields based on content or current context
-    let mappedSuggestions = fieldSuggestions.map(suggestion => {
-      // If the fieldId is generic 'content', try to map it to a specific field
-      if (suggestion.fieldId === 'content') {
-        // If we have a current subfield, use that instead of generic 'content'
-        const targetField = currentSubfield || (
-          // Default to specific fields based on section
-          sectionId === 'executiveSummary' ? 'businessConcept' : sectionId
-        );
-        
-        return {
-          ...suggestion,
-          displayFieldId: targetField
-        };
-      }
+    // CRITICAL: Only show suggestions for the EXACT field the user is working on
+    // If no current subfield is selected, force user to select one first
+    if (!currentSubfield) {
+      return (
+        <div className="mt-4 border-t border-gray-200 pt-3">
+          <h4 className="text-md font-medium text-gray-700 mb-3">
+            Please select a specific field to apply suggestions:
+          </h4>
+          
+          <div className="mb-4">
+            <select 
+              id="fieldSelector"
+              value=""
+              onChange={(e) => {
+                const newFieldId = e.target.value;
+                if (newFieldId) {
+                  setCurrentSubfield(newFieldId);
+                  console.log(`[Field Selection Required] User selected: ${newFieldId}`);
+                }
+              }}
+              className="w-full text-md p-2 border border-gray-300 rounded"
+            >
+              <option value="">Choose a field...</option>
+              {SECTION_SUBSECTIONS[sectionId]?.map(fieldId => (
+                <option key={fieldId} value={fieldId}>
+                  {SUBFIELD_NAMES[fieldId]}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+      );
+    }
+    
+    // ONLY show suggestions for the EXACT current field - no exceptions
+    // No mapping or content detection is used - STRICTLY use currentSubfield
+    
+    // Filter suggestions to ONLY include ones that will be applied to the current field
+    const currentFieldSuggestions = fieldSuggestions.map(suggestion => ({
+      ...suggestion,
+      displayFieldId: currentSubfield // Force ALL suggestions to apply to current field only
+    }));
+    
+    console.log(`[Suggestions Debug] Found ${currentFieldSuggestions.length} suggestions for current field: ${currentSubfield}`);
+    
+    // If we have suggestions for the current field, create a simplified UI
+    if (currentFieldSuggestions.length > 0) {
+      const fieldName = SUBFIELD_NAMES[currentSubfield] || currentSubfield;
       
-      // Otherwise keep the original fieldId
-      return {
-        ...suggestion,
-        displayFieldId: suggestion.fieldId
-      };
-    });
-    
-    console.log(`[Suggestions Debug] Mapped ${mappedSuggestions.length} suggestions`);
-    
-    return (
-      <div className="mt-4 border-t border-gray-200 pt-3">
-        <h4 className="text-sm font-medium text-gray-700 mb-2 flex items-center">
-          <ChevronRight className="h-4 w-4 mr-1" />
-          Suggested content to apply:
-        </h4>
-        
-        {/* Field selector dropdown for better targeting */}
-        <div className="mb-3">
-          <label htmlFor="fieldSelector" className="block text-xs text-gray-600 mb-1">
-            Select target field:
-          </label>
-          <select 
-            id="fieldSelector"
-            value={currentSubfield || ''}
-            onChange={(e) => {
-              const newFieldId = e.target.value;
-              if (newFieldId) {
-                setCurrentSubfield(newFieldId);
-                console.log(`[Field Selector] User selected: ${newFieldId}`);
-              } else {
-                setCurrentSubfield(null);
-                console.log(`[Field Selector] User cleared selection`);
-              }
-            }}
-            className="w-full text-sm p-1 border border-gray-300 rounded"
-          >
-            <option value="">Choose target field...</option>
-            {SECTION_SUBSECTIONS[sectionId]?.map(fieldId => (
-              <option key={fieldId} value={fieldId}>
-                {SUBFIELD_NAMES[fieldId]}
-              </option>
-            ))}
-          </select>
-        </div>
-        
-        <div className="space-y-2">
-          {mappedSuggestions.map((suggestion, index) => {
-            // Get the display field name from the suggestion's fieldId
-            const displayFieldId = suggestion.displayFieldId;
-            const fieldName = SUBFIELD_NAMES[displayFieldId] || displayFieldId;
-            
-            return (
-              <div key={index} className="rounded-md border border-blue-100 bg-blue-50 p-3">
-                <div className="text-sm text-blue-700 mb-1 font-medium">
-                  {/* Show which field this will apply to */}
-                  Suggestion for: {fieldName}
+      return (
+        <div className="mt-4 border-t border-gray-200 pt-3">
+          <div className="mb-3">
+            <div className="text-md text-blue-700 font-medium">
+              Currently working on: <span className="font-bold">{fieldName}</span>
+            </div>
+          </div>
+          
+          <div className="space-y-3">
+            {currentFieldSuggestions.map((suggestion, index) => (
+              <div key={index} className="rounded-md border border-blue-100 bg-blue-50 p-4">
+                <div className="text-md mb-3 text-gray-800">{suggestion.content}</div>
+                <div className="flex space-x-2">
+                  <button
+                    onClick={() => handleApplySuggestion(currentSubfield, suggestion.content)}
+                    className="text-sm bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded"
+                  >
+                    Apply Suggestion
+                  </button>
+                  <button
+                    onClick={() => {
+                      // Clear suggestion UI and continue with current field
+                      setShowSectionPrompt(false);
+                      setShowSectionNav(false);
+                      // Send a message about continuing with this field
+                      const fieldName = SUBFIELD_NAMES[currentSubfield] || currentSubfield;
+                      sendMessage(`Let's continue working on the ${fieldName} field.`);
+                    }}
+                    className="text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded"
+                  >
+                    Continue On This Field
+                  </button>
                 </div>
-                <div className="text-sm text-gray-700 mb-2">{suggestion.content}</div>
-                <button
-                  onClick={() => handleApplySuggestion(displayFieldId, suggestion.content)}
-                  className="text-xs bg-blue-100 hover:bg-blue-200 text-blue-700 px-2 py-1 rounded"
-                >
-                  Apply to {fieldName}
-                </button>
               </div>
-            );
-          })}
+            ))}
+          </div>
         </div>
-      </div>
-    );
+      );
+    }
+    
+    return null;
   }
   
   /**
@@ -580,12 +620,33 @@ export default function BusinessPlanAIAssistant({
       console.log(`[Navigation] Setting current subfield to: "${subsection}" (${subfieldName})`);
       setCurrentSubfield(subsection);
       
-      sendMessage(`Let's work on the ${SECTION_NAMES[sectId]} section, specifically the ${subfieldName} part.`)
+      // Prepare context data with the current section data
+      const contextData: Record<string, any> = {
+        currentSection: businessPlan?.content?.[sectId] || {}
+      };
+      
+      // Special handling for Legal Structure - include Business Structure data
+      if (sectId === 'companyDescription' && subsection === 'legalStructure') {
+        const businessStructureData = businessPlan?.content?.companyDescription?.businessStructure;
+        if (businessStructureData) {
+          contextData.relatedSections = {
+            businessStructure: businessStructureData
+          };
+          console.log('[Context] Adding Business Structure data for Legal Structure navigation');
+        }
+      }
+      
+      sendMessage(`Let's work on the ${SECTION_NAMES[sectId]} section, specifically the ${subfieldName} part.`, contextData)
     } else {
       console.log(`[Navigation] Clearing current subfield (working on whole section)`);
       setCurrentSubfield(null);
       
-      sendMessage(`Let's work on the ${SECTION_NAMES[sectId]} section.`)
+      // Just pass the current section data without related sections
+      const contextData = {
+        currentSection: businessPlan?.content?.[sectId] || {}
+      };
+      
+      sendMessage(`Let's work on the ${SECTION_NAMES[sectId]} section.`, contextData)
     }
     
     setShowSectionNav(false)
@@ -716,25 +777,25 @@ export default function BusinessPlanAIAssistant({
       </div>
       
       {/* Messages Container - Fixed height with overflow scroll */}
-      <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4 space-y-5">
         {messages.map((message, index) => (
           <div key={index} className={`max-w-[85%] ${message.role === 'assistant' ? 'ml-0 mr-auto' : 'ml-auto mr-0'}`}>
             <div 
-              className={`rounded-lg p-3 ${
+              className={`rounded-lg p-4 ${
                 message.role === 'assistant' 
                   ? 'bg-white border border-gray-200' 
                   : 'bg-blue-600 text-white'
               }`}
             >
-              <div className="prose max-w-none text-sm whitespace-pre-wrap break-words">
+              <div className="prose max-w-none text-base whitespace-pre-wrap break-words">
                 <ReactMarkdown
                   remarkPlugins={[remarkGfm]}
                   components={{
                     a: ({node, ...props}) => <a {...props} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline" />,
-                    p: ({node, ...props}) => <p {...props} className="mb-2 last:mb-0" />,
-                    ul: ({node, ...props}) => <ul {...props} className="list-disc pl-4 mb-2" />,
-                    ol: ({node, ...props}) => <ol {...props} className="list-decimal pl-4 mb-2" />,
-                    li: ({node, ...props}) => <li {...props} className="mb-1" />
+                    p: ({node, ...props}) => <p {...props} className="mb-3 last:mb-0" />,
+                    ul: ({node, ...props}) => <ul {...props} className="list-disc pl-5 mb-3" />,
+                    ol: ({node, ...props}) => <ol {...props} className="list-decimal pl-5 mb-3" />,
+                    li: ({node, ...props}) => <li {...props} className="mb-2" />
                   }}
                 >
                   {message.content}
@@ -766,17 +827,15 @@ export default function BusinessPlanAIAssistant({
       </div>
       
       {/* Input Form */}
-      <form onSubmit={handleSubmit} className="p-3 border-t border-gray-200 sticky bottom-0 bg-white z-10">
-        <div className="flex items-center">
+      <div className="border-t border-gray-200 p-4">
+        <form onSubmit={handleSubmit} className="flex items-start">
           <textarea
             ref={textareaRef}
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
-            placeholder="Ask for guidance..."
-            disabled={isLoading}
-            className="flex-grow py-2 px-3 border border-gray-300 rounded-l-md focus:outline-none focus:ring-1 focus:ring-blue-500 min-h-[60px] resize-y"
+            placeholder="Type a message..."
+            className="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 max-h-32 min-h-[90px]"
             onKeyDown={(e) => {
-              // Submit on Enter without Shift key
               if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
                 handleSubmit(e);
@@ -786,33 +845,12 @@ export default function BusinessPlanAIAssistant({
           <button
             type="submit"
             disabled={isLoading || !inputValue.trim()}
-            className="bg-blue-600 text-white py-2 px-4 rounded-r-md hover:bg-blue-700 transition-colors disabled:bg-blue-300 h-[60px]"
+            className="ml-2 bg-blue-600 text-white p-3 rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-400"
           >
-            <Send className="h-5 w-5" />
+            <Send className="h-6 w-6" />
           </button>
-        </div>
-        <div className="flex justify-between items-center text-xs mt-1">
-          <div>
-            {messages.length > 0 && (
-              <button
-                type="button"
-                onClick={clearConversation}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                Clear conversation
-              </button>
-            )}
-          </div>
-          <button
-            type="button"
-            onClick={handleShowSectionNav}
-            className="text-blue-600 hover:text-blue-800 flex items-center"
-          >
-            <BookOpen className="h-3 w-3 mr-1" /> 
-            {showSectionNav ? 'Hide section navigation' : 'Show section navigation'}
-          </button>
-        </div>
-      </form>
+        </form>
+      </div>
     </div>
   )
 } 

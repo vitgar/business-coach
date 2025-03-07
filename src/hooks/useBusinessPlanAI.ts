@@ -46,85 +46,77 @@ export function useBusinessPlanAI(
   /**
    * Send a message to the AI assistant
    * 
-   * @param message - User's message text
-   * @param currentSectionData - Current data for the active section (if available)
+   * @param message - The message text to send
+   * @param contextData - Optional context data about the current section
    */
-  const sendMessage = async (message: string, currentSectionData?: any) => {
-    setIsLoading(true)
-    
+  const sendMessage = async (message: string, contextData?: any) => {
     try {
-      // Add user message to history
-      const userMessage: ChatMessage = { role: 'user', content: message };
+      setIsLoading(true)
+      
+      // Add new message to chat
+      const userMessage: ChatMessage = { 
+        role: 'user', 
+        content: message 
+      }
+      
+      // Update messages state
       const newMessages = [...messages, userMessage];
       setMessages(newMessages)
       
-      // Check if the message is a "Let's work on" request and there's existing content
-      const isWorkOnRequest = message.toLowerCase().includes("let's work on") || 
-                             message.toLowerCase().includes("let us work on") ||
-                             message.toLowerCase().includes("work on the");
+      // Format context data for better AI understanding
+      const currentSectionData = contextData?.currentSection || {};
       
-      const hasExistingContent = currentSectionData && 
-                               Object.keys(currentSectionData).length > 0 &&
-                               Object.values(currentSectionData).some(
-                                 value => value && typeof value === 'string' && value.trim() !== ''
-                               );
+      // Gather related section data if available
+      const relatedSectionsData = contextData?.relatedSections || {};
       
-      // If it's a "Let's work on" request and there's existing content, provide a custom response
-      if (isWorkOnRequest && hasExistingContent) {
-        console.log('[BusinessPlanAI] Detected "Let\'s work on" request with existing content');
-        
-        // Create a custom response acknowledging the existing content
-        const assistantMessage: ChatMessage = { 
-          role: 'assistant', 
-          content: `I see you already have some information in this section. How would you like to proceed? I can help you:\n\n` +
-                  `- Review and improve the existing content\n` +
-                  `- Add more details to specific areas\n` +
-                  `- Start fresh with new ideas\n` +
-                  `- Focus on a particular aspect of this section\n\n` +
-                  `Let me know what you'd like to do, and I'll help you make this section even better!`
-        };
-        
-        setMessages([...newMessages, assistantMessage]);
-        setFieldSuggestions([]);
-        setIsLoading(false);
-        return;
-      }
+      // Prepare combined business plan data for the API
+      const businessPlanData = {
+        ...currentSectionData,
+        _relatedSections: relatedSectionsData // Include related sections with a prefix to distinguish them
+      };
       
-      // Otherwise, proceed with the normal API call
+      console.log('[AI Request] Sending message with section data:', {
+        hasCurrentData: Object.keys(currentSectionData).length > 0,
+        hasRelatedData: Object.keys(relatedSectionsData).length > 0
+      });
+      
+      // Call AI endpoint with messages - use the parameters expected by the API
       const response = await fetch(`/api/business-plans/${businessPlanId}/ai-assist`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          sectionId,
-          message,
+          sectionId: sectionId,
+          message: message,
           conversationHistory: newMessages,
-          businessPlanData: currentSectionData // Pass the current section data to the API
-        }),
+          businessPlanData: businessPlanData
+        })
       })
       
-      if (!response.ok) throw new Error('Failed to get AI response')
+      if (!response.ok) {
+        throw new Error('Failed to fetch response from AI')
+      }
       
       const data = await response.json()
       
-      // Add AI response to messages
-      const assistantMessage: ChatMessage = { role: 'assistant', content: data.message };
-      setMessages([...newMessages, assistantMessage])
+      // Add assistant response to messages
+      const aiMessage: ChatMessage = {
+        role: 'assistant',
+        content: data.message
+      }
       
-      // Extract potential field suggestions
+      setMessages([...newMessages, aiMessage])
+      
+      // Process any content recommendations or field suggestions from the AI
       extractFieldSuggestions(data.message)
     } catch (error) {
-      console.error('Error getting AI assistance:', error)
+      console.error('[AI Error]', error)
       // Add error message
-      const errorMessage: ChatMessage = { 
+      setMessages(prev => [...prev, { 
         role: 'assistant', 
-        content: 'Sorry, I encountered an error trying to help with that. Please try again or refresh the page.' 
-      };
-      setMessages([...messages, errorMessage])
-      
-      // Clear any previous suggestions
-      setFieldSuggestions([])
+        content: 'Sorry, I encountered an error. Please try again.' 
+      }])
     } finally {
       setIsLoading(false)
     }
@@ -223,6 +215,12 @@ export function useBusinessPlanAI(
         financialHighlights: ['financial', 'financials', 'highlights', 'financial highlights', 'revenue'],
         managementTeam: ['management', 'team', 'management team', 'leadership'],
         milestones: ['milestones', 'timeline', 'achievements', 'goals']
+      },
+      companyDescription: {
+        businessStructure: ['business structure', 'structure of business', 'business form', 'company structure'],
+        legalStructure: ['legal structure', 'legal details', 'llc', 'corporation', 'partnership', 'sole proprietorship', 'incorporation', 'liability'],
+        ownershipDetails: ['ownership', 'ownership details', 'ownership structure', 'equity', 'shareholders', 'owners'],
+        companyHistory: ['history', 'background', 'company history', 'founded', 'established', 'timeline']
       }
       // Add keywords for other sections as needed
     };
@@ -234,6 +232,7 @@ export function useBusinessPlanAI(
       'ownership details:': 'ownershipDetails',
       'business structure:': 'businessStructure',
       'legal structure:': 'legalStructure',
+      'legal structure details:': 'legalStructure',
       'company history:': 'companyHistory',
       'mission statement:': 'missionStatement',
       'business concept:': 'businessConcept',
@@ -288,6 +287,19 @@ export function useBusinessPlanAI(
           initialFieldId = fieldId;
           break;
         }
+      }
+    }
+    
+    // For Company Description section, perform specific content analysis if still not identified
+    if (initialFieldId === 'content' && sectionId === 'companyDescription') {
+      // Check for LLC, Corporation, etc. - strong indicators of Legal Structure
+      if (lowerContent.includes('llc') || 
+          lowerContent.includes('corporation') || 
+          lowerContent.includes('partnership') ||
+          lowerContent.includes('liability') ||
+          lowerContent.includes('legal')) {
+        console.log('[Field Extraction Debug] Legal structure terms detected');
+        initialFieldId = 'legalStructure';
       }
     }
     

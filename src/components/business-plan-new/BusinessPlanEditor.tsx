@@ -220,7 +220,7 @@ export default function BusinessPlanEditor({
               highlightedField === field.id 
                 ? 'border-green-500 bg-green-50 ring-2 ring-green-300' 
                 : 'border-gray-300'
-            } rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[100px] max-h-[250px] transition-all duration-300`}
+            } rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[120px] max-h-[300px] transition-all duration-300`}
           />
         )}
         
