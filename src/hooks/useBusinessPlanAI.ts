@@ -213,7 +213,19 @@ export function useBusinessPlanAI(
     // Log the raw extracted content for debugging
     console.log(`[Raw Content] Extracted content to process: "${extractedContent}"`);
     
-    // EXTREMELY PERMISSIVE VALIDATION - accept almost anything with minimal cleaning
+    // Define section-specific words that might indicate the field type
+    const sectionKeywords: Record<string, Record<string, string[]>> = {
+      executiveSummary: {
+        businessConcept: ['business concept', 'business idea', 'concept'],
+        missionStatement: ['mission', 'mission statement'],
+        productsOverview: ['products', 'services', 'products overview', 'services overview', 'offerings'],
+        marketOpportunity: ['market opportunity', 'opportunity', 'market need'],
+        financialHighlights: ['financial', 'financials', 'highlights', 'financial highlights', 'revenue'],
+        managementTeam: ['management', 'team', 'management team', 'leadership'],
+        milestones: ['milestones', 'timeline', 'achievements', 'goals']
+      }
+      // Add keywords for other sections as needed
+    };
     
     // Check if the extracted content starts with a known section prefix
     // and set an initial fieldId based on that
@@ -226,8 +238,11 @@ export function useBusinessPlanAI(
       'mission statement:': 'missionStatement',
       'business concept:': 'businessConcept',
       'products overview:': 'productsOverview',
+      'products/services overview:': 'productsOverview',
       'market opportunity:': 'marketOpportunity',
       'financial highlights:': 'financialHighlights',
+      'management team:': 'managementTeam',
+      'key milestones:': 'milestones',
       // Products and Services prefixes
       'overview:': 'overview',
       'value proposition:': 'valueProposition',
@@ -235,13 +250,44 @@ export function useBusinessPlanAI(
       'future products:': 'futureProducts'
     };
     
-    // Check for prefixes (case insensitive)
+    // First, check for exact prefixes (case insensitive)
     const lowerContent = extractedContent.toLowerCase();
     for (const [prefix, fieldId] of Object.entries(prefixFieldMap)) {
       if (lowerContent.startsWith(prefix)) {
         console.log(`[Field Extraction Debug] Found prefix "${prefix}" in content`);
         initialFieldId = fieldId;
         break;
+      }
+    }
+    
+    // If no exact prefix match, check if there's a field name in the first few words of the content
+    if (initialFieldId === 'content') {
+      const firstWords = lowerContent.split(/\s+/).slice(0, 5).join(' ');
+      
+      // Check if any prefix is contained in the first few words
+      for (const [prefix, fieldId] of Object.entries(prefixFieldMap)) {
+        const cleanPrefix = prefix.replace(':', '').trim();
+        if (firstWords.includes(cleanPrefix)) {
+          console.log(`[Field Extraction Debug] Found prefix "${cleanPrefix}" in first words`);
+          initialFieldId = fieldId;
+          break;
+        }
+      }
+    }
+    
+    // If still no match, use section-specific keywords to attempt identification
+    if (initialFieldId === 'content' && sectionKeywords[sectionId]) {
+      const sectionFields = sectionKeywords[sectionId];
+      
+      // Check each field's keywords
+      for (const [fieldId, keywords] of Object.entries(sectionFields)) {
+        // Check if any keyword is found in the content
+        const keywordFound = keywords.some((keyword: string) => lowerContent.includes(keyword));
+        if (keywordFound) {
+          console.log(`[Field Extraction Debug] Found keyword match for ${fieldId}`);
+          initialFieldId = fieldId;
+          break;
+        }
       }
     }
     
@@ -267,10 +313,18 @@ export function useBusinessPlanAI(
    */
   const applySuggestion = (fieldId: string, content: string) => {
     console.log(`[Apply Suggestion] Applying content to field ${fieldId}: "${content.substring(0, 50)}..."`);
+    console.log(`[Apply Suggestion] In section: ${sectionId}`);
+    
+    // Log the current field that we're working with
+    const fieldDisplayName = fieldId === 'content' ? 'Unknown Field' : fieldId;
+    console.log(`[Apply Suggestion] Field display name: ${fieldDisplayName}`);
     
     // Use the callback to apply the suggestion directly
     if (onSuggestionApplied) {
+      console.log(`[Apply Suggestion] Calling onSuggestionApplied for field: ${fieldId}`);
       onSuggestionApplied(fieldId, content);
+    } else {
+      console.warn(`[Apply Suggestion] No callback provided for applying suggestion to field: ${fieldId}`);
     }
   }
   

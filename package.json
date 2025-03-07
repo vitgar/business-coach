@@ -24,8 +24,9 @@
     "next-auth": "4.24.5",
     "react": "18.2.0",
     "react-dom": "18.2.0",
-    "react-markdown": "^10.0.0",
+    "react-markdown": "^10.1.0",
     "react-toastify": "10.0.4",
+    "remark-gfm": "^4.0.1",
     "zod": "3.22.4"
   },
   "devDependencies": {
