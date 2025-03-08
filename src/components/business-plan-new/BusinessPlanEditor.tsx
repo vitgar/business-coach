@@ -182,7 +182,8 @@ export default function BusinessPlanEditor({
             placeholder: 'Summarize key financial projections...',
             help: 'Brief overview of expected revenue, costs, and profitability'
           }
-        ]
+        ];
+        
       case 'companyDescription':
         return [
           {
@@ -217,8 +218,243 @@ export default function BusinessPlanEditor({
             type: 'textarea',
             placeholder: 'Describe the history and founding of your company...'
           }
-        ]
-      // Add cases for other sections
+        ];
+        
+      case 'productsAndServices':
+        return [
+          {
+            id: 'overview',
+            label: 'Product/Service Overview',
+            type: 'textarea',
+            placeholder: 'Provide a detailed overview of your products or services...',
+            help: 'Comprehensive description of what you offer to customers'
+          },
+          {
+            id: 'valueProposition',
+            label: 'Value Proposition',
+            type: 'textarea',
+            placeholder: 'Describe your unique value proposition...',
+            help: 'What makes your products/services valuable to customers and different from competitors'
+          },
+          {
+            id: 'intellectualProperty',
+            label: 'Intellectual Property',
+            type: 'textarea',
+            placeholder: 'Describe any patents, trademarks, copyrights, or other IP...',
+            help: 'Detail your intellectual property assets and protection strategy'
+          },
+          {
+            id: 'futureProducts',
+            label: 'Future Products/Services',
+            type: 'textarea',
+            placeholder: 'Outline your future product/service development plans...',
+            help: 'Your product roadmap and development timeline'
+          }
+        ];
+        
+      case 'marketAnalysis':
+        return [
+          {
+            id: 'industryOverview',
+            label: 'Industry Overview',
+            type: 'textarea',
+            placeholder: 'Provide an overview of your industry...',
+            help: 'Size, trends, and growth projections for your industry'
+          },
+          {
+            id: 'targetMarket',
+            label: 'Target Market',
+            type: 'textarea',
+            placeholder: 'Describe your target market in detail...',
+            help: 'Demographics, needs, and behaviors of your ideal customers'
+          },
+          {
+            id: 'marketSegmentation',
+            label: 'Market Segmentation',
+            type: 'textarea',
+            placeholder: 'Detail how you segment your market...',
+            help: 'How you divide the market into distinct customer groups'
+          },
+          {
+            id: 'competitiveAnalysis',
+            label: 'Competitive Analysis',
+            type: 'textarea',
+            placeholder: 'Analyze your competitors...',
+            help: 'Identify main competitors and their strengths/weaknesses'
+          },
+          {
+            id: 'swotAnalysis',
+            label: 'SWOT Analysis',
+            type: 'textarea',
+            placeholder: 'Provide a SWOT analysis for your business...',
+            help: 'Strengths, Weaknesses, Opportunities, and Threats'
+          }
+        ];
+        
+      case 'marketingStrategy':
+        return [
+          {
+            id: 'branding',
+            label: 'Branding Strategy',
+            type: 'textarea',
+            placeholder: 'Describe your branding strategy...',
+            help: 'Your brand identity, voice, and positioning'
+          },
+          {
+            id: 'pricing',
+            label: 'Pricing Strategy',
+            type: 'textarea',
+            placeholder: 'Explain your pricing strategy...',
+            help: 'How you price your products/services and why'
+          },
+          {
+            id: 'promotion',
+            label: 'Promotion Plan',
+            type: 'textarea',
+            placeholder: 'Detail your promotion and advertising strategies...',
+            help: 'How you\'ll create awareness and attract customers'
+          },
+          {
+            id: 'salesStrategy',
+            label: 'Sales Strategy',
+            type: 'textarea',
+            placeholder: 'Outline your sales process and strategy...',
+            help: 'Your approach to converting leads into customers'
+          },
+          {
+            id: 'channels',
+            label: 'Distribution Channels',
+            type: 'textarea',
+            placeholder: 'Describe your distribution channels...',
+            help: 'How your products/services reach customers'
+          },
+          {
+            id: 'customerRetention',
+            label: 'Customer Retention',
+            type: 'textarea',
+            placeholder: 'Explain your customer retention strategies...',
+            help: 'How you\'ll keep customers coming back'
+          }
+        ];
+        
+      case 'operationsPlan':
+        return [
+          {
+            id: 'businessModel',
+            label: 'Business Model',
+            type: 'textarea',
+            placeholder: 'Describe your business model in detail...',
+            help: 'How your business creates, delivers, and captures value'
+          },
+          {
+            id: 'facilities',
+            label: 'Facilities & Location',
+            type: 'textarea',
+            placeholder: 'Describe your business facilities and location...',
+            help: 'Information about your physical locations and requirements'
+          },
+          {
+            id: 'technology',
+            label: 'Technology Requirements',
+            type: 'textarea',
+            placeholder: 'Detail your technology infrastructure and requirements...',
+            help: 'Software, hardware, and other tech needs'
+          },
+          {
+            id: 'productionProcess',
+            label: 'Production Process',
+            type: 'textarea',
+            placeholder: 'Outline your production or service delivery process...',
+            help: 'How you create and deliver your products/services'
+          },
+          {
+            id: 'qualityControl',
+            label: 'Quality Control',
+            type: 'textarea',
+            placeholder: 'Describe your quality control procedures...',
+            help: 'How you ensure consistent quality'
+          },
+          {
+            id: 'logistics',
+            label: 'Logistics & Supply Chain',
+            type: 'textarea',
+            placeholder: 'Detail your logistics and supply chain management...',
+            help: 'How you manage inventory, shipping, and suppliers'
+          }
+        ];
+        
+      case 'organizationAndManagement':
+        return [
+          {
+            id: 'structure',
+            label: 'Organizational Structure',
+            type: 'textarea',
+            placeholder: 'Describe your organizational structure...',
+            help: 'Your business hierarchy and reporting relationships'
+          },
+          {
+            id: 'managementTeam',
+            label: 'Management Team',
+            type: 'textarea',
+            placeholder: 'Describe your management team and their experience...',
+            help: 'Background and qualifications of key team members'
+          },
+          {
+            id: 'advisors',
+            label: 'Advisors & Board',
+            type: 'textarea',
+            placeholder: 'List any advisors, mentors, or board members...',
+            help: 'External expertise that supports your business'
+          },
+          {
+            id: 'hrPlan',
+            label: 'HR Plan',
+            type: 'textarea',
+            placeholder: 'Outline your human resources plan...',
+            help: 'Hiring plans, staffing requirements, and compensation strategy'
+          }
+        ];
+        
+      case 'financialPlan':
+        return [
+          {
+            id: 'projections',
+            label: 'Financial Projections',
+            type: 'textarea',
+            placeholder: 'Provide your financial projections...',
+            help: 'Revenue, expenses, and profit forecasts for the next few years'
+          },
+          {
+            id: 'fundingNeeds',
+            label: 'Funding Requirements',
+            type: 'textarea',
+            placeholder: 'Describe your funding requirements...',
+            help: 'How much funding you need and what it will be used for'
+          },
+          {
+            id: 'useOfFunds',
+            label: 'Use of Funds',
+            type: 'textarea',
+            placeholder: 'Detail how you will use the funds...',
+            help: 'Specific allocation of investment or funding'
+          },
+          {
+            id: 'breakEvenAnalysis',
+            label: 'Break-Even Analysis',
+            type: 'textarea',
+            placeholder: 'Provide a break-even analysis...',
+            help: 'When you expect to start covering costs and making a profit'
+          },
+          {
+            id: 'exitStrategy',
+            label: 'Exit Strategy',
+            type: 'textarea',
+            placeholder: 'Describe your exit strategy...',
+            help: 'Your long-term plan for the business (acquisition, IPO, etc.)'
+          }
+        ];
+        
+      // Default case for any other sections
       default:
         return [
           {
@@ -228,7 +464,7 @@ export default function BusinessPlanEditor({
             placeholder: `Enter content for ${currentSection}...`,
             help: 'This section will have more detailed fields in future updates'
           }
-        ]
+        ];
     }
   }
 

@@ -522,6 +522,16 @@ export default function BusinessPlanAIAssistant({
       return 'financialHighlights';
     }
     
+    // COMPANY DESCRIPTION FIELDS
+    
+    // Handle Business Structure field
+    if (lowerId === 'businessstructure' || 
+        lowerId === 'business structure' || 
+        (lowerId.includes('business') && lowerId.includes('structure'))) {
+      console.log(`[Field ID Normalization] Normalizing Business Structure field ID: ${id} -> businessStructure`);
+      return 'businessStructure';
+    }
+    
     // Handle Legal Structure field
     if (lowerId === 'legalstructure' || 
         lowerId === 'legal structure' || 
@@ -536,6 +546,262 @@ export default function BusinessPlanAIAssistant({
         (lowerId.includes('ownership') && lowerId.includes('detail'))) {
       console.log(`[Field ID Normalization] Normalizing Ownership Details field ID: ${id} -> ownershipDetails`);
       return 'ownershipDetails';
+    }
+    
+    // Handle Company History field
+    if (lowerId === 'companyhistory' || 
+        lowerId === 'company history' || 
+        lowerId.includes('founding') ||
+        lowerId.includes('establishment') ||
+        lowerId.includes('origin') ||
+        (lowerId.includes('company') && (lowerId.includes('history') || lowerId.includes('background')))) {
+      console.log(`[Field ID Normalization] Normalizing Company History field ID: ${id} -> companyHistory`);
+      return 'companyHistory';
+    }
+    
+    // PRODUCTS AND SERVICES FIELDS
+    
+    // Handle Overview field
+    if (lowerId === 'overview' || 
+        (lowerId.includes('product') && lowerId.includes('overview'))) {
+      console.log(`[Field ID Normalization] Normalizing Overview field ID: ${id} -> overview`);
+      return 'overview';
+    }
+    
+    // Handle Value Proposition field
+    if (lowerId === 'valueproposition' || 
+        lowerId === 'value proposition' || 
+        (lowerId.includes('value') && lowerId.includes('proposition'))) {
+      console.log(`[Field ID Normalization] Normalizing Value Proposition field ID: ${id} -> valueProposition`);
+      return 'valueProposition';
+    }
+    
+    // Handle Intellectual Property field
+    if (lowerId === 'intellectualproperty' || 
+        lowerId === 'intellectual property' || 
+        (lowerId.includes('intellectual') && lowerId.includes('property'))) {
+      console.log(`[Field ID Normalization] Normalizing Intellectual Property field ID: ${id} -> intellectualProperty`);
+      return 'intellectualProperty';
+    }
+    
+    // Handle Future Products field
+    if (lowerId === 'futureproducts' || 
+        lowerId === 'future products' || 
+        (lowerId.includes('future') && lowerId.includes('product'))) {
+      console.log(`[Field ID Normalization] Normalizing Future Products field ID: ${id} -> futureProducts`);
+      return 'futureProducts';
+    }
+    
+    // MARKET ANALYSIS FIELDS
+    
+    // Handle Industry Overview field
+    if (lowerId === 'industryoverview' || 
+        lowerId === 'industry overview' || 
+        (lowerId.includes('industry') && lowerId.includes('overview'))) {
+      console.log(`[Field ID Normalization] Normalizing Industry Overview field ID: ${id} -> industryOverview`);
+      return 'industryOverview';
+    }
+    
+    // Handle Target Market field
+    if (lowerId === 'targetmarket' || 
+        lowerId === 'target market' || 
+        (lowerId.includes('target') && lowerId.includes('market'))) {
+      console.log(`[Field ID Normalization] Normalizing Target Market field ID: ${id} -> targetMarket`);
+      return 'targetMarket';
+    }
+    
+    // Handle Market Segmentation field
+    if (lowerId === 'marketsegmentation' || 
+        lowerId === 'market segmentation' || 
+        (lowerId.includes('market') && lowerId.includes('segment'))) {
+      console.log(`[Field ID Normalization] Normalizing Market Segmentation field ID: ${id} -> marketSegmentation`);
+      return 'marketSegmentation';
+    }
+    
+    // Handle Competitive Analysis field
+    if (lowerId === 'competitiveanalysis' || 
+        lowerId === 'competitive analysis' || 
+        (lowerId.includes('competitive') && lowerId.includes('analysis'))) {
+      console.log(`[Field ID Normalization] Normalizing Competitive Analysis field ID: ${id} -> competitiveAnalysis`);
+      return 'competitiveAnalysis';
+    }
+    
+    // Handle SWOT Analysis field
+    if (lowerId === 'swotanalysis' || 
+        lowerId === 'swot analysis' || 
+        lowerId === 'swot') {
+      console.log(`[Field ID Normalization] Normalizing SWOT Analysis field ID: ${id} -> swotAnalysis`);
+      return 'swotAnalysis';
+    }
+    
+    // MARKETING STRATEGY FIELDS
+    
+    // Handle Branding field
+    if (lowerId === 'branding' || 
+        lowerId === 'brand strategy' || 
+        lowerId === 'branding strategy') {
+      console.log(`[Field ID Normalization] Normalizing Branding field ID: ${id} -> branding`);
+      return 'branding';
+    }
+    
+    // Handle Pricing field
+    if (lowerId === 'pricing' || 
+        lowerId === 'pricing strategy' || 
+        (lowerId.includes('price') || lowerId.includes('pricing'))) {
+      console.log(`[Field ID Normalization] Normalizing Pricing field ID: ${id} -> pricing`);
+      return 'pricing';
+    }
+    
+    // Handle Promotion field
+    if (lowerId === 'promotion' || 
+        lowerId === 'promotion plan' || 
+        lowerId.includes('promot')) {
+      console.log(`[Field ID Normalization] Normalizing Promotion field ID: ${id} -> promotion`);
+      return 'promotion';
+    }
+    
+    // Handle Sales Strategy field
+    if (lowerId === 'salesstrategy' || 
+        lowerId === 'sales strategy' || 
+        (lowerId.includes('sales') && lowerId.includes('strategy'))) {
+      console.log(`[Field ID Normalization] Normalizing Sales Strategy field ID: ${id} -> salesStrategy`);
+      return 'salesStrategy';
+    }
+    
+    // Handle Channels field
+    if (lowerId === 'channels' || 
+        lowerId === 'distribution channels' || 
+        lowerId.includes('channel')) {
+      console.log(`[Field ID Normalization] Normalizing Channels field ID: ${id} -> channels`);
+      return 'channels';
+    }
+    
+    // Handle Customer Retention field
+    if (lowerId === 'customerretention' || 
+        lowerId === 'customer retention' || 
+        (lowerId.includes('customer') && lowerId.includes('retention'))) {
+      console.log(`[Field ID Normalization] Normalizing Customer Retention field ID: ${id} -> customerRetention`);
+      return 'customerRetention';
+    }
+    
+    // OPERATIONS PLAN FIELDS
+    
+    // Handle Business Model field
+    if (lowerId === 'businessmodel' || 
+        lowerId === 'business model' || 
+        (lowerId.includes('business') && lowerId.includes('model'))) {
+      console.log(`[Field ID Normalization] Normalizing Business Model field ID: ${id} -> businessModel`);
+      return 'businessModel';
+    }
+    
+    // Handle Facilities field
+    if (lowerId === 'facilities' || 
+        lowerId === 'facilities & location' || 
+        lowerId.includes('facilit')) {
+      console.log(`[Field ID Normalization] Normalizing Facilities field ID: ${id} -> facilities`);
+      return 'facilities';
+    }
+    
+    // Handle Technology field
+    if (lowerId === 'technology' || 
+        lowerId === 'technology requirements' || 
+        lowerId.includes('tech')) {
+      console.log(`[Field ID Normalization] Normalizing Technology field ID: ${id} -> technology`);
+      return 'technology';
+    }
+    
+    // Handle Production Process field
+    if (lowerId === 'productionprocess' || 
+        lowerId === 'production process' || 
+        (lowerId.includes('production') && lowerId.includes('process'))) {
+      console.log(`[Field ID Normalization] Normalizing Production Process field ID: ${id} -> productionProcess`);
+      return 'productionProcess';
+    }
+    
+    // Handle Quality Control field
+    if (lowerId === 'qualitycontrol' || 
+        lowerId === 'quality control' || 
+        (lowerId.includes('quality') && lowerId.includes('control'))) {
+      console.log(`[Field ID Normalization] Normalizing Quality Control field ID: ${id} -> qualityControl`);
+      return 'qualityControl';
+    }
+    
+    // Handle Logistics field
+    if (lowerId === 'logistics' || 
+        lowerId === 'logistics & supply chain' || 
+        lowerId.includes('logistic')) {
+      console.log(`[Field ID Normalization] Normalizing Logistics field ID: ${id} -> logistics`);
+      return 'logistics';
+    }
+    
+    // ORGANIZATION & MANAGEMENT FIELDS
+    
+    // Handle Structure field
+    if (lowerId === 'structure' || 
+        lowerId === 'organizational structure' || 
+        (lowerId.includes('organizational') && lowerId.includes('structure'))) {
+      console.log(`[Field ID Normalization] Normalizing Structure field ID: ${id} -> structure`);
+      return 'structure';
+    }
+    
+    // Handle HR Plan field
+    if (lowerId === 'hrplan' || 
+        lowerId === 'hr plan' || 
+        (lowerId.includes('hr') && lowerId.includes('plan'))) {
+      console.log(`[Field ID Normalization] Normalizing HR Plan field ID: ${id} -> hrPlan`);
+      return 'hrPlan';
+    }
+    
+    // Handle Advisors field
+    if (lowerId === 'advisors' || 
+        lowerId === 'advisors & board' || 
+        lowerId.includes('advisor')) {
+      console.log(`[Field ID Normalization] Normalizing Advisors field ID: ${id} -> advisors`);
+      return 'advisors';
+    }
+    
+    // FINANCIAL PLAN FIELDS
+    
+    // Handle Projections field
+    if (lowerId === 'projections' || 
+        lowerId === 'financial projections' || 
+        (lowerId.includes('financial') && lowerId.includes('projection'))) {
+      console.log(`[Field ID Normalization] Normalizing Projections field ID: ${id} -> projections`);
+      return 'projections';
+    }
+    
+    // Handle Funding Needs field
+    if (lowerId === 'fundingneeds' || 
+        lowerId === 'funding needs' || 
+        lowerId === 'funding requirements' || 
+        (lowerId.includes('funding') && (lowerId.includes('needs') || lowerId.includes('requirement')))) {
+      console.log(`[Field ID Normalization] Normalizing Funding Needs field ID: ${id} -> fundingNeeds`);
+      return 'fundingNeeds';
+    }
+    
+    // Handle Use of Funds field
+    if (lowerId === 'useoffunds' || 
+        lowerId === 'use of funds' || 
+        (lowerId.includes('use') && lowerId.includes('funds'))) {
+      console.log(`[Field ID Normalization] Normalizing Use of Funds field ID: ${id} -> useOfFunds`);
+      return 'useOfFunds';
+    }
+    
+    // Handle Break-Even Analysis field
+    if (lowerId === 'breakevenanalysis' || 
+        lowerId === 'break-even analysis' || 
+        lowerId === 'breakeven analysis' || 
+        (lowerId.includes('break') && lowerId.includes('even'))) {
+      console.log(`[Field ID Normalization] Normalizing Break-Even Analysis field ID: ${id} -> breakEvenAnalysis`);
+      return 'breakEvenAnalysis';
+    }
+    
+    // Handle Exit Strategy field
+    if (lowerId === 'exitstrategy' || 
+        lowerId === 'exit strategy' || 
+        (lowerId.includes('exit') && lowerId.includes('strategy'))) {
+      console.log(`[Field ID Normalization] Normalizing Exit Strategy field ID: ${id} -> exitStrategy`);
+      return 'exitStrategy';
     }
     
     // Handle content field mapping based on context
@@ -573,36 +839,88 @@ export default function BusinessPlanAIAssistant({
         // If there's a last shown suggestion, use that
         if (lastShownSuggestion) {
           suggestionToApply = lastShownSuggestion;
+          console.log('[Auto-Apply] Using last shown suggestion:', lastShownSuggestion);
         }
         // Otherwise, try to find an appropriate suggestion
         else {
-          // Get normalized field ID for current subfield
-          const fieldId = currentSubfield || '';
-          
-          // Filter to get suggestions for the current field
-          const relevantSuggestions = fieldSuggestions.filter(suggestion => {
-            if (!currentSubfield) return true; // If no subfield is selected, all suggestions are relevant
+          // Special handling for Ownership Details section
+          if (sectionId === 'companyDescription' && currentSubfield === 'ownershipDetails') {
+            console.log('[Auto-Apply] In Ownership Details section, searching for matching suggestions');
             
-            const normalizedSuggestionId = normalizeFieldId(suggestion.fieldId);
-            const normalizedCurrentSubfield = normalizeFieldId(currentSubfield);
+            // Find suggestions that might be related to ownership details
+            const ownershipRelatedSuggestions = fieldSuggestions.filter(suggestion => {
+              const suggestionFieldId = suggestion.fieldId.toLowerCase();
+              return suggestionFieldId.includes('ownership') || 
+                     suggestionFieldId.includes('owner') ||
+                     suggestionFieldId.includes('detail') || 
+                     suggestionFieldId === 'content';
+            });
             
-            return normalizedSuggestionId === normalizedCurrentSubfield || 
-                   suggestion.fieldId === 'content' || 
-                   normalizedSuggestionId === 'content';
-          });
+            if (ownershipRelatedSuggestions.length > 0) {
+              console.log('[Auto-Apply] Found Ownership Details related suggestions:', ownershipRelatedSuggestions);
+              suggestionToApply = {
+                ...ownershipRelatedSuggestions[0],
+                displayFieldId: 'ownershipDetails'
+              };
+            }
+          }
+          // Special handling for Company History section
+          else if (sectionId === 'companyDescription' && currentSubfield === 'companyHistory') {
+            console.log('[Auto-Apply] In Company History section, looking for related suggestions');
+            
+            // Look for suggestions that might be related to company history
+            const companyHistorySuggestions = fieldSuggestions.filter(s => {
+              const lowerId = s.fieldId.toLowerCase();
+              return lowerId.includes('company') || 
+                     lowerId.includes('history') || 
+                     lowerId.includes('founding') ||
+                     lowerId.includes('background') ||
+                     lowerId.includes('establishment') ||
+                     lowerId.includes('origin') ||
+                     lowerId === 'content';
+            });
+            
+            if (companyHistorySuggestions.length > 0) {
+              console.log(`[Auto-Apply] Found ${companyHistorySuggestions.length} Company History related suggestions`);
+              suggestionToApply = {
+                ...companyHistorySuggestions[0],
+                displayFieldId: 'companyHistory'
+              };
+            }
+          }
           
-          // Use the first relevant suggestion if available
-          if (relevantSuggestions.length > 0) {
-            suggestionToApply = {
-              ...relevantSuggestions[0],
-              displayFieldId: currentSubfield || relevantSuggestions[0].fieldId
-            };
+          // If no Company History or Ownership Details suggestion was found, use standard filtering
+          if (!suggestionToApply) {
+            // Get normalized field ID for current subfield
+            const fieldId = currentSubfield || '';
+            
+            // Filter to get suggestions for the current field
+            const relevantSuggestions = fieldSuggestions.filter(suggestion => {
+              if (!currentSubfield) return true; // If no subfield is selected, all suggestions are relevant
+              
+              const normalizedSuggestionId = normalizeFieldId(suggestion.fieldId);
+              const normalizedCurrentSubfield = normalizeFieldId(currentSubfield);
+              
+              return normalizedSuggestionId === normalizedCurrentSubfield || 
+                     suggestion.fieldId === 'content' || 
+                     normalizedSuggestionId === 'content';
+            });
+            
+            // Use the first relevant suggestion if available
+            if (relevantSuggestions.length > 0) {
+              console.log('[Auto-Apply] Found relevant suggestions through normal filtering:', relevantSuggestions);
+              suggestionToApply = {
+                ...relevantSuggestions[0],
+                displayFieldId: currentSubfield || relevantSuggestions[0].fieldId
+              };
+            }
           }
         }
         
         // If we found a suggestion to apply
         if (suggestionToApply) {
           const fieldIdToUse = suggestionToApply.displayFieldId || suggestionToApply.fieldId;
+          console.log('[Auto-Apply] Applying suggestion to field:', fieldIdToUse);
           
           // Send the user message first
           sendMessage(userMessage, currentSectionData);
@@ -630,6 +948,8 @@ export default function BusinessPlanAIAssistant({
           // Don't send the message again
           setInputValue('');
           return;
+        } else {
+          console.log('[Auto-Apply] Could not find an appropriate suggestion to apply');
         }
       }
       
@@ -658,8 +978,10 @@ export default function BusinessPlanAIAssistant({
     
     // Normalize the field ID
     const normalizedFieldId = normalizeFieldId(fieldId);
+    console.log(`[Apply Suggestion Debug] Normalized field ID: ${fieldId} → ${normalizedFieldId}`);
     
     // Apply the suggestion with the normalized field ID
+    console.log(`[Apply Suggestion Debug] Applying content to normalized field: ${normalizedFieldId}`);
     onApplySuggestion(normalizedFieldId, content);
     
     // Update state tracking
@@ -736,17 +1058,54 @@ export default function BusinessPlanAIAssistant({
     // Only show suggestions for the current subfield if one is selected
     let filteredSuggestions = fieldSuggestions
     
+    // Special handling for Ownership Details field
+    if (sectionId === 'companyDescription' && currentSubfield === 'ownershipDetails') {
+      console.log('[Suggestion Debug] In Ownership Details context, looking for related suggestions');
+      
+      // Look for suggestions that might be related to ownership details
+      const ownershipDetailsSuggestions = fieldSuggestions.filter(s => {
+        const lowerId = s.fieldId.toLowerCase();
+        return lowerId.includes('ownership') || 
+               lowerId.includes('owner') ||
+               lowerId.includes('detail') || 
+               lowerId === 'content';
+      });
+      
+      if (ownershipDetailsSuggestions.length > 0) {
+        console.log(`[Suggestion Debug] Found ${ownershipDetailsSuggestions.length} Ownership Details related suggestions`);
+        filteredSuggestions = ownershipDetailsSuggestions;
+      }
+    }
+    // Special handling for Company History field
+    else if (sectionId === 'companyDescription' && currentSubfield === 'companyHistory') {
+      console.log('[Suggestion Debug] In Company History context, looking for related suggestions');
+      
+      // Look for suggestions that might be related to company history
+      const companyHistorySuggestions = fieldSuggestions.filter(s => {
+        const lowerId = s.fieldId.toLowerCase();
+        return lowerId.includes('company') || 
+               lowerId.includes('history') || 
+               lowerId.includes('founding') ||
+               lowerId.includes('background') ||
+               lowerId.includes('establishment') ||
+               lowerId.includes('origin') ||
+               lowerId === 'content';
+      });
+      
+      if (companyHistorySuggestions.length > 0) {
+        console.log(`[Suggestion Debug] Found ${companyHistorySuggestions.length} Company History related suggestions`);
+        filteredSuggestions = companyHistorySuggestions;
+      }
+    }
     /**
      * MARKET OPPORTUNITY SPECIAL HANDLING
      * Check if we're in a context where we should prioritize or explicitly show Market Opportunity content
      */
-    const shouldIncludeMarketOpportunity = currentSubfield === 'marketOpportunity' || 
+    else if (currentSubfield === 'marketOpportunity' || 
       (sectionId === 'executiveSummary' && 
        fieldSuggestions.some(s => s.fieldId === 'marketOpportunity' || 
                                   s.fieldId === 'market opportunity' || 
-                                  s.fieldId.toLowerCase().includes('market')));
-    
-    if (shouldIncludeMarketOpportunity) {
+                                  s.fieldId.toLowerCase().includes('market')))) {
       console.log('[Market Opportunity Debug] Detected Market Opportunity context, prioritizing those suggestions');
       
       // If we're on Market Opportunity subfield, filter to only those suggestions
@@ -808,8 +1167,18 @@ export default function BusinessPlanAIAssistant({
       // First normalize the field ID if needed
       let normalizedFieldId = normalizeFieldId(suggestion.fieldId);
       
-      // Special case for Market Opportunity: ensure it's properly mapped
-      if (suggestion.fieldId.toLowerCase().includes('market') || 
+      // Special case for Ownership Details
+      if (sectionId === 'companyDescription' && currentSubfield === 'ownershipDetails') {
+        normalizedFieldId = 'ownershipDetails';
+        console.log(`[Suggestion Mapping] Ensuring Ownership Details is properly mapped: ${suggestion.fieldId} -> ${normalizedFieldId}`);
+      }
+      // Special case for Company History
+      else if (sectionId === 'companyDescription' && currentSubfield === 'companyHistory') {
+        normalizedFieldId = 'companyHistory';
+        console.log(`[Suggestion Mapping] Ensuring Company History is properly mapped: ${suggestion.fieldId} -> ${normalizedFieldId}`);
+      }
+      // Special case for Market Opportunity
+      else if (suggestion.fieldId.toLowerCase().includes('market') || 
           (currentSubfield && currentSubfield.toLowerCase().includes('market'))) {
         normalizedFieldId = 'marketOpportunity';
         console.log(`[Suggestion Mapping] Ensuring Market Opportunity is properly mapped: ${suggestion.fieldId} -> ${normalizedFieldId}`);
@@ -824,6 +1193,7 @@ export default function BusinessPlanAIAssistant({
     
     // Save the first suggestion as the last shown suggestion for auto-application
     if (mappedSuggestions.length > 0 && !lastShownSuggestion) {
+      console.log('[Suggestion Debug] Setting last shown suggestion:', mappedSuggestions[0]);
       setLastShownSuggestion(mappedSuggestions[0]);
     }
     
@@ -837,8 +1207,26 @@ export default function BusinessPlanAIAssistant({
             // Get the appropriate field ID for display and application
             let fieldIdToUse = suggestion.displayFieldId || suggestion.fieldId;
             
+            // Handle special case for Ownership Details explicitly
+            if ((fieldIdToUse.toLowerCase().includes('ownership') && 
+                 fieldIdToUse.toLowerCase().includes('detail')) || 
+                 (sectionId === 'companyDescription' && currentSubfield === 'ownershipDetails')) {
+              fieldIdToUse = 'ownershipDetails';
+              console.log(`[Suggestion Rendering] Using explicit ownershipDetails ID for: ${suggestion.fieldId}`);
+            }
+            // Handle special case for Company History explicitly
+            else if ((fieldIdToUse.toLowerCase().includes('company') && 
+                 fieldIdToUse.toLowerCase().includes('history')) || 
+                 fieldIdToUse.toLowerCase().includes('founding') ||
+                 fieldIdToUse.toLowerCase().includes('origin') ||
+                 fieldIdToUse.toLowerCase().includes('establishment') ||
+                 (fieldIdToUse.toLowerCase().includes('company') && fieldIdToUse.toLowerCase().includes('background')) ||
+                 (sectionId === 'companyDescription' && currentSubfield === 'companyHistory')) {
+              fieldIdToUse = 'companyHistory';
+              console.log(`[Suggestion Rendering] Using explicit companyHistory ID for: ${suggestion.fieldId}`);
+            }
             // Handle special case for Market Opportunity explicitly
-            if (fieldIdToUse.toLowerCase().includes('market') && 
+            else if (fieldIdToUse.toLowerCase().includes('market') && 
                 (fieldIdToUse.toLowerCase().includes('opportunit') || 
                  fieldIdToUse === 'market' || 
                  fieldIdToUse === 'opportunity')) {
@@ -846,38 +1234,165 @@ export default function BusinessPlanAIAssistant({
               console.log(`[Suggestion Rendering] Using explicit marketOpportunity ID for: ${suggestion.fieldId}`);
             }
             
-            // Special case for productsOverview
+            // Get the proper display name for the field
             let fieldName = '';
-            if (fieldIdToUse === 'productsOverview') {
+            
+            // Executive Summary fields
+            if (fieldIdToUse === 'businessConcept') {
+              fieldName = 'Business Concept';
+            } else if (fieldIdToUse === 'missionStatement') {
+              fieldName = 'Mission Statement';
+            } else if (fieldIdToUse === 'productsOverview') {
               fieldName = 'Products/Services Overview';
             } else if (fieldIdToUse === 'marketOpportunity') {
               fieldName = 'Market Opportunity';
-            } else {
+            } else if (fieldIdToUse === 'financialHighlights') {
+              fieldName = 'Financial Highlights';
+            } 
+            // Company Description fields
+            else if (fieldIdToUse === 'businessStructure') {
+              fieldName = 'Business Structure';
+            } else if (fieldIdToUse === 'legalStructure') {
+              fieldName = 'Legal Structure';
+            } else if (fieldIdToUse === 'ownershipDetails') {
+              fieldName = 'Ownership Details';
+            } else if (fieldIdToUse === 'companyHistory') {
+              fieldName = 'Company History';
+            }
+            // Products and Services fields
+            else if (fieldIdToUse === 'overview') {
+              fieldName = 'Overview';
+            } else if (fieldIdToUse === 'valueProposition') {
+              fieldName = 'Value Proposition';
+            } else if (fieldIdToUse === 'intellectualProperty') {
+              fieldName = 'Intellectual Property';
+            } else if (fieldIdToUse === 'futureProducts') {
+              fieldName = 'Future Products';
+            }
+            // Market Analysis fields
+            else if (fieldIdToUse === 'industryOverview') {
+              fieldName = 'Industry Overview';
+            } else if (fieldIdToUse === 'targetMarket') {
+              fieldName = 'Target Market';
+            } else if (fieldIdToUse === 'marketSegmentation') {
+              fieldName = 'Market Segmentation';
+            } else if (fieldIdToUse === 'competitiveAnalysis') {
+              fieldName = 'Competitive Analysis';
+            } else if (fieldIdToUse === 'swotAnalysis') {
+              fieldName = 'SWOT Analysis';
+            }
+            // Marketing Strategy fields
+            else if (fieldIdToUse === 'branding') {
+              fieldName = 'Branding';
+            } else if (fieldIdToUse === 'pricing') {
+              fieldName = 'Pricing';
+            } else if (fieldIdToUse === 'promotion') {
+              fieldName = 'Promotion';
+            } else if (fieldIdToUse === 'salesStrategy') {
+              fieldName = 'Sales Strategy';
+            } else if (fieldIdToUse === 'channels') {
+              fieldName = 'Distribution Channels';
+            } else if (fieldIdToUse === 'customerRetention') {
+              fieldName = 'Customer Retention';
+            }
+            // Operations Plan fields
+            else if (fieldIdToUse === 'businessModel') {
+              fieldName = 'Business Model';
+            } else if (fieldIdToUse === 'facilities') {
+              fieldName = 'Facilities';
+            } else if (fieldIdToUse === 'technology') {
+              fieldName = 'Technology';
+            } else if (fieldIdToUse === 'productionProcess') {
+              fieldName = 'Production Process';
+            } else if (fieldIdToUse === 'qualityControl') {
+              fieldName = 'Quality Control';
+            } else if (fieldIdToUse === 'logistics') {
+              fieldName = 'Logistics';
+            }
+            // Organization & Management fields
+            else if (fieldIdToUse === 'structure') {
+              fieldName = 'Organizational Structure';
+            } else if (fieldIdToUse === 'hrPlan') {
+              fieldName = 'HR Plan';
+            } else if (fieldIdToUse === 'advisors') {
+              fieldName = 'Advisors';
+            }
+            // Financial Plan fields
+            else if (fieldIdToUse === 'projections') {
+              fieldName = 'Financial Projections';
+            } else if (fieldIdToUse === 'fundingNeeds') {
+              fieldName = 'Funding Needs';
+            } else if (fieldIdToUse === 'useOfFunds') {
+              fieldName = 'Use of Funds';
+            } else if (fieldIdToUse === 'breakEvenAnalysis') {
+              fieldName = 'Break-Even Analysis';
+            } else if (fieldIdToUse === 'exitStrategy') {
+              fieldName = 'Exit Strategy';
+            }
+            // Default to the SUBFIELD_NAMES or the field ID for any field not explicitly handled
+            else {
               fieldName = SUBFIELD_NAMES[fieldIdToUse] || fieldIdToUse;
             }
             
             // Don't render suggestions that might not apply to the current context
-            // (except for Market Opportunity which we handle specially)
+            // except for fields that we handle specially with proper field name mapping
             if (currentSubfield && 
                 fieldIdToUse !== currentSubfield && 
-                fieldIdToUse !== 'marketOpportunity') {
+                fieldIdToUse !== 'marketOpportunity' &&
+                fieldIdToUse !== 'companyHistory' &&
+                fieldIdToUse !== 'businessConcept' &&
+                fieldIdToUse !== 'missionStatement' &&
+                fieldIdToUse !== 'productsOverview' &&
+                fieldIdToUse !== 'financialHighlights' &&
+                fieldIdToUse !== 'businessStructure' &&
+                fieldIdToUse !== 'legalStructure' &&
+                fieldIdToUse !== 'ownershipDetails' &&
+                fieldIdToUse !== 'overview' &&
+                fieldIdToUse !== 'valueProposition' &&
+                fieldIdToUse !== 'intellectualProperty' &&
+                fieldIdToUse !== 'futureProducts' &&
+                fieldIdToUse !== 'industryOverview' &&
+                fieldIdToUse !== 'targetMarket' &&
+                fieldIdToUse !== 'marketSegmentation' &&
+                fieldIdToUse !== 'competitiveAnalysis' &&
+                fieldIdToUse !== 'swotAnalysis' &&
+                fieldIdToUse !== 'branding' &&
+                fieldIdToUse !== 'pricing' &&
+                fieldIdToUse !== 'promotion' &&
+                fieldIdToUse !== 'salesStrategy' &&
+                fieldIdToUse !== 'channels' &&
+                fieldIdToUse !== 'customerRetention' &&
+                fieldIdToUse !== 'businessModel' &&
+                fieldIdToUse !== 'facilities' &&
+                fieldIdToUse !== 'technology' &&
+                fieldIdToUse !== 'productionProcess' &&
+                fieldIdToUse !== 'qualityControl' &&
+                fieldIdToUse !== 'logistics' &&
+                fieldIdToUse !== 'structure' &&
+                fieldIdToUse !== 'hrPlan' &&
+                fieldIdToUse !== 'advisors' &&
+                fieldIdToUse !== 'projections' &&
+                fieldIdToUse !== 'fundingNeeds' &&
+                fieldIdToUse !== 'useOfFunds' &&
+                fieldIdToUse !== 'breakEvenAnalysis' &&
+                fieldIdToUse !== 'exitStrategy') {
               console.log(`[Suggestion Rendering] Skipping suggestion with field ID ${fieldIdToUse} that doesn't match current subfield ${currentSubfield}`);
               return null;
             }
             
             return (
-            <div key={index} className="rounded-md border border-blue-100 bg-blue-50 p-3">
-              <div className="text-sm text-blue-700 mb-1 font-medium">
+              <div key={index} className="rounded-md border border-blue-100 bg-blue-50 p-3">
+                <div className="text-sm text-blue-700 mb-1 font-medium">
                   {fieldName}
-              </div>
-              <div className="text-sm text-gray-700 mb-2">{suggestion.content}</div>
-              <button
+                </div>
+                <div className="text-sm text-gray-700 mb-2">{suggestion.content}</div>
+                <button
                   onClick={() => handleApplySuggestion(fieldIdToUse, suggestion.content)}
-                className="text-xs bg-blue-100 hover:bg-blue-200 text-blue-700 px-2 py-1 rounded"
-              >
-                Apply to field
-              </button>
-            </div>
+                  className="text-xs bg-blue-100 hover:bg-blue-200 text-blue-700 px-2 py-1 rounded"
+                >
+                  Apply to field
+                </button>
+              </div>
             );
           })}
         </div>
@@ -953,7 +1468,7 @@ export default function BusinessPlanAIAssistant({
                 <>
                   <div className="flex flex-col space-y-4">
                     {messages.map((message, index) => (
-                      <div 
+                      <div
                         key={index}
                         className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
                       >
@@ -969,9 +1484,9 @@ export default function BusinessPlanAIAssistant({
                               {isLoading && messages.length === index + 1 ? (
                                 <div className="text-gray-500">Thinking...</div>
                               ) : (
-                                <div className="whitespace-pre-wrap">
+                          <div className="whitespace-pre-wrap">
                                   {message.content}
-                                </div>
+                          </div>
                               )}
                             </div>
                           )}
