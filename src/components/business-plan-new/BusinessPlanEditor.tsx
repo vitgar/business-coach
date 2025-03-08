@@ -40,9 +40,13 @@ export default function BusinessPlanEditor({
   const [formData, setFormData] = useState<any>({})
   const [isDirty, setIsDirty] = useState(false)
   const [highlightedField, setHighlightedField] = useState<string | null>(null)
+  // Track the field that should be focused
+  const [fieldToFocus, setFieldToFocus] = useState<string | null>(null)
   
   // Create a map of textarea refs
   const textareaRefs = useRef<{[key: string]: HTMLTextAreaElement | null}>({})
+  // Create a ref for the form element to use for scrolling
+  const formRef = useRef<HTMLFormElement>(null)
   
   // Initialize form data from business plan content when section changes
   useEffect(() => {
@@ -58,7 +62,85 @@ export default function BusinessPlanEditor({
     
     // Reset any highlighted fields
     setHighlightedField(null)
+    
+    // When section changes, set the first field to be focused
+    const fields = getFieldDefinitions()
+    if (fields.length > 0) {
+      setFieldToFocus(fields[0].id)
+    }
   }, [businessPlan, currentSection])
+  
+  // Effect to focus on a field when fieldToFocus changes
+  useEffect(() => {
+    if (fieldToFocus) {
+      // Wait for the DOM to be fully updated
+      setTimeout(() => {
+        // Get the textarea element for the field to focus
+        const textareaElement = textareaRefs.current[fieldToFocus]
+        if (textareaElement) {
+          // Focus the element
+          textareaElement.focus()
+          
+          // Scroll the field into view with some padding
+          if (formRef.current) {
+            const fieldElement = document.getElementById(fieldToFocus)
+            if (fieldElement) {
+              // Calculate position to scroll to (field position minus some padding)
+              const yOffset = -20
+              const y = fieldElement.getBoundingClientRect().top + window.pageYOffset + yOffset
+              
+              // Scroll the form container
+              formRef.current.scrollTo({
+                top: y - formRef.current.offsetTop,
+                behavior: 'smooth'
+              })
+            }
+          }
+        }
+        
+        // Clear the field to focus after focusing
+        setFieldToFocus(null)
+      }, 100)
+    }
+  }, [fieldToFocus])
+  
+  /**
+   * Focus on a specific field in the form
+   * @param fieldId The ID of the field to focus, or null for the first field
+   */
+  const focusField = (fieldId: string | null = null) => {
+    const fields = getFieldDefinitions()
+    if (fields.length === 0) return
+    
+    // If fieldId is provided and exists in the current section, focus it
+    if (fieldId && fields.some(field => field.id === fieldId)) {
+      setFieldToFocus(fieldId)
+    } else {
+      // Otherwise, focus the first field
+      setFieldToFocus(fields[0].id)
+    }
+  }
+  
+  // Make the focusField function available to the parent component
+  useEffect(() => {
+    // Attach the focusField function to the window object
+    // so the parent component can access it
+    // @ts-ignore - Adding custom property to window
+    window.businessPlanEditor = window.businessPlanEditor || {}
+    // @ts-ignore
+    window.businessPlanEditor[currentSection] = {
+      focusField
+    }
+    
+    return () => {
+      // Clean up when component unmounts
+      // @ts-ignore
+      if (window.businessPlanEditor && window.businessPlanEditor[currentSection]) {
+        // @ts-ignore
+        delete window.businessPlanEditor[currentSection]
+      }
+    }
+  }, [currentSection])
 
   // Get field definitions based on current section
   const getFieldDefinitions = (): FieldDefinition[] => {
@@ -307,26 +389,28 @@ export default function BusinessPlanEditor({
   }, [formData]);
 
   return (
-    <div className="h-full overflow-auto">
-      <div className="p-4">
-        <form onSubmit={handleSubmit}>
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-lg font-medium text-gray-800">
-              {getSectionTitle()}
-            </h2>
+    <div className="flex flex-col h-full overflow-hidden">
+      <div className="p-4 border-b">
+        <h2 className="text-lg font-medium text-gray-800">{getSectionTitle()}</h2>
+      </div>
+      
+      <div className="flex-grow overflow-auto p-4">
+        <form ref={formRef} onSubmit={handleSubmit}>
+          {renderFields()}
+          
+          <div className="mt-4 flex justify-end">
             <button
               type="submit"
               disabled={!isDirty}
-              className={`px-3 py-1 rounded text-sm transition-colors ${
-                isDirty
-                  ? 'bg-blue-600 text-white hover:bg-blue-700'
-                  : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+              className={`px-4 py-2 rounded-md ${
+                isDirty 
+                  ? 'bg-blue-600 text-white hover:bg-blue-700' 
+                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
               }`}
             >
               Save Changes
             </button>
           </div>
-          {renderFields()}
         </form>
       </div>
     </div>

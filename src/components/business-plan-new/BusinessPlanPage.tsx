@@ -107,8 +107,19 @@ export default function BusinessPlanPage({ businessPlanId }: { businessPlanId: s
   }
 
   // Handle section change
-  const handleSectionChange = (sectionName: string) => {
+  const handleSectionChange = (sectionName: string, fieldId?: string | null) => {
+    // Update the current section
     setCurrentSection(sectionName)
+    
+    // Focus on the appropriate field after a small delay to ensure components are updated
+    setTimeout(() => {
+      // Access the field focus function from the BusinessPlanEditor component
+      // @ts-ignore - Accessing dynamically added property
+      if (window.businessPlanEditor && window.businessPlanEditor[sectionName]) {
+        // @ts-ignore
+        window.businessPlanEditor[sectionName].focusField(fieldId || null)
+      }
+    }, 200)
   }
 
   return (

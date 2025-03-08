@@ -20,7 +20,7 @@ interface BusinessPlanAIAssistantProps {
   collapsed?: boolean;
   businessPlan?: any;
   onApplySuggestion?: (fieldId: string, content: string) => void;
-  onSectionChange?: (sectionId: string) => void;
+  onSectionChange?: (sectionId: string, fieldId?: string) => void;
 }
 
 // Define the section order for navigation
@@ -147,6 +147,9 @@ export default function BusinessPlanAIAssistant({
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const messagesContainerRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  
+  // Track the last suggestion shown to the user
+  const [lastShownSuggestion, setLastShownSuggestion] = useState<ExtendedFieldSuggestion | null>(null);
   
   // Add resize listener for responsive behavior
   useEffect(() => {
@@ -361,7 +364,7 @@ export default function BusinessPlanAIAssistant({
   };
   
   /**
-   * Processes message text to extract mentions of sections for navigation
+   * Process message text to extract mentions of sections for navigation
    * @param message The user's message text
    * @returns boolean indicating if a section was identified and navigation occurred
    */
@@ -394,9 +397,17 @@ export default function BusinessPlanAIAssistant({
           return false; // No navigation needed, but section was mentioned
         }
         
-        // Navigate to the mentioned section
+        // Navigate to the mentioned section - pass null for field ID to focus the first field
         if (onSectionChange) {
-          onSectionChange(sectionId);
+          onSectionChange(sectionId, undefined);
+          
+          // Add a custom message to provide context about what happened
+          const assistantMessage: ChatMessage = { 
+            role: 'assistant', 
+            content: `I've navigated to the ${sectionName} section for you. The form is now focused and ready for your input. How would you like to proceed with this section?`
+          };
+          setMessages([...messages, { role: 'user', content: message }, assistantMessage]);
+          
           return true;
         }
       }
@@ -406,11 +417,19 @@ export default function BusinessPlanAIAssistant({
       for (const subsection of subsections) {
         const subsectionName = SUBFIELD_NAMES[subsection]?.toLowerCase() || '';
         if (subsectionName && normalizedMessage.includes(subsectionName.toLowerCase())) {
-          // Navigate to section and set subsection
+          // Navigate to section and pass the specific subsection field ID
           if (onSectionChange) {
-            onSectionChange(sectionId);
+            onSectionChange(sectionId, subsection);
             // Set current subfield after a delay to allow section change to complete
             setTimeout(() => setCurrentSubfield(subsection), 300);
+            
+            // Add a custom message to provide context about what happened
+            const assistantMessage: ChatMessage = { 
+              role: 'assistant', 
+              content: `I've navigated to the ${sectionName} section and focused on the ${SUBFIELD_NAMES[subsection]} field for you. You can now start typing directly. Would you like some guidance on what to include in this field?`
+            };
+            setMessages([...messages, { role: 'user', content: message }, assistantMessage]);
+            
             return true;
           }
         }
@@ -421,6 +440,114 @@ export default function BusinessPlanAIAssistant({
   }
   
   /**
+   * Checks if a message is an approval response
+   * @param message The message to check
+   * @returns True if the message appears to be an approval
+   */
+  const isApprovalResponse = (message: string): boolean => {
+    const normalizedMessage = message.toLowerCase().trim();
+    
+    // Common approval phrases
+    return (
+      normalizedMessage === 'yes' ||
+      normalizedMessage === 'yeah' ||
+      normalizedMessage === 'yep' ||
+      normalizedMessage === 'ok' ||
+      normalizedMessage === 'okay' ||
+      normalizedMessage === 'sure' ||
+      normalizedMessage === 'approve' ||
+      normalizedMessage === 'approved' ||
+      normalizedMessage === 'looks good' ||
+      normalizedMessage === 'good' ||
+      normalizedMessage === 'that works' ||
+      normalizedMessage === 'correct' ||
+      normalizedMessage === 'that is correct' ||
+      normalizedMessage === 'that\'s correct' ||
+      normalizedMessage === 'i approve' ||
+      normalizedMessage === 'apply it' ||
+      normalizedMessage === 'use it' ||
+      normalizedMessage.startsWith('yes,') ||
+      normalizedMessage.startsWith('yeah,') ||
+      normalizedMessage.startsWith('correct,') ||
+      normalizedMessage.startsWith('approved,') ||
+      normalizedMessage.startsWith('looks good,') ||
+      normalizedMessage.includes('apply this') ||
+      normalizedMessage.includes('use this')
+    );
+  }
+
+  /**
+   * Enhanced field ID normalization with specialized handling for various field types
+   * @param id The field ID to normalize
+   * @returns The normalized field ID
+   */
+  const normalizeFieldId = (id: string): string => {
+    const lowerId = id.toLowerCase();
+    
+    // EXECUTIVE SUMMARY FIELD MAPPINGS
+    // These should follow the same pattern for all Executive Summary fields
+    
+    // Handle Business Concept field
+    if (lowerId === 'businessconcept' || lowerId === 'business concept') {
+      console.log(`[Field ID Normalization] Normalizing Business Concept field ID: ${id} -> businessConcept`);
+      return 'businessConcept';
+    }
+    
+    // Handle Mission Statement field
+    if (lowerId === 'missionstatement' || lowerId === 'mission statement') {
+      console.log(`[Field ID Normalization] Normalizing Mission Statement field ID: ${id} -> missionStatement`);
+      return 'missionStatement';
+    }
+    
+    // Handle Products/Services Overview field
+    if (lowerId.includes('product') && 
+        (lowerId.includes('service') || lowerId.includes('overview'))) {
+      console.log(`[Field ID Normalization] Normalizing Products/Services field ID: ${id} -> productsOverview`);
+      return 'productsOverview';
+    }
+    
+    // Handle Market Opportunity field
+    if (lowerId === 'marketopportunity' || 
+        lowerId === 'market opportunity' || 
+        (lowerId.includes('market') && lowerId.includes('opportunit'))) {
+      console.log(`[Field ID Normalization] Normalizing Market Opportunity field ID: ${id} -> marketOpportunity`);
+      return 'marketOpportunity';
+    }
+    
+    // Handle Financial Highlights field
+    if (lowerId === 'financialhighlights' || 
+        lowerId === 'financial highlights' || 
+        (lowerId.includes('financial') && lowerId.includes('highlight'))) {
+      console.log(`[Field ID Normalization] Normalizing Financial Highlights field ID: ${id} -> financialHighlights`);
+      return 'financialHighlights';
+    }
+    
+    // Handle Legal Structure field
+    if (lowerId === 'legalstructure' || 
+        lowerId === 'legal structure' || 
+        (lowerId.includes('legal') && lowerId.includes('structure'))) {
+      console.log(`[Field ID Normalization] Normalizing Legal Structure field ID: ${id} -> legalStructure`);
+      return 'legalStructure';
+    }
+    
+    // Handle Ownership Details field
+    if (lowerId === 'ownershipdetails' || 
+        lowerId === 'ownership details' || 
+        (lowerId.includes('ownership') && lowerId.includes('detail'))) {
+      console.log(`[Field ID Normalization] Normalizing Ownership Details field ID: ${id} -> ownershipDetails`);
+      return 'ownershipDetails';
+    }
+    
+    // Handle content field mapping based on context
+    if (lowerId === 'content' && currentSubfield) {
+      console.log(`[Field ID Normalization] Mapping generic 'content' to ${currentSubfield} based on context`);
+      return currentSubfield;
+    }
+    
+    return id;
+  };
+
+  /**
    * Handles form submission
    */
   const handleSubmit = (e: React.FormEvent) => {
@@ -428,23 +555,96 @@ export default function BusinessPlanAIAssistant({
     
     if (!inputValue.trim() || isLoading) return
     
-    // Check if the message contains a section reference for navigation
-    const navigatedToSection = processSectionNavigation(inputValue);
+    // Store the user's message
+    const userMessage = inputValue.trim();
     
-    // If we navigated to a different section, don't send the message as a regular query
+    // Check if the message contains a section reference for navigation
+    const navigatedToSection = processSectionNavigation(userMessage);
+    
+    // If we didn't navigate to a section, process the message
     if (!navigatedToSection) {
-      // Send as a regular message
-      sendMessage(inputValue, currentSectionData)
+      // Check if this is an approval response and there's a last suggestion to apply
+      if (fieldSuggestions.length > 0 && isApprovalResponse(userMessage)) {
+        console.log('[Auto-Apply] Detected approval response, applying last suggestion');
+        
+        // Filter suggestions for the current context
+        let suggestionToApply: ExtendedFieldSuggestion | null = null;
+        
+        // If there's a last shown suggestion, use that
+        if (lastShownSuggestion) {
+          suggestionToApply = lastShownSuggestion;
+        }
+        // Otherwise, try to find an appropriate suggestion
+        else {
+          // Get normalized field ID for current subfield
+          const fieldId = currentSubfield || '';
+          
+          // Filter to get suggestions for the current field
+          const relevantSuggestions = fieldSuggestions.filter(suggestion => {
+            if (!currentSubfield) return true; // If no subfield is selected, all suggestions are relevant
+            
+            const normalizedSuggestionId = normalizeFieldId(suggestion.fieldId);
+            const normalizedCurrentSubfield = normalizeFieldId(currentSubfield);
+            
+            return normalizedSuggestionId === normalizedCurrentSubfield || 
+                   suggestion.fieldId === 'content' || 
+                   normalizedSuggestionId === 'content';
+          });
+          
+          // Use the first relevant suggestion if available
+          if (relevantSuggestions.length > 0) {
+            suggestionToApply = {
+              ...relevantSuggestions[0],
+              displayFieldId: currentSubfield || relevantSuggestions[0].fieldId
+            };
+          }
+        }
+        
+        // If we found a suggestion to apply
+        if (suggestionToApply) {
+          const fieldIdToUse = suggestionToApply.displayFieldId || suggestionToApply.fieldId;
+          
+          // Send the user message first
+          sendMessage(userMessage, currentSectionData);
+          
+          // Then apply the suggestion
+          setTimeout(() => {
+            // Apply the suggestion
+            handleApplySuggestion(fieldIdToUse, suggestionToApply.content);
+            
+            // Send a confirmation message
+            const fieldName = SUBFIELD_NAMES[fieldIdToUse] || fieldIdToUse.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
+            const confirmationMessage: ChatMessage = {
+              role: 'assistant',
+              content: `✅ I've applied the suggested content to the ${fieldName} field for you. Is there anything else you'd like help with?`
+            };
+            
+            // Add the confirmation message
+            setMessages(prevMessages => [...prevMessages, confirmationMessage]);
+            
+            // Clear field suggestions after applying
+            setFieldSuggestions([]);
+            setLastShownSuggestion(null);
+          }, 1000); // Small delay to ensure the user message is processed first
+          
+          // Don't send the message again
+          setInputValue('');
+          return;
+        }
+      }
+      
+      // If it's not a valid approval or no suggestions to apply, send as a regular message
+      sendMessage(userMessage, currentSectionData);
     }
     
-    setInputValue('')
+    setInputValue('');
     
     // Reset height of textarea after clearing
     setTimeout(() => {
       if (textareaRef.current) {
-        textareaRef.current.style.height = '60px'
+        textareaRef.current.style.height = '60px';
       }
-    }, 0)
+    }, 0);
   }
   
   /**
@@ -456,57 +656,8 @@ export default function BusinessPlanAIAssistant({
     console.log(`[Apply Suggestion Debug] Applying suggestion to field: ${fieldId}`);
     console.log(`[Apply Suggestion Debug] Current section: ${sectionId}, Current subfield: ${currentSubfield}`);
     
-    // Executive Summary field normalization
-    let normalizedFieldId = fieldId;
-    
-    if (sectionId === 'executiveSummary') {
-      const lowerId = fieldId.toLowerCase();
-      
-      // Business Concept normalization
-      if (lowerId === 'businessconcept' || 
-          lowerId === 'business concept' || 
-          lowerId.includes('business') && lowerId.includes('concept')) {
-        normalizedFieldId = 'businessConcept';
-        console.log(`[Apply Suggestion Debug] Normalized Business Concept field ID to: ${normalizedFieldId}`);
-      }
-      
-      // Mission Statement normalization
-      else if (lowerId === 'missionstatement' || 
-               lowerId === 'mission statement' || 
-               (lowerId.includes('mission') && lowerId.includes('statement'))) {
-        normalizedFieldId = 'missionStatement';
-        console.log(`[Apply Suggestion Debug] Normalized Mission Statement field ID to: ${normalizedFieldId}`);
-      }
-      
-      // Products Overview normalization
-      else if (lowerId.includes('product') && 
-               (lowerId.includes('service') || lowerId.includes('overview'))) {
-        normalizedFieldId = 'productsOverview';
-        console.log(`[Apply Suggestion Debug] Normalized Products Overview field ID to: ${normalizedFieldId}`);
-      }
-      
-      // Market Opportunity normalization
-      else if (lowerId === 'marketopportunity' || 
-               lowerId === 'market opportunity' || 
-               (lowerId.includes('market') && lowerId.includes('opportunit'))) {
-        normalizedFieldId = 'marketOpportunity';
-        console.log(`[Apply Suggestion Debug] Normalized Market Opportunity field ID to: ${normalizedFieldId}`);
-      }
-      
-      // Financial Highlights normalization
-      else if (lowerId === 'financialhighlights' || 
-               lowerId === 'financial highlights' || 
-               (lowerId.includes('financial') && lowerId.includes('highlight'))) {
-        normalizedFieldId = 'financialHighlights';
-        console.log(`[Apply Suggestion Debug] Normalized Financial Highlights field ID to: ${normalizedFieldId}`);
-      }
-      
-      // If current subfield is set and fieldId is generic 'content', use the current subfield
-      else if (lowerId === 'content' && currentSubfield) {
-        normalizedFieldId = currentSubfield;
-        console.log(`[Apply Suggestion Debug] Using current subfield ${currentSubfield} for generic content`);
-      }
-    }
+    // Normalize the field ID
+    const normalizedFieldId = normalizeFieldId(fieldId);
     
     // Apply the suggestion with the normalized field ID
     onApplySuggestion(normalizedFieldId, content);
@@ -581,59 +732,6 @@ export default function BusinessPlanAIAssistant({
     
     console.log('[Suggestion Debug] Current subfield:', currentSubfield)
     console.log('[Suggestion Debug] Available suggestions:', fieldSuggestions.map(s => s.fieldId))
-    
-    /**
-     * Enhanced field ID normalization with specialized Market Opportunity handling
-     */
-    const normalizeFieldId = (id: string): string => {
-      const lowerId = id.toLowerCase();
-      
-      // EXECUTIVE SUMMARY FIELD MAPPINGS
-      // These should follow the same pattern for all Executive Summary fields
-      
-      // Handle Business Concept field
-      if (lowerId === 'businessconcept' || lowerId === 'business concept') {
-        console.log(`[Suggestion Debug] Normalizing Business Concept field ID: ${id} -> businessConcept`);
-        return 'businessConcept';
-      }
-      
-      // Handle Mission Statement field
-      if (lowerId === 'missionstatement' || lowerId === 'mission statement') {
-        console.log(`[Suggestion Debug] Normalizing Mission Statement field ID: ${id} -> missionStatement`);
-        return 'missionStatement';
-      }
-      
-      // Handle Products/Services Overview field
-      if (lowerId.includes('product') && 
-          (lowerId.includes('service') || lowerId.includes('overview'))) {
-        console.log(`[Suggestion Debug] Normalizing Products/Services field ID: ${id} -> productsOverview`);
-        return 'productsOverview';
-      }
-      
-      // Handle Market Opportunity field - using same pattern as other fields
-      if (lowerId === 'marketopportunity' || 
-          lowerId === 'market opportunity' || 
-          (lowerId.includes('market') && lowerId.includes('opportunit'))) {
-        console.log(`[Suggestion Debug] Normalizing Market Opportunity field ID: ${id} -> marketOpportunity`);
-        return 'marketOpportunity';
-      }
-      
-      // Handle Financial Highlights field
-      if (lowerId === 'financialhighlights' || 
-          lowerId === 'financial highlights' || 
-          (lowerId.includes('financial') && lowerId.includes('highlight'))) {
-        console.log(`[Suggestion Debug] Normalizing Financial Highlights field ID: ${id} -> financialHighlights`);
-        return 'financialHighlights';
-      }
-      
-      // Handle content field mapping based on context
-      if (lowerId === 'content' && currentSubfield) {
-        console.log(`[Suggestion Debug] Mapping generic 'content' to ${currentSubfield} based on context`);
-        return currentSubfield;
-      }
-      
-      return id;
-    };
     
     // Only show suggestions for the current subfield if one is selected
     let filteredSuggestions = fieldSuggestions
@@ -724,6 +822,11 @@ export default function BusinessPlanAIAssistant({
       };
     });
     
+    // Save the first suggestion as the last shown suggestion for auto-application
+    if (mappedSuggestions.length > 0 && !lastShownSuggestion) {
+      setLastShownSuggestion(mappedSuggestions[0]);
+    }
+    
     return (
       <div className="space-y-4">
         <h4 className="text-sm font-medium text-zinc-300">
@@ -777,6 +880,9 @@ export default function BusinessPlanAIAssistant({
             </div>
             );
           })}
+        </div>
+        <div className="text-xs text-gray-500 mt-1">
+          Tip: Just type "yes" to apply the suggestion.
         </div>
       </div>
     );
