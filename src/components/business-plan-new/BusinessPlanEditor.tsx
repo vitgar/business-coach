@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { HelpCircle } from 'lucide-react'
 
 /**
@@ -37,22 +37,27 @@ export default function BusinessPlanEditor({
   onSave
 }: BusinessPlanEditorProps) {
   // Manage form state
-  const [formData, setFormData] = useState<Record<string, any>>({})
+  const [formData, setFormData] = useState<any>({})
   const [isDirty, setIsDirty] = useState(false)
   const [highlightedField, setHighlightedField] = useState<string | null>(null)
   
-  // Load data when section changes
+  // Create a map of textarea refs
+  const textareaRefs = useRef<{[key: string]: HTMLTextAreaElement | null}>({})
+  
+  // Initialize form data from business plan content when section changes
   useEffect(() => {
-    // Reset form when section changes
-    if (businessPlan?.content && businessPlan.content[currentSection]) {
+    if (businessPlan?.content?.[currentSection]) {
       setFormData(businessPlan.content[currentSection])
     } else {
-      // Initialize with empty values
+      // Initialize with empty object if section doesn't exist
       setFormData({})
     }
     
-    // Reset dirty flag
+    // Reset dirty state when section changes
     setIsDirty(false)
+    
+    // Reset any highlighted fields
+    setHighlightedField(null)
   }, [businessPlan, currentSection])
 
   // Get field definitions based on current section
@@ -145,13 +150,31 @@ export default function BusinessPlanEditor({
     }
   }
 
-  // Handle input changes
+  /**
+   * Handle input changes and update form data
+   * @param fieldId - The field identifier
+   * @param value - The new value
+   */
   const handleInputChange = (fieldId: string, value: any) => {
-    setFormData(prev => ({
+    setFormData((prev: Record<string, any>) => ({
       ...prev,
       [fieldId]: value
     }))
+    
+    // Mark form as dirty (has unsaved changes)
     setIsDirty(true)
+    
+    // For textareas, auto-adjust height
+    if (textareaRefs.current[fieldId]) {
+      const textarea = textareaRefs.current[fieldId];
+      
+      // Reset height to calculate correct scrollHeight
+      textarea!.style.height = 'auto';
+      
+      // Set the new height based on content, with min and max constraints
+      const newHeight = Math.min(Math.max(80, textarea!.scrollHeight + 2), 500);
+      textarea!.style.height = `${newHeight}px`;
+    }
   }
 
   // Handle form submission
@@ -213,6 +236,7 @@ export default function BusinessPlanEditor({
         {field.type === 'textarea' && (
           <textarea
             id={field.id}
+            ref={el => textareaRefs.current[field.id] = el}
             value={formData[field.id] || ''}
             onChange={(e) => handleInputChange(field.id, e.target.value)}
             placeholder={field.placeholder}
@@ -220,7 +244,7 @@ export default function BusinessPlanEditor({
               highlightedField === field.id 
                 ? 'border-green-500 bg-green-50 ring-2 ring-green-300' 
                 : 'border-gray-300'
-            } rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[80px] max-h-[300px] transition-all duration-300`}
+            } rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[80px] resize-none transition-all duration-200`}
           />
         )}
         
@@ -261,6 +285,26 @@ export default function BusinessPlanEditor({
       </div>
     ))
   }
+
+  // Add useEffect to adjust textarea heights when form data changes 
+  // (handles initial load and external changes like AI suggestions)
+  useEffect(() => {
+    // Wait for the DOM to be updated
+    setTimeout(() => {
+      // For each field in the form data
+      Object.keys(formData).forEach(fieldId => {
+        const textarea = textareaRefs.current[fieldId];
+        if (textarea) {
+          // Reset height
+          textarea.style.height = 'auto';
+          
+          // Set height based on content
+          const newHeight = Math.min(Math.max(80, textarea.scrollHeight + 2), 500);
+          textarea.style.height = `${newHeight}px`;
+        }
+      });
+    }, 0);
+  }, [formData]);
 
   return (
     <div className="h-full overflow-auto">

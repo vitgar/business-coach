@@ -141,10 +141,7 @@ export default function BusinessPlanAIAssistant({
   const [showSectionPrompt, setShowSectionPrompt] = useState(false)
   const [lastAppliedSuggestion, setLastAppliedSuggestion] = useState<{fieldId: string, content: string} | null>(null)
   const [currentSubfield, setCurrentSubfield] = useState<string | null>(null)
-  const [showSectionNav, setShowSectionNav] = useState(false)
-  // Add state for compact mode
   const [isCompactMode, setIsCompactMode] = useState(window.innerHeight < 800)
-  const [selectedSection, setSelectedSection] = useState<string | null>(null)
   
   // Create refs for the component
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -160,6 +157,25 @@ export default function BusinessPlanAIAssistant({
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+  
+  /**
+   * Automatically adjusts the height of the textarea based on its content
+   * @param e The change event from the textarea
+   */
+  const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setInputValue(e.target.value);
+    
+    // Auto-adjust height
+    if (textareaRef.current) {
+      // First reset the height to get the correct scrollHeight
+      textareaRef.current.style.height = 'auto';
+      
+      // Set the height based on scrollHeight (content height)
+      // Add a small buffer to prevent scrollbar flashing
+      const newHeight = Math.min(Math.max(60, e.target.scrollHeight + 2), 200);
+      textareaRef.current.style.height = `${newHeight}px`;
+    }
+  }
   
   // Get current section data if available
   const currentSectionData = businessPlan?.content?.[sectionId] || {};
@@ -197,7 +213,7 @@ export default function BusinessPlanAIAssistant({
     }, 100);
     
     return () => clearTimeout(scrollTimer);
-  }, [messages, isLoading, fieldSuggestions, showSectionPrompt, showSectionNav]);
+  }, [messages, isLoading, fieldSuggestions, showSectionPrompt]);
   
   // Add an effect to scroll when messages change
   useEffect(() => {
@@ -219,38 +235,102 @@ export default function BusinessPlanAIAssistant({
     }
   }, [fieldSuggestions]);
   
-  // Add effect to scroll to the section navigation menu on initial page load
+  // Add an effect to adjust textarea height whenever inputValue changes
+  // This handles cases like pasting text or when the app initializes with content
   useEffect(() => {
-    // This effect runs once on component mount
-    console.log('[Initial Load] Component mounted, ensuring section menu is visible');
-    
-    // Wait for DOM to be fully rendered
-    const initialScrollTimer = setTimeout(() => {
-      // If there are no messages, we're in the empty state with the section menu
-      if (messages.length === 0) {
-        console.log('[Initial Load] Empty state detected, scrolling to section menu');
-        
-        // Try to find and scroll to the section navigation
-        const sectionNavElement = document.querySelector('.border-t.border-gray-200.pt-2');
-        if (sectionNavElement) {
-          console.log('[Initial Load] Found section navigation element, scrolling into view');
-          sectionNavElement.scrollIntoView({ behavior: 'auto', block: 'center' });
-        } else {
-          console.log('[Initial Load] Section navigation element not found, using fallback scrolling');
-          // Fallback: scroll the container to show as much content as possible
-          if (messagesContainerRef.current) {
-            messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight / 2;
-          }
+    if (textareaRef.current && inputValue) {
+      // Reset height to auto to get the correct scrollHeight
+      textareaRef.current.style.height = 'auto';
+      
+      // Set the height based on the content
+      const newHeight = Math.min(Math.max(60, textareaRef.current.scrollHeight + 2), 200);
+      textareaRef.current.style.height = `${newHeight}px`;
+    }
+  }, [inputValue]);
+  
+  // When component initializes, show incomplete sections summary
+  useEffect(() => {
+    // Initialize with a welcome message that includes incomplete sections
+    if (messages.length === 0 && businessPlan?.content) {
+      // Generate welcome message with incomplete sections information
+      const welcomeMessage = generateWelcomeMessageWithIncompleteInfo();
+      setMessages([
+        { 
+          role: 'assistant', 
+          content: welcomeMessage
         }
-      }
-    }, 500); // Longer delay to ensure everything is rendered
+      ]);
+    }
+  }, [businessPlan]);
+
+  /**
+   * Checks if a section is complete based on required fields
+   * @param sectionId - The section identifier
+   * @param sectionData - The section data object
+   * @returns boolean indicating if the section is complete
+   */
+  const isSectionComplete = (sectionId: string, sectionData: any): boolean => {
+    if (!sectionData) return false;
     
-    return () => clearTimeout(initialScrollTimer);
-  }, []); // Empty dependency array means this runs once on mount
+    // Define required fields for each section
+    const requiredFields: Record<string, string[]> = {
+      executiveSummary: ['businessConcept', 'missionStatement', 'productsOverview'],
+      companyDescription: ['businessStructure', 'legalStructure', 'ownershipDetails', 'companyHistory'],
+      productsAndServices: ['overview', 'valueProposition'],
+      marketAnalysis: ['industryOverview', 'targetMarket'],
+      marketingStrategy: ['branding', 'pricing', 'promotion', 'salesStrategy'],
+      operationsPlan: ['businessModel', 'facilities', 'technology', 'productionProcess'],
+      organizationAndManagement: ['structure', 'hrPlan'],
+      financialPlan: ['projections', 'fundingNeeds', 'useOfFunds']
+    };
+    
+    // Check if all required fields for this section exist and have content
+    const fieldsToCheck = requiredFields[sectionId] || [];
+    return fieldsToCheck.every(field => {
+      // Handle nested objects like projections
+      if (field === 'projections' && sectionData.projections) {
+        return sectionData.projections.yearOne && 
+               sectionData.projections.yearOne.revenue && 
+               sectionData.projections.yearOne.expenses;
+      }
+      return sectionData[field] && typeof sectionData[field] === 'string' && sectionData[field].trim() !== '';
+    });
+  }
   
   /**
-   * Scroll to the bottom of the messages container
-   * Enhanced with multiple fallback methods to ensure reliable scrolling
+   * Generates a welcome message that includes information about incomplete sections
+   * @returns A formatted welcome message string
+   */
+  const generateWelcomeMessageWithIncompleteInfo = (): string => {
+    const incompleteSections: string[] = [];
+    
+    // Check each section's completion status
+    if (businessPlan?.content) {
+      SECTION_ORDER.forEach(section => {
+        const sectionData = businessPlan.content?.[section];
+        if (!isSectionComplete(section, sectionData)) {
+          incompleteSections.push(SECTION_NAMES[section]);
+        }
+      });
+    }
+    
+    let welcomeMessage = `Hello! I'm your AI business plan assistant. I'm here to help you complete your business plan.`;
+    
+    if (incompleteSections.length > 0) {
+      welcomeMessage += `\n\nBased on my analysis, you still need to complete the following sections:\n`;
+      incompleteSections.forEach(section => {
+        welcomeMessage += `- ${section}\n`;
+      });
+      welcomeMessage += `\nYou can tell me which section you'd like to work on, and I'll help you complete it. For example, you can say "Let's work on the ${incompleteSections[0]}" or "Help me with the Products & Services section."`;
+    } else {
+      welcomeMessage += `\n\nGreat news! It looks like you've completed all the required fields in your business plan. Is there a specific section you'd like to review or enhance? You can simply tell me which section you want to work on.`;
+    }
+    
+    return welcomeMessage;
+  }
+  
+  /**
+   * Scrolls the message container to the bottom
    */
   const scrollToBottom = () => {
     console.log('[Scroll Debug] Attempting to scroll to bottom');
@@ -281,152 +361,94 @@ export default function BusinessPlanAIAssistant({
   };
   
   /**
-   * Process chat message text to make subsection names clickable
-   * This allows users to navigate directly to subsections by clicking on them in the chat
+   * Processes message text to extract mentions of sections for navigation
+   * @param message The user's message text
+   * @returns boolean indicating if a section was identified and navigation occurred
    */
-  const processMessageWithSubsectionLinks = (messageText: string) => {
-    // Regular expression to find subsection references with bullet points
-    const subsectionPattern = /• ([^•\n]+)/g;
-    const parts = [];
-    let lastIndex = 0;
-    let match;
+  const processSectionNavigation = (message: string): boolean => {
+    const normalizedMessage = message.toLowerCase();
     
-    // Clone the text so we can search in it
-    const text = messageText;
-    
-    // Look for subsection patterns in the text
-    while ((match = subsectionPattern.exec(text)) !== null) {
-      // Add the text before the match
-      if (match.index > lastIndex) {
-        parts.push(<span key={`text-${lastIndex}`}>{text.substring(lastIndex, match.index)}</span>);
-      }
+    // Check for section mentions
+    for (const [sectionId, sectionName] of Object.entries(SECTION_NAMES)) {
+      const normalizedSectionName = sectionName.toLowerCase();
       
-      // Extract the subsection name without the bullet
-      const subsectionName = match[1].trim();
-      
-      // Find the corresponding subsection ID
-      let subsectionId = null;
-      for (const [id, name] of Object.entries(SUBFIELD_NAMES)) {
-        if (name === subsectionName) {
-          subsectionId = id;
-          break;
+      // Various ways a user might reference a section
+      if (
+        normalizedMessage.includes(`work on ${normalizedSectionName}`) ||
+        normalizedMessage.includes(`help with ${normalizedSectionName}`) ||
+        normalizedMessage.includes(`go to ${normalizedSectionName}`) ||
+        normalizedMessage.includes(`switch to ${normalizedSectionName}`) ||
+        normalizedMessage.includes(`let's do ${normalizedSectionName}`) ||
+        normalizedMessage.includes(`navigate to ${normalizedSectionName}`) ||
+        normalizedMessage.includes(`edit ${normalizedSectionName}`) ||
+        normalizedMessage.includes(`complete ${normalizedSectionName}`) ||
+        normalizedMessage.includes(`work on the ${normalizedSectionName}`) ||
+        normalizedMessage.includes(`help me with ${normalizedSectionName}`) ||
+        normalizedMessage.includes(`update ${normalizedSectionName}`) ||
+        // Also match just the section name if it's specific enough
+        (normalizedMessage === normalizedSectionName) ||
+        (normalizedMessage === `${normalizedSectionName} section`)
+      ) {
+        // Check if we're already on this section
+        if (sectionId === sectionId) {
+          return false; // No navigation needed, but section was mentioned
+        }
+        
+        // Navigate to the mentioned section
+        if (onSectionChange) {
+          onSectionChange(sectionId);
+          return true;
         }
       }
       
-      // If we found a matching subsection ID, make it a clickable link
-      if (subsectionId) {
-        // Find the parent section ID
-        let parentSectionId = sectionId; // Default to current section
-        for (const [sectId, subsections] of Object.entries(SECTION_SUBSECTIONS)) {
-          if (subsections.includes(subsectionId)) {
-            parentSectionId = sectId;
-            break;
+      // Also check for subsection mentions if in the format "help with mission statement"
+      const subsections = SECTION_SUBSECTIONS[sectionId] || [];
+      for (const subsection of subsections) {
+        const subsectionName = SUBFIELD_NAMES[subsection]?.toLowerCase() || '';
+        if (subsectionName && normalizedMessage.includes(subsectionName.toLowerCase())) {
+          // Navigate to section and set subsection
+          if (onSectionChange) {
+            onSectionChange(sectionId);
+            // Set current subfield after a delay to allow section change to complete
+            setTimeout(() => setCurrentSubfield(subsection), 300);
+            return true;
           }
         }
-        
-        parts.push(
-          <span key={`bullet-${match.index}`}>• </span>
-        );
-        
-        parts.push(
-          <button
-            key={`link-${match.index}`}
-            onClick={() => handleNavigateToSection(parentSectionId, subsectionId)}
-            className="inline text-blue-600 hover:underline"
-          >
-            {subsectionName}
-          </button>
-        );
-      } else {
-        // If no matching subsection, leave the text as-is
-        parts.push(<span key={`text-${match.index}`}>{match[0]}</span>);
       }
-      
-      lastIndex = match.index + match[0].length;
     }
     
-    // Add any remaining text
-    if (lastIndex < text.length) {
-      parts.push(<span key={`text-${lastIndex}`}>{text.substring(lastIndex)}</span>);
-    }
-    
-    return <>{parts}</>;
-  };
-  
-  /**
-   * Get suggested prompts based on section
-   */
-  const getSuggestedPrompts = () => {
-    // All help questions removed at client's request
-    const suggestionMap: Record<string, string[]> = {
-      executiveSummary: [],
-      companyDescription: [],
-      productsAndServices: [],
-      marketAnalysis: [],
-      marketingStrategy: [],
-      operationsPlan: [],
-      organizationAndManagement: [],
-      financialPlan: []
-    }
-    
-    // Return empty array for any section
-    return []
+    return false;
   }
   
   /**
-   * Handle form submission
+   * Handles form submission
    */
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    
     if (!inputValue.trim() || isLoading) return
     
-    // Debug logging to verify data
-    console.log('[BusinessPlanAI] Sending message with section data:', {
-      sectionId,
-      dataAvailable: Object.keys(currentSectionData).length > 0,
-      keys: Object.keys(currentSectionData)
-    });
+    // Check if the message contains a section reference for navigation
+    const navigatedToSection = processSectionNavigation(inputValue);
     
-    // Send the message with current section data
-    sendMessage(inputValue, currentSectionData)
+    // If we navigated to a different section, don't send the message as a regular query
+    if (!navigatedToSection) {
+      // Send as a regular message
+      sendMessage(inputValue, currentSectionData)
+    }
+    
     setInputValue('')
     
-    // Hide the section prompt if it was showing
-    setShowSectionPrompt(false)
-    
-    // Reset the section navigation state
-    if (showSectionNav) {
-      setShowSectionNav(false)
-    }
-    
-    // Force scroll after sending message
-    setTimeout(scrollToBottom, 100)
-    
-    // Maintain focus on the textarea
-    if (textareaRef.current) {
-      textareaRef.current.focus()
-    }
+    // Reset height of textarea after clearing
+    setTimeout(() => {
+      if (textareaRef.current) {
+        textareaRef.current.style.height = '60px'
+      }
+    }, 0)
   }
   
   /**
-   * Handle clicking on a suggested prompt
-   */
-  const handleSuggestionClick = (suggestion: string) => {
-    // Send the suggestion as a message with current section data
-    sendMessage(suggestion, currentSectionData)
-    
-    // Hide the section prompt if it was showing
-    setShowSectionPrompt(false)
-    
-    // Reset section navigation if open
-    setShowSectionNav(false)
-    
-    // Force scroll after state updates
-    setTimeout(scrollToBottom, 100)
-  }
-  
-  /**
-   * Handle applying a suggestion to a field
+   * Handles applying a suggestion to a field
    */
   const handleApplySuggestion = (fieldId: string, content: string) => {
     if (!onApplySuggestion) return
@@ -550,83 +572,6 @@ export default function BusinessPlanAIAssistant({
     }
     return subsections[currentIndex + 1];
   }
-  
-  /**
-   * Render section navigation prompt
-   */
-  const renderSectionNavigationPrompt = () => {
-    if (!showSectionPrompt || !currentSubfield) return null;
-    
-    // Check if there's a next subfield in the current section
-    const nextSubfield = getNextSubfield(currentSubfield);
-    const nextSubfieldName = nextSubfield ? SUBFIELD_NAMES[nextSubfield] : null;
-    
-    // If no next subfield, consider next major section
-    const nextSectionId = nextSubfield ? null : getNextSectionId(sectionId);
-    const nextSectionName = nextSectionId ? SECTION_NAMES[nextSectionId] : null;
-    
-    return (
-      <div className="mt-4 border-t border-gray-200 pt-3">
-        <h4 className="text-sm font-medium text-gray-700 mb-2 flex items-center">
-          <ChevronRight className="h-4 w-4 mr-1" />
-          Great! Where would you like to go next?
-        </h4>
-        <div className="space-y-2">
-          {nextSubfieldName && (
-            <button
-              onClick={() => {
-                setShowSectionPrompt(false);
-                sendMessage(`Let's work on the ${nextSubfieldName} field now.`);
-              }}
-              className="w-full bg-blue-50 hover:bg-blue-100 text-blue-700 p-2 rounded-md text-sm flex items-center justify-between"
-            >
-              <span>Continue with {nextSubfieldName}</span>
-              <ArrowRight className="h-4 w-4" />
-            </button>
-          )}
-          
-          {nextSectionName && (
-            <button
-              onClick={handleMoveToNextSection}
-              className="w-full bg-blue-50 hover:bg-blue-100 text-blue-700 p-2 rounded-md text-sm flex items-center justify-between"
-            >
-              <span>Move to {nextSectionName} section</span>
-              <ArrowRight className="h-4 w-4" />
-            </button>
-          )}
-          
-          <button
-            onClick={handleStayOnCurrentSection}
-            className="w-full bg-gray-50 hover:bg-gray-100 text-gray-700 p-2 rounded-md text-sm"
-          >
-            Continue working on current field
-          </button>
-          
-          <div className="mt-2">
-            <div className="text-xs text-gray-500 mb-1">Or select a specific field:</div>
-            <div className="grid grid-cols-1 gap-1">
-              {SECTION_SUBSECTIONS[sectionId]?.map(fieldId => (
-                <button
-                  key={fieldId}
-                  onClick={() => {
-                    setShowSectionPrompt(false);
-                    sendMessage(`Let's work on the ${SUBFIELD_NAMES[fieldId]} field now.`);
-                  }}
-                  className={`text-xs p-1 rounded text-left ${
-                    fieldId === currentSubfield 
-                      ? 'bg-blue-100 text-blue-700' 
-                      : 'bg-gray-50 hover:bg-gray-100 text-gray-600'
-                  }`}
-                >
-                  {SUBFIELD_NAMES[fieldId]}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  };
   
   /**
    * Render field suggestions if available
@@ -837,223 +782,6 @@ export default function BusinessPlanAIAssistant({
     );
   }
   
-  /**
-   * Toggle section navigation visibility
-   */
-  const handleShowSectionNav = () => {
-    setShowSectionNav(!showSectionNav)
-    setSelectedSection(null)
-    setShowSectionPrompt(false)
-  }
-  
-  /**
-   * Navigate to a specific section/subsection
-   */
-  const handleNavigateToSection = (sectId: string, subsection?: string) => {
-    if (!onSectionChange) return
-    
-    // Log pre-navigation state
-    console.log(`[Navigation Debug] PRE-NAVIGATION - Current subfield: ${currentSubfield}, Section ID: ${sectionId}`);
-    console.log(`[Navigation Debug] NAVIGATING TO - Section: ${sectId}, Subsection: ${subsection || 'none'}`);
-    
-    // MARKET OPPORTUNITY SPECIAL HANDLING
-    // Check multiple variations and patterns to ensure Market Opportunity is correctly identified
-    const isMarketOpportunitySubsection = subsection && (
-      // Direct match
-      subsection === 'marketOpportunity' ||
-      subsection === 'marketopportunity' ||
-      subsection === 'Market Opportunity' ||
-      
-      // Content-based identification
-      (subsection.toLowerCase().includes('market') && 
-       (subsection.toLowerCase().includes('opportunit') || 
-        subsection.toLowerCase().includes('analysis'))) ||
-      
-      // Partial matches
-      subsection === 'market' || 
-      subsection === 'opportunity'
-    );
-    
-    // Fix for Market Opportunity field
-    if (isMarketOpportunitySubsection) {
-      subsection = 'marketOpportunity';
-      console.log(`[Market Opportunity Debug] FIXING Market Opportunity field ID to: ${subsection}`);
-    }
-    // Fix for Products Services Overview field
-    else if (subsection === 'Products Services Overview' || 
-          subsection === 'ProductsServicesOverview' || 
-          subsection === 'productsServicesOverview') {
-      subsection = 'productsOverview';
-      console.log(`[Navigation Debug] FIXING Products Services Overview field ID to: ${subsection}`);
-    }
-    
-    // Clear previous state
-    setCurrentSubfield(null);
-    
-    onSectionChange(sectId)
-    
-    if (subsection) {
-      const subfieldName = SUBFIELD_NAMES[subsection] || subsection
-      
-      // Set the current subfield with explicit logging
-      console.log(`[Navigation Debug] Setting current subfield to: "${subsection}" (${subfieldName})`);
-      setCurrentSubfield(subsection);
-      
-      // Log the field map for debugging
-      console.log('[Navigation Debug] Current SUBFIELD_NAMES:', SUBFIELD_NAMES);
-      
-      // Special handling for Market Opportunity to ensure consistent messaging to AI
-      if (subsection === 'marketOpportunity') {
-        console.log(`[Market Opportunity Debug] Sending specialized Market Opportunity prompt to AI`);
-        sendMessage(`Let's work on the ${SECTION_NAMES[sectId]} section, specifically the Market Opportunity part.`);
-      } else {
-        sendMessage(`Let's work on the ${SECTION_NAMES[sectId]} section, specifically the ${subfieldName} part.`);
-      }
-    } else {
-      console.log(`[Navigation Debug] Clearing current subfield (working on whole section)`);
-      setCurrentSubfield(null);
-      
-      // Show subsections in the chat when a section is selected without specifying a subsection
-      const subsectionList = SECTION_SUBSECTIONS[sectId] || [];
-      if (subsectionList.length > 0) {
-        // Format the subsections into a bulleted list for the chat
-        const formattedSubsections = subsectionList
-          .map(sub => `• ${SUBFIELD_NAMES[sub] || sub}`)
-          .join('\n');
-        
-        // Send a message showing the available subsections for this section
-        sendMessage(
-          `Let's work on the ${SECTION_NAMES[sectId]} section. This section contains the following subsections:\n\n${formattedSubsections}\n\nWhich part would you like to focus on first?`
-        );
-      } else {
-        // If no subsections are defined, just use the original message
-        sendMessage(`Let's work on the ${SECTION_NAMES[sectId]} section.`);
-      }
-    }
-    
-    // Clear any active suggestions
-    setFieldSuggestions([]);
-    
-    // Close section navigation after selecting a section
-    setShowSectionNav(false);
-    // Also reset selectedSection when navigating to a section
-    setSelectedSection(null);
-    
-    // Log post-navigation state
-    console.log(`[Navigation Debug] POST-NAVIGATION - Current subfield: ${subsection || 'none'}, Section ID: ${sectId}`);
-    
-    // Force scroll after state updates with longer delay to ensure UI has updated
-    setTimeout(() => {
-      // First try to scroll the main messages container to the bottom
-      scrollToBottom();
-      
-      // Then make sure the content is visible by scrolling the entire chat into view
-      if (messagesContainerRef.current) {
-        messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
-      }
-      
-      // As a final fallback, ensure the messages end ref is in view
-      if (messagesEndRef.current) {
-        messagesEndRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
-      }
-      
-      console.log(`[Navigation Debug] Scrolled to bottom after section selection`);
-    }, 300); // Longer delay to ensure the new content has rendered
-  }
-  
-  /**
-   * Render section navigation UI
-   */
-  const renderSectionNavigation = () => {
-    return (
-      <div className="mt-2">
-        <h4 className="text-xs font-medium text-gray-700 mb-1 flex items-center">
-          <ChevronRight className="h-3 w-3 mr-1" />
-          {selectedSection ? 'Choose a subsection:' : 'Choose a section to work on:'}
-        </h4>
-        <div className="space-y-1">
-          {selectedSection ? (
-            // Show subsections of selected section
-            <>
-              <div className="mb-1 flex items-center">
-                <button 
-                  onClick={() => setSelectedSection(null)}
-                  className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 px-1 py-1 rounded mr-1 flex items-center"
-                >
-                  <ArrowRight className="h-3 w-3 rotate-180 mr-1" />
-                  Back
-                </button>
-                <span className="text-xs font-medium">{SECTION_NAMES[selectedSection]} subsections:</span>
-              </div>
-              <div className="grid grid-cols-1 gap-1">
-                {SECTION_SUBSECTIONS[selectedSection]?.map(subsection => (
-                  <button
-                    key={subsection}
-                    onClick={() => handleNavigateToSection(selectedSection, subsection)}
-                    className="text-left p-1 border border-gray-200 rounded hover:bg-blue-50 text-xs text-gray-700"
-                  >
-                    {SUBFIELD_NAMES[subsection] || subsection.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
-                  </button>
-                ))}
-              </div>
-            </>
-          ) : (
-            // Show all available sections in a grid layout
-            <div className="grid grid-cols-2 gap-1">
-              {SECTION_ORDER.map(section => (
-                <button
-                  key={section}
-                  onClick={() => {
-                    if (SECTION_SUBSECTIONS[section]?.length > 0) {
-                      setSelectedSection(section)
-                    } else {
-                      handleNavigateToSection(section)
-                    }
-                  }}
-                  className={`text-left p-1 border rounded flex justify-between items-center text-xs ${
-                    section === sectionId 
-                      ? 'bg-blue-100 text-blue-700 border-blue-200' 
-                      : 'border-gray-200 hover:bg-gray-50 text-gray-700'
-                  }`}
-                >
-                  <span>{SECTION_NAMES[section]}</span>
-                  {SECTION_SUBSECTIONS[section]?.length > 0 && (
-                    <ChevronRight className="h-3 w-3" />
-                  )}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-    )
-  }
-  
-  // When component initializes, set showSectionNav to true when in empty state
-  useEffect(() => {
-    // Initialize section navigation to true in empty state
-    if (messages.length === 0) {
-      setShowSectionNav(true);
-      
-      // Scroll to make section navigation visible after a slight delay
-      setTimeout(() => {
-        if (messagesContainerRef.current) {
-          // Set initial scroll position to show the navigation menu
-          messagesContainerRef.current.scrollTop = 0;
-        }
-      }, 50);
-    }
-  }, [messages.length]);
-  
-  // Add a manual scroll trigger when section navigation is toggled
-  useEffect(() => {
-    const scrollTimer = setTimeout(() => {
-      scrollToBottom();
-    }, 150); // Slightly longer delay for section navigation which adds more content
-    
-    return () => clearTimeout(scrollTimer);
-  }, [showSectionNav, selectedSection]);
-  
   // Modify the render function to include the compact mode class
   return (
     <div className={`flex flex-col bg-white border rounded-lg shadow-sm ${isCompactMode ? 'compact-assistant' : ''} ${className}`}>
@@ -1112,32 +840,35 @@ export default function BusinessPlanAIAssistant({
                 <div className="text-center py-2 text-gray-500">
                   {/* Render section navigation immediately in empty state, without any messages */}
                   <div className="mt-1">
-                    {renderSectionNavigation()}
+                    {renderFieldSuggestions()}
                   </div>
                 </div>
               ) : (
                 <>
                   <div className="flex flex-col space-y-4">
                     {messages.map((message, index) => (
-                      <div
+                      <div 
                         key={index}
-                        className={`flex ${
-                          message.role === 'user' ? 'justify-end' : 'justify-start'
-                        }`}
+                        className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
                       >
                         <div
-                          className={`p-3 rounded-lg max-w-[85%] ${
-                            message.role === 'user'
-                              ? 'bg-blue-600 text-white'
-                              : 'bg-gray-200 text-gray-800'
-                          }`}
+                          className={`px-3 py-1.5 rounded-lg ${
+                            message.role === 'user' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-800'
+                          } ${isCompactMode ? 'text-sm' : 'text-base'} max-w-[85%]`}
                         >
-                          <div className="whitespace-pre-wrap">
-                            {message.role === 'assistant' 
-                              ? processMessageWithSubsectionLinks(message.content)
-                              : message.content
-                            }
-                          </div>
+                          {message.role === 'user' ? (
+                            <div>{message.content}</div>
+                          ) : (
+                            <div className="prose max-w-none">
+                              {isLoading && messages.length === index + 1 ? (
+                                <div className="text-gray-500">Thinking...</div>
+                              ) : (
+                                <div className="whitespace-pre-wrap">
+                                  {message.content}
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </div>
                       </div>
                     ))}
@@ -1154,9 +885,9 @@ export default function BusinessPlanAIAssistant({
                   )}
                   
                   {/* Show section navigation if enabled */}
-                  {showSectionNav && (
+                  {showSectionPrompt && (
                     <div className="mt-2 border-t border-gray-200 pt-2">
-                      {renderSectionNavigation()}
+                      {renderFieldSuggestions()}
                     </div>
                   )}
                 </>
@@ -1170,10 +901,10 @@ export default function BusinessPlanAIAssistant({
               <textarea
                 ref={textareaRef}
                 value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
+                onChange={handleTextareaChange}
                 placeholder="Ask for guidance..."
                 disabled={isLoading}
-                className="flex-grow py-2 px-3 border border-gray-300 rounded-l-md focus:outline-none focus:ring-1 focus:ring-blue-500 min-h-[60px] resize-y"
+                className="flex-grow py-2 px-3 border border-gray-300 rounded-l-md focus:outline-none focus:ring-1 focus:ring-blue-500 min-h-[60px] max-h-[200px] resize-none transition-all duration-100"
                 onKeyDown={(e) => {
                   // Submit on Enter without Shift key
                   if (e.key === 'Enter' && !e.shiftKey) {
@@ -1202,14 +933,6 @@ export default function BusinessPlanAIAssistant({
                   </button>
                 )}
               </div>
-              <button
-                type="button"
-                onClick={handleShowSectionNav}
-                className="text-blue-600 hover:text-blue-800 flex items-center"
-              >
-                <BookOpen className="h-3 w-3 mr-1" /> 
-                {showSectionNav ? 'Hide section navigation' : 'Show section navigation'}
-              </button>
             </div>
           </div>
         </>
