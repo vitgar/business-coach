@@ -143,6 +143,10 @@ export default function BusinessPlanAIAssistant({
   const [currentSubfield, setCurrentSubfield] = useState<string | null>(null)
   const [isCompactMode, setIsCompactMode] = useState(window.innerHeight < 800)
   
+  // For the simple section navigation menu
+  const [showSectionMenu, setShowSectionMenu] = useState(true)
+  const [selectedMainSection, setSelectedMainSection] = useState<string | null>(null)
+  
   // Create refs for the component
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const messagesContainerRef = useRef<HTMLDivElement>(null)
@@ -251,7 +255,7 @@ export default function BusinessPlanAIAssistant({
     }
   }, [inputValue]);
   
-  // When component initializes, show incomplete sections summary
+  // When component initializes, show incomplete sections summary and section menu
   useEffect(() => {
     // Initialize with a welcome message that includes incomplete sections
     if (messages.length === 0 && businessPlan?.content) {
@@ -263,6 +267,9 @@ export default function BusinessPlanAIAssistant({
           content: welcomeMessage
         }
       ]);
+      
+      // Show section menu by default
+      setShowSectionMenu(true);
     }
   }, [businessPlan]);
 
@@ -1403,6 +1410,102 @@ export default function BusinessPlanAIAssistant({
     );
   }
   
+  /**
+   * Handle section selection in the menu
+   */
+  const handleSelectMainSection = (section: string) => {
+    if (selectedMainSection === section) {
+      // If clicking the same section again, collapse it
+      setSelectedMainSection(null);
+    } else {
+      // Otherwise, expand to show subsections
+      setSelectedMainSection(section);
+    }
+  };
+  
+  /**
+   * Handle subsection selection in the menu
+   */
+  const handleSelectSubsection = (mainSection: string, subsection: string) => {
+    // Use the existing navigation functionality
+    if (onSectionChange) {
+      onSectionChange(mainSection, subsection);
+      
+      // Reset menu state after navigation
+      setSelectedMainSection(null);
+      
+      // Add a message to the chat indicating navigation
+      const sectionDisplayName = SECTION_NAMES[mainSection];
+      const subsectionDisplayName = SUBFIELD_NAMES[subsection];
+      const message = `Navigating to ${sectionDisplayName} - ${subsectionDisplayName}`;
+      
+      // Add user message and assistant response
+      setMessages([
+        ...messages,
+        { role: 'user', content: `Let's work on ${subsectionDisplayName}` },
+        { 
+          role: 'assistant', 
+          content: `I've navigated to the ${sectionDisplayName} section and focused on the ${subsectionDisplayName} field for you. You can now start typing directly. Would you like some guidance on what to include in this field?`
+        }
+      ]);
+      
+      // Hide the menu after selection
+      setShowSectionMenu(false);
+    }
+  };
+  
+  /**
+   * Render the section navigation menu
+   */
+  const renderSectionMenu = () => {
+    if (!showSectionMenu) return null;
+    
+    return (
+      <div className="border rounded-md bg-white p-2 mb-2 text-xs">
+        <h4 className="text-xs font-medium text-gray-700 mb-1">Business Plan Sections</h4>
+        <div className="space-y-1">
+          {SECTION_ORDER.map(section => (
+            <div key={section} className="rounded border border-gray-200">
+              <button
+                onClick={() => handleSelectMainSection(section)}
+                className={`w-full text-left px-2 py-1 flex justify-between items-center text-xs ${
+                  section === sectionId ? 'bg-blue-50 text-blue-700' : 'hover:bg-gray-50'
+                }`}
+              >
+                <span>{SECTION_NAMES[section]}</span>
+                <span>{selectedMainSection === section ? '▼' : '►'}</span>
+              </button>
+              
+              {selectedMainSection === section && SECTION_SUBSECTIONS[section] && (
+                <div className="pl-2 pr-1 py-1 bg-gray-50 border-t border-gray-200">
+                  {SECTION_SUBSECTIONS[section].map(subsection => (
+                    <button
+                      key={subsection}
+                      onClick={() => handleSelectSubsection(section, subsection)}
+                      className={`w-full text-left px-2 py-0.5 my-0.5 text-xs rounded ${
+                        currentSubfield === subsection ? 'bg-blue-100 text-blue-800' : 'hover:bg-gray-100'
+                      }`}
+                    >
+                      {SUBFIELD_NAMES[subsection] || subsection}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+        <div className="mt-1 text-right">
+          <button 
+            onClick={() => setShowSectionMenu(false)}
+            className="text-xs text-gray-500 hover:text-gray-700"
+          >
+            Hide Menu
+          </button>
+        </div>
+      </div>
+    );
+  };
+  
   // Modify the render function to include the compact mode class
   return (
     <div className={`flex flex-col bg-white border rounded-lg shadow-sm ${isCompactMode ? 'compact-assistant' : ''} ${className}`}>
@@ -1425,6 +1528,16 @@ export default function BusinessPlanAIAssistant({
         </div>
         
         <div className="flex space-x-1">
+          {/* Add button to toggle section menu */}
+          {!showSectionMenu && (
+            <button
+              onClick={() => setShowSectionMenu(true)}
+              className="text-gray-500 hover:text-gray-700 p-1"
+              title="Show Sections Menu"
+            >
+              <BookOpen className="h-4 w-4" />
+            </button>
+          )}
           {/* Add button to toggle compact mode */}
           <button
             onClick={() => setIsCompactMode(!isCompactMode)}
@@ -1447,8 +1560,8 @@ export default function BusinessPlanAIAssistant({
       
       {/* Adjust the message container max-height based on compact mode */}
       {isOpen && (
-        <>
-          <div 
+        <div className="flex-grow overflow-hidden flex flex-col">
+          <div
             ref={messagesContainerRef}
             className={`flex-grow overflow-y-auto p-3 ${
               isCompactMode ? 'max-h-[350px]' : 'max-h-[450px]'
@@ -1456,64 +1569,66 @@ export default function BusinessPlanAIAssistant({
               messages.length === 0 ? 'min-h-[200px] empty-state-container' : ''
             }`}
           >
-            <div className="flex-grow">
-              {messages.length === 0 ? (
-                <div className="text-center py-2 text-gray-500">
-                  {/* Render section navigation immediately in empty state, without any messages */}
-                  <div className="mt-1">
+            {/* Render section navigation menu at the top */}
+            {renderSectionMenu()}
+            
+            {/* Messages UI */}
+            {messages.length === 0 ? (
+              <div className="text-center py-2 text-gray-500">
+                {/* Render section navigation immediately in empty state, without any messages */}
+                <div className="mt-1">
+                  {renderFieldSuggestions()}
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className="flex flex-col space-y-4">
+                  {messages.map((message, index) => (
+                    <div
+                      key={index}
+                      className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                    >
+                      <div
+                        className={`px-3 py-1.5 rounded-lg ${
+                          message.role === 'user' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-800'
+                        } ${isCompactMode ? 'text-sm' : 'text-base'} max-w-[85%]`}
+                      >
+                        {message.role === 'user' ? (
+                          <div>{message.content}</div>
+                        ) : (
+                          <div className="prose max-w-none">
+                            {isLoading && messages.length === index + 1 ? (
+                              <div className="text-gray-500">Thinking...</div>
+                            ) : (
+                              <div className="whitespace-pre-wrap">
+                                {message.content}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                  <div ref={messagesEndRef} />
+                </div>
+                {isLoading && (
+                  <div className="bg-gray-100 text-gray-800 p-2 rounded-lg max-w-[85%] mt-2">
+                    <div className="flex space-x-2">
+                      <div className="w-2 h-2 rounded-full bg-gray-400 animate-pulse"></div>
+                      <div className="w-2 h-2 rounded-full bg-gray-400 animate-pulse delay-100"></div>
+                      <div className="w-2 h-2 rounded-full bg-gray-400 animate-pulse delay-200"></div>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Show section navigation if enabled */}
+                {showSectionPrompt && (
+                  <div className="mt-2 border-t border-gray-200 pt-2">
                     {renderFieldSuggestions()}
                   </div>
-                </div>
-              ) : (
-                <>
-                  <div className="flex flex-col space-y-4">
-                    {messages.map((message, index) => (
-                      <div
-                        key={index}
-                        className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                      >
-                        <div
-                          className={`px-3 py-1.5 rounded-lg ${
-                            message.role === 'user' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-800'
-                          } ${isCompactMode ? 'text-sm' : 'text-base'} max-w-[85%]`}
-                        >
-                          {message.role === 'user' ? (
-                            <div>{message.content}</div>
-                          ) : (
-                            <div className="prose max-w-none">
-                              {isLoading && messages.length === index + 1 ? (
-                                <div className="text-gray-500">Thinking...</div>
-                              ) : (
-                          <div className="whitespace-pre-wrap">
-                                  {message.content}
-                          </div>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                    <div ref={messagesEndRef} />
-                  </div>
-                  {isLoading && (
-                    <div className="bg-gray-100 text-gray-800 p-2 rounded-lg max-w-[85%] mt-2">
-                      <div className="flex space-x-2">
-                        <div className="w-2 h-2 rounded-full bg-gray-400 animate-pulse"></div>
-                        <div className="w-2 h-2 rounded-full bg-gray-400 animate-pulse delay-100"></div>
-                        <div className="w-2 h-2 rounded-full bg-gray-400 animate-pulse delay-200"></div>
-                      </div>
-                    </div>
-                  )}
-                  
-                  {/* Show section navigation if enabled */}
-                  {showSectionPrompt && (
-                    <div className="mt-2 border-t border-gray-200 pt-2">
-                      {renderFieldSuggestions()}
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
+                )}
+              </>
+            )}
           </div>
           
           {/* Input area - make more compact when needed */}
@@ -1556,7 +1671,7 @@ export default function BusinessPlanAIAssistant({
               </div>
             </div>
           </div>
-        </>
+        </div>
       )}
     </div>
   );
