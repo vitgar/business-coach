@@ -259,17 +259,11 @@ export default function BusinessPlanAIAssistant({
   useEffect(() => {
     // Initialize with a welcome message that includes incomplete sections
     if (messages.length === 0 && businessPlan?.content) {
-      // Generate welcome message with incomplete sections information
-      const welcomeMessage = generateWelcomeMessageWithIncompleteInfo();
-      setMessages([
-        { 
-          role: 'assistant', 
-          content: welcomeMessage
-        }
-      ]);
-      
-      // Show section menu by default
+      // When the component first loads, only show the section menu, not the welcome message
       setShowSectionMenu(true);
+      
+      // Don't show the welcome message if we're showing the menu
+      // We'll let the menu be the initial interface
     }
   }, [businessPlan]);
 
