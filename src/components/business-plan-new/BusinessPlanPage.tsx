@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation'
 import { ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 import BusinessPlanHeader from './BusinessPlanHeader'
-import BusinessPlanSections from './BusinessPlanSections'
 import BusinessPlanEditor from './BusinessPlanEditor'
 import BusinessPlanControls from './BusinessPlanControls'
 import BusinessPlanAIAssistant from '../business-plan-ai/BusinessPlanAIAssistant'
@@ -188,19 +187,12 @@ export default function BusinessPlanPage({ businessPlanId }: { businessPlanId: s
           </div>
         ) : businessPlan ? (
           <div className="flex flex-col h-full flex-grow pt-2">
-            {/* Business Plan Sections Navigation - Compact horizontal bar */}
-            <div className="bg-white rounded-lg shadow-sm p-2 mb-3">
-              <BusinessPlanSections 
-                currentSection={currentSection}
-                onSectionChange={handleSectionChange}
-                businessPlan={businessPlan}
-              />
-            </div>
+            {/* Removed the BusinessPlanSections horizontal bar to clean up the UI */}
             
             {/* Content Area Grid - Optimized ratio for 14" screens */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 flex-grow h-full overflow-hidden">
               {/* Business Plan Editor - Expand height */}
-              <div className="lg:col-span-7 h-[calc(100vh-130px)]">
+              <div className="lg:col-span-7 h-[calc(100vh-100px)]">
                 <div className="bg-white rounded-lg shadow-sm h-full">
                   <BusinessPlanEditor 
                     businessPlan={businessPlan}
@@ -211,7 +203,7 @@ export default function BusinessPlanPage({ businessPlanId }: { businessPlanId: s
               </div>
 
               {/* AI Assistant */}
-              <div className="lg:col-span-5 h-[calc(100vh-130px)] overflow-hidden">
+              <div className="lg:col-span-5 h-[calc(100vh-100px)] overflow-hidden">
                 <BusinessPlanAIAssistant
                   businessPlanId={businessPlan.id}
                   sectionId={currentSection}

@@ -143,8 +143,8 @@ export default function BusinessPlanAIAssistant({
   const [currentSubfield, setCurrentSubfield] = useState<string | null>(null)
   const [isCompactMode, setIsCompactMode] = useState(window.innerHeight < 800)
   
-  // For the simple section navigation menu
-  const [showSectionMenu, setShowSectionMenu] = useState(true)
+  // For the dropdown menu
+  const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [selectedMainSection, setSelectedMainSection] = useState<string | null>(null)
   
   // Create refs for the component
@@ -255,15 +255,11 @@ export default function BusinessPlanAIAssistant({
     }
   }, [inputValue]);
   
-  // When component initializes, show incomplete sections summary and section menu
+  // When component initializes, initialize the menu
   useEffect(() => {
-    // Initialize with a welcome message that includes incomplete sections
     if (messages.length === 0 && businessPlan?.content) {
-      // When the component first loads, only show the section menu, not the welcome message
-      setShowSectionMenu(true);
-      
-      // Don't show the welcome message if we're showing the menu
-      // We'll let the menu be the initial interface
+      // The menu dropdown will be available but closed initially
+      setIsMenuOpen(false);
     }
   }, [businessPlan]);
 
@@ -467,13 +463,31 @@ export default function BusinessPlanAIAssistant({
       normalizedMessage === 'i approve' ||
       normalizedMessage === 'apply it' ||
       normalizedMessage === 'use it' ||
+      // Common ways to say "no" to "anything else?" questions (indicating satisfaction)
+      normalizedMessage === 'no' ||
+      normalizedMessage === 'no thanks' ||
+      normalizedMessage === 'nothing else' ||
+      normalizedMessage === 'that\'s all' ||
+      normalizedMessage === 'thats all' ||
+      normalizedMessage === 'it\'s good' ||
+      normalizedMessage === 'its good' ||
+      normalizedMessage === 'looks fine' ||
+      normalizedMessage === 'no changes' ||
+      normalizedMessage === 'no changes needed' ||
+      normalizedMessage === 'i like it' ||
+      normalizedMessage === 'sounds good' ||
+      // Handle common phrase starts
       normalizedMessage.startsWith('yes,') ||
       normalizedMessage.startsWith('yeah,') ||
       normalizedMessage.startsWith('correct,') ||
       normalizedMessage.startsWith('approved,') ||
       normalizedMessage.startsWith('looks good,') ||
-      normalizedMessage.includes('apply this') ||
-      normalizedMessage.includes('use this')
+      normalizedMessage.startsWith('no,') ||
+      normalizedMessage.startsWith('no thanks') ||
+      normalizedMessage.startsWith('nope') ||
+      normalizedMessage.startsWith('looks fine') ||
+      normalizedMessage.startsWith('that works') ||
+      normalizedMessage.startsWith('i like')
     );
   }
 
@@ -572,8 +586,12 @@ export default function BusinessPlanAIAssistant({
     // Handle Value Proposition field
     if (lowerId === 'valueproposition' || 
         lowerId === 'value proposition' || 
-        (lowerId.includes('value') && lowerId.includes('proposition'))) {
+        lowerId === 'valueprop' ||
+        lowerId === 'value prop' ||
+        (lowerId.includes('value') && lowerId.includes('proposition')) ||
+        (lowerId.includes('val') && lowerId.includes('prop'))) {
       console.log(`[Field ID Normalization] Normalizing Value Proposition field ID: ${id} -> valueProposition`);
+      // Explicitly ensure we're using the exact format expected by the editor
       return 'valueProposition';
     }
     
@@ -586,10 +604,22 @@ export default function BusinessPlanAIAssistant({
     }
     
     // Handle Future Products field
-    if (lowerId === 'futureproducts' || 
-        lowerId === 'future products' || 
-        (lowerId.includes('future') && lowerId.includes('product'))) {
+    if (lowerId === 'futureproducts' || lowerId === 'future products') {
       console.log(`[Field ID Normalization] Normalizing Future Products field ID: ${id} -> futureProducts`);
+      // Return exact camelCase format required by the editor
+      return 'futureProducts';
+    }
+    
+    if (lowerId === 'futureproduct' || lowerId === 'future product' || lowerId === 'future services') {
+      console.log(`[Field ID Normalization] Normalizing Additional Future Products variants: ${id} -> futureProducts`);
+      // Return exact camelCase format required by the editor
+      return 'futureProducts';
+    }
+    
+    if ((lowerId.includes('future') && lowerId.includes('product')) || 
+        (lowerId.includes('future') && lowerId.includes('service'))) {
+      console.log(`[Field ID Normalization] Normalizing Generic Future Products reference: ${id} -> futureProducts`);
+      // Return exact camelCase format required by the editor
       return 'futureProducts';
     }
     
@@ -977,18 +1007,338 @@ export default function BusinessPlanAIAssistant({
     console.log(`[Apply Suggestion Debug] Applying suggestion to field: ${fieldId}`);
     console.log(`[Apply Suggestion Debug] Current section: ${sectionId}, Current subfield: ${currentSubfield}`);
     
-    // Normalize the field ID
+    // Direct fix for Future Products - hardcode when detected
+    const lowerFieldId = fieldId.toLowerCase();
+    if ((lowerFieldId.includes('future') && (lowerFieldId.includes('product') || lowerFieldId.includes('service'))) ||
+        lowerFieldId === 'futureproducts') {
+      
+      console.log(`[Apply Suggestion Debug] FIX: Directly applying to futureProducts field`);
+      
+      // Apply suggestion
+      onApplySuggestion('futureProducts', content);
+      
+      // Update tracking
+      setCurrentSubfield('futureProducts');
+      setLastAppliedSuggestion({ fieldId: 'futureProducts', content });
+      setShowSectionPrompt(true);
+      
+      // Force proper focus
+      if (onSectionChange) {
+        console.log(`[Apply Suggestion Debug] FIX: Setting focus to futureProducts field`);
+        setTimeout(() => {
+          onSectionChange('productsAndServices', 'futureProducts');
+        }, 100);
+      }
+      
+      // Scroll after applying
+      setTimeout(scrollToBottom, 150);
+      
+      return;
+    }
+
+    // Direct fix for Industry Overview - hardcode when detected
+    if ((lowerFieldId.includes('industry') && lowerFieldId.includes('overview')) ||
+        lowerFieldId === 'industryoverview') {
+      
+      console.log(`[Apply Suggestion Debug] FIX: Directly applying to industryOverview field`);
+      
+      // Apply suggestion
+      onApplySuggestion('industryOverview', content);
+      
+      // Update tracking
+      setCurrentSubfield('industryOverview');
+      setLastAppliedSuggestion({ fieldId: 'industryOverview', content });
+      setShowSectionPrompt(true);
+      
+      // Force proper focus
+      if (onSectionChange) {
+        console.log(`[Apply Suggestion Debug] FIX: Setting focus to industryOverview field`);
+        setTimeout(() => {
+          onSectionChange('marketAnalysis', 'industryOverview');
+        }, 100);
+      }
+      
+      // Scroll after applying
+      setTimeout(scrollToBottom, 150);
+      
+      return;
+    }
+
+    // Direct fix for Target Market - hardcode when detected
+    if ((lowerFieldId.includes('target') && lowerFieldId.includes('market')) ||
+        lowerFieldId === 'targetmarket' ||
+        lowerFieldId === 'target market' ||
+        lowerFieldId.includes('target audience') ||
+        lowerFieldId.includes('customer segment') ||
+        lowerFieldId.includes('demographic') ||
+        lowerFieldId.includes('customer base')) {
+      
+      console.log(`[Apply Suggestion Debug] OVERRIDE: Directly applying to targetMarket field, bypassing all other logic`);
+      
+      try {
+        // Force direct apply with hardcoded values
+        if (onApplySuggestion) {
+          // Apply directly to the known correct field ID
+          onApplySuggestion('targetMarket', content);
+          
+          console.log(`[Apply Suggestion Debug] OVERRIDE: Successfully applied content to targetMarket`);
+          
+          // Manually update all tracking state
+          setCurrentSubfield('targetMarket');
+          setLastAppliedSuggestion({ fieldId: 'targetMarket', content });
+          setShowSectionPrompt(true);
+          
+          // Force section navigation and focus with explicit section ID
+          if (onSectionChange) {
+            // Ensure we're in the correct section first
+            console.log(`[Apply Suggestion Debug] OVERRIDE: Force setting market analysis section and targetMarket focus`);
+            
+            // Give editor time to update by using a timeout
+            setTimeout(() => {
+              onSectionChange('marketAnalysis', 'targetMarket');
+              
+              // Double-check focus after a short delay
+              setTimeout(() => {
+                if (onSectionChange) {
+                  onSectionChange('marketAnalysis', 'targetMarket');
+                }
+              }, 300);
+            }, 100);
+          }
+          
+          // Ensure scroll happens after all updates
+          setTimeout(scrollToBottom, 200);
+          
+          console.log(`[Apply Suggestion Debug] OVERRIDE: Target Market handling complete`);
+          return;
+        }
+      } catch (err) {
+        console.error(`[Apply Suggestion Debug] ERROR in Target Market override:`, err);
+      }
+    }
+    
+    // Direct fix for Market Segmentation - hardcode when detected
+    if ((lowerFieldId.includes('market') && lowerFieldId.includes('segment')) ||
+        lowerFieldId === 'marketsegmentation' ||
+        lowerFieldId === 'market segmentation' ||
+        lowerFieldId.includes('customer group') ||
+        lowerFieldId.includes('market division') ||
+        lowerFieldId.includes('segment')) {
+      
+      console.log(`[Apply Suggestion Debug] OVERRIDE: Directly applying to marketSegmentation field, bypassing all other logic`);
+      
+      try {
+        // Force direct apply with hardcoded values
+        if (onApplySuggestion) {
+          // Apply directly to the known correct field ID
+          onApplySuggestion('marketSegmentation', content);
+          
+          console.log(`[Apply Suggestion Debug] OVERRIDE: Successfully applied content to marketSegmentation`);
+          
+          // Manually update all tracking state
+          setCurrentSubfield('marketSegmentation');
+          setLastAppliedSuggestion({ fieldId: 'marketSegmentation', content });
+          setShowSectionPrompt(true);
+          
+          // Force section navigation and focus with explicit section ID
+          if (onSectionChange) {
+            // Ensure we're in the correct section first
+            console.log(`[Apply Suggestion Debug] OVERRIDE: Force setting market analysis section and marketSegmentation focus`);
+            
+            // Give editor time to update by using a timeout
+            setTimeout(() => {
+              onSectionChange('marketAnalysis', 'marketSegmentation');
+              
+              // Double-check focus after a short delay
+              setTimeout(() => {
+                if (onSectionChange) {
+                  onSectionChange('marketAnalysis', 'marketSegmentation');
+                }
+              }, 300);
+            }, 100);
+          }
+          
+          // Ensure scroll happens after all updates
+          setTimeout(scrollToBottom, 200);
+          
+          console.log(`[Apply Suggestion Debug] OVERRIDE: Market Segmentation handling complete`);
+          return;
+        }
+      } catch (err) {
+        console.error(`[Apply Suggestion Debug] ERROR in Market Segmentation override:`, err);
+      }
+    }
+    
+    // Direct fix for Competitive Analysis - hardcode when detected
+    if ((lowerFieldId.includes('competitive') && lowerFieldId.includes('analysis')) ||
+        lowerFieldId === 'competitiveanalysis' ||
+        lowerFieldId === 'competitive analysis' ||
+        (lowerFieldId.includes('competitor') && lowerFieldId.includes('analysis')) ||
+        lowerFieldId.includes('competition analysis') ||
+        lowerFieldId.includes('competitor review') ||
+        lowerFieldId.includes('market competition') ||
+        lowerFieldId.includes('industry competition') ||
+        (lowerFieldId.includes('competitor') && lowerFieldId.includes('landscape'))) {
+      
+      console.log(`[Apply Suggestion Debug] OVERRIDE: Directly applying to competitiveAnalysis field, bypassing all other logic`);
+      
+      try {
+        // Force direct apply with hardcoded values
+        if (onApplySuggestion) {
+          // Apply directly to the known correct field ID with exact camelCase
+          onApplySuggestion('competitiveAnalysis', content);
+          
+          console.log(`[Apply Suggestion Debug] OVERRIDE: Successfully applied content to competitiveAnalysis`);
+          
+          // Manually update all tracking state to ensure consistency
+          setCurrentSubfield('competitiveAnalysis');
+          setLastAppliedSuggestion({ fieldId: 'competitiveAnalysis', content });
+          setShowSectionPrompt(true);
+          
+          // Force section navigation and focus with explicit section ID
+          if (onSectionChange) {
+            // Ensure we're in the correct section first
+            console.log(`[Apply Suggestion Debug] OVERRIDE: Force setting market analysis section and competitiveAnalysis focus`);
+            
+            // Give editor time to update by using a timeout
+            setTimeout(() => {
+              // First navigation attempt
+              onSectionChange('marketAnalysis', 'competitiveAnalysis');
+              
+              // Double-check focus with multiple attempts to ensure it takes
+              setTimeout(() => {
+                if (onSectionChange) {
+                  console.log(`[Apply Suggestion Debug] OVERRIDE: Second focus attempt for competitiveAnalysis`);
+                  onSectionChange('marketAnalysis', 'competitiveAnalysis');
+                  
+                  // Third attempt with longer delay as a failsafe
+                  setTimeout(() => {
+                    if (onSectionChange) {
+                      console.log(`[Apply Suggestion Debug] OVERRIDE: Final focus attempt for competitiveAnalysis`);
+                      onSectionChange('marketAnalysis', 'competitiveAnalysis');
+                    }
+                  }, 500);
+                }
+              }, 300);
+            }, 100);
+          }
+          
+          // Ensure scroll happens after all updates
+          setTimeout(scrollToBottom, 300);
+          
+          console.log(`[Apply Suggestion Debug] OVERRIDE: Competitive Analysis handling complete`);
+          return;
+        }
+      } catch (err) {
+        console.error(`[Apply Suggestion Debug] ERROR in Competitive Analysis override:`, err);
+        // If there's an error, let's still try the standard approach
+        console.log(`[Apply Suggestion Debug] Falling back to standard processing after error`);
+      }
+    }
+    
+    // Direct fix for SWOT Analysis - hardcode when detected
+    if (lowerFieldId === 'swotanalysis' ||
+        lowerFieldId === 'swot analysis' ||
+        lowerFieldId === 'swot' ||
+        (lowerFieldId.includes('swot') && lowerFieldId.includes('analysis')) ||
+        (lowerFieldId.includes('strength') && lowerFieldId.includes('weakness')) ||
+        (lowerFieldId.includes('strength') && lowerFieldId.includes('threat')) ||
+        (lowerFieldId.includes('weakness') && lowerFieldId.includes('opportunity')) ||
+        (lowerFieldId.includes('opportunity') && lowerFieldId.includes('threat')) ||
+        lowerFieldId.includes('s.w.o.t') ||
+        lowerFieldId.includes('s-w-o-t') ||
+        lowerFieldId.includes('s w o t')) {
+      
+      console.log(`[Apply Suggestion Debug] OVERRIDE: Directly applying to swotAnalysis field, bypassing all other logic`);
+      
+      try {
+        // Force direct apply with hardcoded values
+        if (onApplySuggestion) {
+          // Apply directly to the known correct field ID with exact camelCase
+          onApplySuggestion('swotAnalysis', content);
+          
+          console.log(`[Apply Suggestion Debug] OVERRIDE: Successfully applied content to swotAnalysis`);
+          
+          // Manually update all tracking state to ensure consistency
+          setCurrentSubfield('swotAnalysis');
+          setLastAppliedSuggestion({ fieldId: 'swotAnalysis', content });
+          setShowSectionPrompt(true);
+          
+          // Force section navigation and focus with explicit section ID
+          if (onSectionChange) {
+            // Ensure we're in the correct section first
+            console.log(`[Apply Suggestion Debug] OVERRIDE: Force setting market analysis section and swotAnalysis focus`);
+            
+            // Give editor time to update by using a timeout
+            setTimeout(() => {
+              // First navigation attempt
+              onSectionChange('marketAnalysis', 'swotAnalysis');
+              
+              // Double-check focus with multiple attempts to ensure it takes
+              setTimeout(() => {
+                if (onSectionChange) {
+                  console.log(`[Apply Suggestion Debug] OVERRIDE: Second focus attempt for swotAnalysis`);
+                  onSectionChange('marketAnalysis', 'swotAnalysis');
+                  
+                  // Third attempt with longer delay as a failsafe
+                  setTimeout(() => {
+                    if (onSectionChange) {
+                      console.log(`[Apply Suggestion Debug] OVERRIDE: Final focus attempt for swotAnalysis`);
+                      onSectionChange('marketAnalysis', 'swotAnalysis');
+                    }
+                  }, 500);
+                }
+              }, 300);
+            }, 100);
+          }
+          
+          // Ensure scroll happens after all updates
+          setTimeout(scrollToBottom, 300);
+          
+          console.log(`[Apply Suggestion Debug] OVERRIDE: SWOT Analysis handling complete`);
+          return;
+        }
+      } catch (err) {
+        console.error(`[Apply Suggestion Debug] ERROR in SWOT Analysis override:`, err);
+        // If there's an error, let's still try the standard approach
+        console.log(`[Apply Suggestion Debug] Falling back to standard processing after error`);
+      }
+    }
+    
+    // Normalize the field ID for other fields
     const normalizedFieldId = normalizeFieldId(fieldId);
     console.log(`[Apply Suggestion Debug] Normalized field ID: ${fieldId} → ${normalizedFieldId}`);
     
-    // Apply the suggestion with the normalized field ID
-    console.log(`[Apply Suggestion Debug] Applying content to normalized field: ${normalizedFieldId}`);
-    onApplySuggestion(normalizedFieldId, content);
+    // Special handling for problematic fields
+    let finalFieldId = normalizedFieldId;
+    
+    // Ensure Value Proposition uses the exact casing expected by the editor
+    if (normalizedFieldId.toLowerCase() === 'valueproposition') {
+      finalFieldId = 'valueProposition';
+      console.log(`[Apply Suggestion Debug] Special handling for Value Proposition field: ${normalizedFieldId} → ${finalFieldId}`);
+    }
+    
+    // Ensure Intellectual Property uses the exact casing expected by the editor
+    if (normalizedFieldId.toLowerCase() === 'intellectualproperty') {
+      finalFieldId = 'intellectualProperty';
+      console.log(`[Apply Suggestion Debug] Special handling for Intellectual Property field: ${normalizedFieldId} → ${finalFieldId}`);
+    }
+    
+    // Apply the suggestion with the final field ID
+    console.log(`[Apply Suggestion Debug] Applying content to field: ${finalFieldId}`);
+    onApplySuggestion(finalFieldId, content);
     
     // Update state tracking
-    setCurrentSubfield(normalizedFieldId);
-    setLastAppliedSuggestion({ fieldId: normalizedFieldId, content });
+    setCurrentSubfield(finalFieldId);
+    setLastAppliedSuggestion({ fieldId: finalFieldId, content });
     setShowSectionPrompt(true);
+    
+    // Manually focus on the field after applying the suggestion
+    if (onSectionChange) {
+      console.log(`[Apply Suggestion Debug] Setting focus to field: ${finalFieldId}`);
+      // Make sure we never pass null as the field ID
+      onSectionChange(sectionId, finalFieldId || '');
+    }
     
     // Force scroll after applying suggestion
     setTimeout(scrollToBottom, 150);
@@ -1423,40 +1773,65 @@ export default function BusinessPlanAIAssistant({
   const handleSelectSubsection = (mainSection: string, subsection: string) => {
     // Use the existing navigation functionality
     if (onSectionChange) {
+      // Add concise navigation messages
+      const sectionName = SECTION_NAMES[mainSection];
+      const subsectionName = SUBFIELD_NAMES[subsection] || subsection;
+      
+      // Add user message (short version)
+      setMessages((prev) => [...prev, {
+        role: 'user',
+        content: `Go to ${subsectionName}`
+      }]);
+      
+      // Add assistant response (concise)
+      setMessages((prev) => [...prev, {
+        role: 'assistant',
+        content: `Navigating to ${sectionName} > ${subsectionName}. What would you like to work on in this section? I can help with ideas, step by step guidance, or answering questions.`
+      }]);
+
+      // Navigate to the selected section and subsection
       onSectionChange(mainSection, subsection);
       
       // Reset menu state after navigation
       setSelectedMainSection(null);
+      setIsMenuOpen(false);
       
-      // Add a message to the chat indicating navigation
-      const sectionDisplayName = SECTION_NAMES[mainSection];
-      const subsectionDisplayName = SUBFIELD_NAMES[subsection];
-      const message = `Navigating to ${sectionDisplayName} - ${subsectionDisplayName}`;
-      
-      // Add user message and assistant response
-      setMessages([
-        ...messages,
-        { role: 'user', content: `Let's work on ${subsectionDisplayName}` },
-        { 
-          role: 'assistant', 
-          content: `I've navigated to the ${sectionDisplayName} section and focused on the ${subsectionDisplayName} field for you. You can now start typing directly. Would you like some guidance on what to include in this field?`
-        }
-      ]);
-      
-      // Hide the menu after selection
-      setShowSectionMenu(false);
+      // Set current subfield to ensure proper context
+      setTimeout(() => setCurrentSubfield(subsection), 300);
     }
   };
   
   /**
-   * Render the section navigation menu
+   * Render the section navigation menu dropdown
    */
   const renderSectionMenu = () => {
-    if (!showSectionMenu) return null;
+    if (!isMenuOpen) {
+      // When menu is collapsed, just show the dropdown button
+      return (
+        <div className="border-b border-gray-200 py-1 px-2 bg-white">
+          <button 
+            onClick={() => setIsMenuOpen(true)}
+            className="flex items-center text-xs font-medium text-gray-700 hover:text-blue-600"
+          >
+            <ChevronRight className="h-3 w-3 mr-1" />
+            Menu
+          </button>
+        </div>
+      );
+    }
     
+    // When menu is open, show the full section navigation
     return (
-      <div className="border rounded-md bg-white p-2 mb-2 text-xs">
-        <h4 className="text-xs font-medium text-gray-700 mb-1">Business Plan Sections</h4>
+      <div className="border rounded-md bg-white p-2 text-xs">
+        <div className="flex justify-between items-center mb-1">
+          <h4 className="text-xs font-medium text-gray-700">Business Plan Sections</h4>
+          <button 
+            onClick={() => setIsMenuOpen(false)}
+            className="text-xs text-gray-500 hover:text-gray-700"
+          >
+            <X className="h-3 w-3" />
+          </button>
+        </div>
         <div className="space-y-1">
           {SECTION_ORDER.map(section => (
             <div key={section} className="rounded border border-gray-200">
@@ -1488,14 +1863,6 @@ export default function BusinessPlanAIAssistant({
             </div>
           ))}
         </div>
-        <div className="mt-1 text-right">
-          <button 
-            onClick={() => setShowSectionMenu(false)}
-            className="text-xs text-gray-500 hover:text-gray-700"
-          >
-            Hide Menu
-          </button>
-        </div>
       </div>
     );
   };
@@ -1512,59 +1879,39 @@ export default function BusinessPlanAIAssistant({
         }
       `}</style>
       
-      {/* Header - make more compact when in compact mode */}
+      {/* Simplified header */}
       <div className={`flex items-center justify-between border-b ${isCompactMode ? 'p-2' : 'p-3'}`}>
         <div className="flex items-center">
           <MessageSquare className={`text-blue-500 ${isCompactMode ? 'h-4 w-4 mr-1' : 'h-5 w-5 mr-2'}`} />
           <h3 className={`font-medium ${isCompactMode ? 'text-sm' : 'text-base'}`}>
-            AI Assistant: {sectionName}
+            AI Assistant
           </h3>
         </div>
         
-        <div className="flex space-x-1">
-          {/* Add button to toggle section menu */}
-          {!showSectionMenu && (
-            <button
-              onClick={() => setShowSectionMenu(true)}
-              className="text-gray-500 hover:text-gray-700 p-1"
-              title="Show Sections Menu"
-            >
-              <BookOpen className="h-4 w-4" />
-            </button>
-          )}
-          {/* Add button to toggle compact mode */}
-          <button
-            onClick={() => setIsCompactMode(!isCompactMode)}
-            className="text-gray-500 hover:text-gray-700 p-1"
-            title={isCompactMode ? "Expand view" : "Compact view"}
-          >
-            {isCompactMode ? 
-              <ArrowDown className="h-4 w-4" /> : 
-              <ArrowRight className="h-4 w-4" />
-            }
-          </button>
-          <button
-            onClick={() => setIsOpen(!isOpen)}
-            className="text-gray-500 hover:text-gray-700 p-1"
-          >
-            {isOpen ? <X className="h-4 w-4" /> : <MessageSquare className="h-4 w-4" />}
-          </button>
-        </div>
+        {/* Just close button */}
+        <button
+          onClick={() => setIsOpen(!isOpen)}
+          className="text-gray-500 hover:text-gray-700 p-1"
+        >
+          {isOpen ? <X className="h-4 w-4" /> : <MessageSquare className="h-4 w-4" />}
+        </button>
       </div>
       
-      {/* Adjust the message container max-height based on compact mode */}
+      {/* Adjust the message container to take full height */}
       {isOpen && (
         <div className="flex-grow overflow-hidden flex flex-col">
           <div
             ref={messagesContainerRef}
-            className={`flex-grow overflow-y-auto p-3 ${
+            className={`flex-grow overflow-y-auto pt-0 px-3 pb-3 ${
               isCompactMode ? 'max-h-[350px]' : 'max-h-[450px]'
             } ${
               messages.length === 0 ? 'min-h-[200px] empty-state-container' : ''
             }`}
           >
-            {/* Render section navigation menu at the top */}
-            {renderSectionMenu()}
+            {/* Always show the menu dropdown at the top */}
+            <div className="sticky top-0 z-10 -mx-3 mb-2">
+              {renderSectionMenu()}
+            </div>
             
             {/* Messages UI */}
             {messages.length === 0 ? (
