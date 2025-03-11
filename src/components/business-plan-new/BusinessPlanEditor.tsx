@@ -639,8 +639,8 @@ export default function BusinessPlanEditor({
               type="submit"
               disabled={!isDirty}
               className={`px-4 py-2 rounded-md ${
-                isDirty 
-                  ? 'bg-blue-600 text-white hover:bg-blue-700' 
+                isDirty
+                  ? 'bg-blue-600 text-white hover:bg-blue-700'
                   : 'bg-gray-300 text-gray-500 cursor-not-allowed'
               }`}
             >

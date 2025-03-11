@@ -1305,6 +1305,1404 @@ export default function BusinessPlanAIAssistant({
       }
     }
     
+    // Direct fix for Branding Strategy - hardcode when detected
+    if ((lowerFieldId.includes('brand') && lowerFieldId.includes('strategy')) ||
+        lowerFieldId === 'branding' ||
+        lowerFieldId === 'brandingstrategy' ||
+        lowerFieldId === 'branding strategy' ||
+        lowerFieldId.includes('brand identity') ||
+        lowerFieldId.includes('brand positioning') ||
+        lowerFieldId.includes('brand voice') ||
+        lowerFieldId.includes('brand image') ||
+        lowerFieldId.includes('brand development') ||
+        lowerFieldId.includes('brand recognition')) {
+      
+      console.log(`[Apply Suggestion Debug] OVERRIDE: Directly applying to branding field, bypassing all other logic`);
+      
+      try {
+        // Force direct apply with hardcoded values
+        if (onApplySuggestion) {
+          // Apply directly to the known correct field ID as specified in the editor
+          onApplySuggestion('branding', content);
+          
+          console.log(`[Apply Suggestion Debug] OVERRIDE: Successfully applied content to branding field`);
+          
+          // Manually update all tracking state to ensure consistency
+          setCurrentSubfield('branding');
+          setLastAppliedSuggestion({ fieldId: 'branding', content });
+          setShowSectionPrompt(true);
+          
+          // Force section navigation and focus with explicit section ID
+          if (onSectionChange) {
+            // Ensure we're in the correct section first - marketing strategy is the correct section
+            console.log(`[Apply Suggestion Debug] OVERRIDE: Force setting marketing strategy section and branding focus`);
+            
+            // Give editor time to update by using a timeout
+            setTimeout(() => {
+              // First navigation attempt
+              onSectionChange('marketingStrategy', 'branding');
+              
+              // Double-check focus with multiple attempts to ensure it takes
+              setTimeout(() => {
+                if (onSectionChange) {
+                  console.log(`[Apply Suggestion Debug] OVERRIDE: Second focus attempt for branding`);
+                  onSectionChange('marketingStrategy', 'branding');
+                  
+                  // Third attempt with longer delay as a failsafe
+                  setTimeout(() => {
+                    if (onSectionChange) {
+                      console.log(`[Apply Suggestion Debug] OVERRIDE: Final focus attempt for branding`);
+                      onSectionChange('marketingStrategy', 'branding');
+                    }
+                  }, 500);
+                }
+              }, 300);
+            }, 100);
+          }
+          
+          // Ensure scroll happens after all updates
+          setTimeout(scrollToBottom, 300);
+          
+          console.log(`[Apply Suggestion Debug] OVERRIDE: Branding Strategy handling complete`);
+          return;
+        }
+      } catch (err) {
+        console.error(`[Apply Suggestion Debug] ERROR in Branding Strategy override:`, err);
+        // If there's an error, let's still try the standard approach
+        console.log(`[Apply Suggestion Debug] Falling back to standard processing after error`);
+      }
+    }
+    
+    // Direct fix for Pricing Strategy - hardcode when detected
+    if ((lowerFieldId.includes('price') && lowerFieldId.includes('strategy')) ||
+        lowerFieldId === 'pricing' ||
+        lowerFieldId === 'pricingstrategy' ||
+        lowerFieldId === 'pricing strategy' ||
+        lowerFieldId.includes('price model') ||
+        lowerFieldId.includes('price point') ||
+        lowerFieldId.includes('pricing model') ||
+        lowerFieldId.includes('cost strategy') ||
+        lowerFieldId.includes('monetization') ||
+        lowerFieldId.includes('revenue model') ||
+        lowerFieldId.includes('cost structure') ||
+        lowerFieldId.includes('margin strategy')) {
+      
+      console.log(`[Apply Suggestion Debug] OVERRIDE: Directly applying to pricing field, bypassing all other logic`);
+      
+      try {
+        // Force direct apply with hardcoded values
+        if (onApplySuggestion) {
+          // Apply directly to the known correct field ID as specified in the editor
+          onApplySuggestion('pricing', content);
+          
+          console.log(`[Apply Suggestion Debug] OVERRIDE: Successfully applied content to pricing field`);
+          
+          // Manually update all tracking state to ensure consistency
+          setCurrentSubfield('pricing');
+          setLastAppliedSuggestion({ fieldId: 'pricing', content });
+          setShowSectionPrompt(true);
+          
+          // Force section navigation and focus with explicit section ID
+          if (onSectionChange) {
+            // Ensure we're in the correct section first - marketing strategy is the correct section
+            console.log(`[Apply Suggestion Debug] OVERRIDE: Force setting marketing strategy section and pricing focus`);
+            
+            // Give editor time to update by using a timeout
+            setTimeout(() => {
+              // First navigation attempt
+              onSectionChange('marketingStrategy', 'pricing');
+              
+              // Double-check focus with multiple attempts to ensure it takes
+              setTimeout(() => {
+                if (onSectionChange) {
+                  console.log(`[Apply Suggestion Debug] OVERRIDE: Second focus attempt for pricing`);
+                  onSectionChange('marketingStrategy', 'pricing');
+                  
+                  // Third attempt with longer delay as a failsafe
+                  setTimeout(() => {
+                    if (onSectionChange) {
+                      console.log(`[Apply Suggestion Debug] OVERRIDE: Final focus attempt for pricing`);
+                      onSectionChange('marketingStrategy', 'pricing');
+                    }
+                  }, 500);
+                }
+              }, 300);
+            }, 100);
+          }
+          
+          // Ensure scroll happens after all updates
+          setTimeout(scrollToBottom, 300);
+          
+          console.log(`[Apply Suggestion Debug] OVERRIDE: Pricing Strategy handling complete`);
+          return;
+        }
+      } catch (err) {
+        console.error(`[Apply Suggestion Debug] ERROR in Pricing Strategy override:`, err);
+        // If there's an error, let's still try the standard approach
+        console.log(`[Apply Suggestion Debug] Falling back to standard processing after error`);
+      }
+    }
+
+    // Direct fix for Promotion Plan - hardcode when detected
+    if ((lowerFieldId.includes('promotion') && lowerFieldId.includes('plan')) ||
+        lowerFieldId === 'promotion' ||
+        lowerFieldId === 'promotionplan' ||
+        lowerFieldId === 'promotion plan' ||
+        lowerFieldId.includes('advertising') ||
+        lowerFieldId.includes('marketing plan') ||
+        lowerFieldId.includes('marketing campaign') ||
+        lowerFieldId.includes('promotional strategy') ||
+        lowerFieldId.includes('market promotion') ||
+        lowerFieldId.includes('customer acquisition') ||
+        lowerFieldId.includes('brand promotion') ||
+        lowerFieldId.includes('promotional activities')) {
+      
+      console.log(`[Apply Suggestion Debug] OVERRIDE: Directly applying to promotion field, bypassing all other logic`);
+      
+      try {
+        // Force direct apply with hardcoded values
+        if (onApplySuggestion) {
+          // Apply directly to the known correct field ID as specified in the editor
+          onApplySuggestion('promotion', content);
+          
+          console.log(`[Apply Suggestion Debug] OVERRIDE: Successfully applied content to promotion field`);
+          
+          // Manually update all tracking state to ensure consistency
+          setCurrentSubfield('promotion');
+          setLastAppliedSuggestion({ fieldId: 'promotion', content });
+          setShowSectionPrompt(true);
+          
+          // Force section navigation and focus with explicit section ID
+          if (onSectionChange) {
+            // Ensure we're in the correct section first - marketing strategy is the correct section
+            console.log(`[Apply Suggestion Debug] OVERRIDE: Force setting marketing strategy section and promotion focus`);
+            
+            // Give editor time to update by using a timeout
+            setTimeout(() => {
+              // First navigation attempt
+              onSectionChange('marketingStrategy', 'promotion');
+              
+              // Double-check focus with multiple attempts to ensure it takes
+              setTimeout(() => {
+                if (onSectionChange) {
+                  console.log(`[Apply Suggestion Debug] OVERRIDE: Second focus attempt for promotion`);
+                  onSectionChange('marketingStrategy', 'promotion');
+                  
+                  // Third attempt with longer delay as a failsafe
+                  setTimeout(() => {
+                    if (onSectionChange) {
+                      console.log(`[Apply Suggestion Debug] OVERRIDE: Final focus attempt for promotion`);
+                      onSectionChange('marketingStrategy', 'promotion');
+                    }
+                  }, 500);
+                }
+              }, 300);
+            }, 100);
+          }
+          
+          // Ensure scroll happens after all updates
+          setTimeout(scrollToBottom, 300);
+          
+          console.log(`[Apply Suggestion Debug] OVERRIDE: Promotion Plan handling complete`);
+          return;
+        }
+      } catch (err) {
+        console.error(`[Apply Suggestion Debug] ERROR in Promotion Plan override:`, err);
+        // If there's an error, let's still try the standard approach
+        console.log(`[Apply Suggestion Debug] Falling back to standard processing after error`);
+      }
+    }
+
+    // Direct fix for Sales Strategy - hardcode when detected
+    if ((lowerFieldId.includes('sales') && lowerFieldId.includes('strategy')) ||
+        lowerFieldId === 'salesstrategy' ||
+        lowerFieldId === 'sales strategy' ||
+        lowerFieldId.includes('sales plan') ||
+        lowerFieldId.includes('sales process') ||
+        lowerFieldId.includes('sales approach') ||
+        lowerFieldId.includes('sales method') ||
+        lowerFieldId.includes('sales funnel') ||
+        lowerFieldId.includes('sales cycle') ||
+        lowerFieldId.includes('customer conversion') ||
+        lowerFieldId.includes('lead generation') ||
+        lowerFieldId.includes('revenue generation')) {
+      
+      console.log(`[Apply Suggestion Debug] OVERRIDE: Directly applying to salesStrategy field, bypassing all other logic`);
+      
+      try {
+        // Force direct apply with hardcoded values
+        if (onApplySuggestion) {
+          // Apply directly to the known correct field ID as specified in the editor (note camelCase format)
+          onApplySuggestion('salesStrategy', content);
+          
+          console.log(`[Apply Suggestion Debug] OVERRIDE: Successfully applied content to salesStrategy field`);
+          
+          // Manually update all tracking state to ensure consistency
+          setCurrentSubfield('salesStrategy');
+          setLastAppliedSuggestion({ fieldId: 'salesStrategy', content });
+          setShowSectionPrompt(true);
+          
+          // Force section navigation and focus with explicit section ID
+          if (onSectionChange) {
+            // Ensure we're in the correct section first - marketing strategy is the correct section
+            console.log(`[Apply Suggestion Debug] OVERRIDE: Force setting marketing strategy section and salesStrategy focus`);
+            
+            // Give editor time to update by using a timeout
+            setTimeout(() => {
+              // First navigation attempt
+              onSectionChange('marketingStrategy', 'salesStrategy');
+              
+              // Double-check focus with multiple attempts to ensure it takes
+              setTimeout(() => {
+                if (onSectionChange) {
+                  console.log(`[Apply Suggestion Debug] OVERRIDE: Second focus attempt for salesStrategy`);
+                  onSectionChange('marketingStrategy', 'salesStrategy');
+                  
+                  // Triple-check with extra long delay as a failsafe
+                  setTimeout(() => {
+                    if (onSectionChange) {
+                      console.log(`[Apply Suggestion Debug] OVERRIDE: Final focus attempt for salesStrategy`);
+                      onSectionChange('marketingStrategy', 'salesStrategy');
+                    }
+                  }, 500);
+                }
+              }, 300);
+            }, 100);
+          }
+          
+          // Ensure scroll happens after all updates
+          setTimeout(scrollToBottom, 300);
+          
+          console.log(`[Apply Suggestion Debug] OVERRIDE: Sales Strategy handling complete`);
+          return;
+        }
+      } catch (err) {
+        console.error(`[Apply Suggestion Debug] ERROR in Sales Strategy override:`, err);
+        // If there's an error, let's still try the standard approach
+        console.log(`[Apply Suggestion Debug] Falling back to standard processing after error`);
+      }
+    }
+
+    // Direct fix for Distribution Channels - hardcode when detected
+    if ((lowerFieldId.includes('distribution') && lowerFieldId.includes('channel')) ||
+        lowerFieldId === 'channels' ||
+        lowerFieldId === 'distributionchannels' ||
+        lowerFieldId === 'distribution channels' ||
+        lowerFieldId.includes('sales channel') ||
+        lowerFieldId.includes('delivery channel') ||
+        lowerFieldId.includes('go to market') ||
+        lowerFieldId.includes('product distribution') ||
+        lowerFieldId.includes('service distribution') ||
+        lowerFieldId.includes('market reach') ||
+        lowerFieldId.includes('distribution network') ||
+        lowerFieldId.includes('channel strategy')) {
+      
+      console.log(`[Apply Suggestion Debug] OVERRIDE: Directly applying to channels field, bypassing all other logic`);
+      
+      try {
+        // Force direct apply with hardcoded values
+        if (onApplySuggestion) {
+          // Apply directly to the known correct field ID as specified in the editor
+          onApplySuggestion('channels', content);
+          
+          console.log(`[Apply Suggestion Debug] OVERRIDE: Successfully applied content to channels field`);
+          
+          // Manually update all tracking state to ensure consistency
+          setCurrentSubfield('channels');
+          setLastAppliedSuggestion({ fieldId: 'channels', content });
+          setShowSectionPrompt(true);
+          
+          // Force section navigation and focus with explicit section ID
+          if (onSectionChange) {
+            // Ensure we're in the correct section first - marketing strategy is the correct section
+            console.log(`[Apply Suggestion Debug] OVERRIDE: Force setting marketing strategy section and channels focus`);
+            
+            // Give editor time to update by using a timeout
+            setTimeout(() => {
+              // First navigation attempt
+              onSectionChange('marketingStrategy', 'channels');
+              
+              // Double-check focus with multiple attempts to ensure it takes
+              setTimeout(() => {
+                if (onSectionChange) {
+                  console.log(`[Apply Suggestion Debug] OVERRIDE: Second focus attempt for channels`);
+                  onSectionChange('marketingStrategy', 'channels');
+                  
+                  // Third attempt with longer delay as a failsafe
+                  setTimeout(() => {
+                    if (onSectionChange) {
+                      console.log(`[Apply Suggestion Debug] OVERRIDE: Final focus attempt for channels`);
+                      onSectionChange('marketingStrategy', 'channels');
+                    }
+                  }, 500);
+                }
+              }, 300);
+            }, 100);
+          }
+          
+          // Ensure scroll happens after all updates
+          setTimeout(scrollToBottom, 300);
+          
+          console.log(`[Apply Suggestion Debug] OVERRIDE: Distribution Channels handling complete`);
+          return;
+        }
+      } catch (err) {
+        console.error(`[Apply Suggestion Debug] ERROR in Distribution Channels override:`, err);
+        // If there's an error, let's still try the standard approach
+        console.log(`[Apply Suggestion Debug] Falling back to standard processing after error`);
+      }
+    }
+
+    // Direct fix for Customer Retention - hardcode when detected
+    if ((lowerFieldId.includes('customer') && lowerFieldId.includes('retention')) ||
+        lowerFieldId === 'customerretention' ||
+        lowerFieldId === 'customer retention' ||
+        lowerFieldId.includes('client retention') ||
+        lowerFieldId.includes('customer loyalty') ||
+        lowerFieldId.includes('customer satisfaction') ||
+        lowerFieldId.includes('churn reduction') ||
+        lowerFieldId.includes('repeat business') ||
+        lowerFieldId.includes('customer experience') ||
+        lowerFieldId.includes('client relationship') ||
+        lowerFieldId.includes('customer relationship management') ||
+        lowerFieldId.includes('customer service')) {
+      
+      console.log(`[Apply Suggestion Debug] OVERRIDE: Directly applying to customerRetention field, bypassing all other logic`);
+      
+      try {
+        // Force direct apply with hardcoded values
+        if (onApplySuggestion) {
+          // Apply directly to the known correct field ID as specified in the editor (note camelCase format)
+          onApplySuggestion('customerRetention', content);
+          
+          console.log(`[Apply Suggestion Debug] OVERRIDE: Successfully applied content to customerRetention field`);
+          
+          // Manually update all tracking state to ensure consistency
+          setCurrentSubfield('customerRetention');
+          setLastAppliedSuggestion({ fieldId: 'customerRetention', content });
+          setShowSectionPrompt(true);
+          
+          // Force section navigation and focus with explicit section ID
+          if (onSectionChange) {
+            // Ensure we're in the correct section first - marketing strategy is the correct section
+            console.log(`[Apply Suggestion Debug] OVERRIDE: Force setting marketing strategy section and customerRetention focus`);
+            
+            // Give editor time to update by using a timeout
+            setTimeout(() => {
+              // First navigation attempt
+              onSectionChange('marketingStrategy', 'customerRetention');
+              
+              // Double-check focus with multiple attempts to ensure it takes
+              setTimeout(() => {
+                if (onSectionChange) {
+                  console.log(`[Apply Suggestion Debug] OVERRIDE: Second focus attempt for customerRetention`);
+                  onSectionChange('marketingStrategy', 'customerRetention');
+                  
+                  // Triple-check with extra long delay as a failsafe
+                  setTimeout(() => {
+                    if (onSectionChange) {
+                      console.log(`[Apply Suggestion Debug] OVERRIDE: Final focus attempt for customerRetention`);
+                      onSectionChange('marketingStrategy', 'customerRetention');
+                    }
+                  }, 500);
+                }
+              }, 300);
+            }, 100);
+          }
+          
+          // Ensure scroll happens after all updates
+          setTimeout(scrollToBottom, 300);
+          
+          console.log(`[Apply Suggestion Debug] OVERRIDE: Customer Retention handling complete`);
+          return;
+        }
+      } catch (err) {
+        console.error(`[Apply Suggestion Debug] ERROR in Customer Retention override:`, err);
+        // If there's an error, let's still try the standard approach
+        console.log(`[Apply Suggestion Debug] Falling back to standard processing after error`);
+      }
+    }
+
+    // Direct fix for Business Model - hardcode when detected
+    if ((lowerFieldId.includes('business') && lowerFieldId.includes('model')) ||
+        lowerFieldId === 'businessmodel' ||
+        lowerFieldId === 'business model' ||
+        lowerFieldId.includes('revenue model') ||
+        lowerFieldId.includes('operating model') ||
+        lowerFieldId.includes('business framework') ||
+        lowerFieldId.includes('value creation') ||
+        lowerFieldId.includes('value delivery') ||
+        lowerFieldId.includes('value capture') ||
+        lowerFieldId.includes('business operation') ||
+        lowerFieldId.includes('business approach') ||
+        lowerFieldId.includes('business structure')) {
+      
+      console.log(`[Apply Suggestion Debug] OVERRIDE: Directly applying to businessModel field, bypassing all other logic`);
+      
+      try {
+        // Force direct apply with hardcoded values
+        if (onApplySuggestion) {
+          // Apply directly to the known correct field ID as specified in the editor
+          onApplySuggestion('businessModel', content);
+          
+          console.log(`[Apply Suggestion Debug] OVERRIDE: Successfully applied content to businessModel field`);
+          
+          // Manually update all tracking state to ensure consistency
+          setCurrentSubfield('businessModel');
+          setLastAppliedSuggestion({ fieldId: 'businessModel', content });
+          setShowSectionPrompt(true);
+          
+          // Force section navigation and focus with explicit section ID
+          if (onSectionChange) {
+            // Ensure we're in the correct section first - operationsPlan is the correct section
+            console.log(`[Apply Suggestion Debug] OVERRIDE: Force setting operations plan section and businessModel focus`);
+            
+            // Give editor time to update by using a timeout
+            setTimeout(() => {
+              // First navigation attempt
+              onSectionChange('operationsPlan', 'businessModel');
+              
+              // Double-check focus with multiple attempts to ensure it takes
+              setTimeout(() => {
+                if (onSectionChange) {
+                  console.log(`[Apply Suggestion Debug] OVERRIDE: Second focus attempt for businessModel`);
+                  onSectionChange('operationsPlan', 'businessModel');
+                  
+                  // Third attempt with longer delay as a failsafe
+                  setTimeout(() => {
+                    if (onSectionChange) {
+                      console.log(`[Apply Suggestion Debug] OVERRIDE: Final focus attempt for businessModel`);
+                      onSectionChange('operationsPlan', 'businessModel');
+                    }
+                  }, 500);
+                }
+              }, 300);
+            }, 100);
+          }
+          
+          // Ensure scroll happens after all updates
+          setTimeout(scrollToBottom, 300);
+          
+          console.log(`[Apply Suggestion Debug] OVERRIDE: Business Model handling complete`);
+          return;
+        }
+      } catch (err) {
+        console.error(`[Apply Suggestion Debug] ERROR in Business Model override:`, err);
+        // If there's an error, let's still try the standard approach
+        console.log(`[Apply Suggestion Debug] Falling back to standard processing after error`);
+      }
+    }
+
+    // Direct fix for Facilities - hardcode when detected
+    if ((lowerFieldId.includes('facilities') && lowerFieldId.includes('location')) ||
+        lowerFieldId === 'facilities' ||
+        lowerFieldId.includes('facility') ||
+        lowerFieldId.includes('physical location') ||
+        lowerFieldId.includes('business location') ||
+        lowerFieldId.includes('office space') ||
+        lowerFieldId.includes('physical requirements') ||
+        lowerFieldId.includes('warehouse') ||
+        lowerFieldId.includes('retail space') ||
+        lowerFieldId.includes('manufacturing space') ||
+        lowerFieldId.includes('workspace') ||
+        lowerFieldId.includes('real estate')) {
+      
+      console.log(`[Apply Suggestion Debug] OVERRIDE: Directly applying to facilities field, bypassing all other logic`);
+      
+      try {
+        // Force direct apply with hardcoded values
+        if (onApplySuggestion) {
+          // Apply directly to the known correct field ID as specified in the editor
+          onApplySuggestion('facilities', content);
+          
+          console.log(`[Apply Suggestion Debug] OVERRIDE: Successfully applied content to facilities field`);
+          
+          // Manually update all tracking state to ensure consistency
+          setCurrentSubfield('facilities');
+          setLastAppliedSuggestion({ fieldId: 'facilities', content });
+          setShowSectionPrompt(true);
+          
+          // Force section navigation and focus with explicit section ID
+          if (onSectionChange) {
+            // Ensure we're in the correct section first - operationsPlan is the correct section
+            console.log(`[Apply Suggestion Debug] OVERRIDE: Force setting operations plan section and facilities focus`);
+            
+            // Give editor time to update by using a timeout
+            setTimeout(() => {
+              // First navigation attempt
+              onSectionChange('operationsPlan', 'facilities');
+              
+              // Double-check focus with multiple attempts to ensure it takes
+              setTimeout(() => {
+                if (onSectionChange) {
+                  console.log(`[Apply Suggestion Debug] OVERRIDE: Second focus attempt for facilities`);
+                  onSectionChange('operationsPlan', 'facilities');
+                  
+                  // Third attempt with longer delay as a failsafe
+                  setTimeout(() => {
+                    if (onSectionChange) {
+                      console.log(`[Apply Suggestion Debug] OVERRIDE: Final focus attempt for facilities`);
+                      onSectionChange('operationsPlan', 'facilities');
+                    }
+                  }, 500);
+                }
+              }, 300);
+            }, 100);
+          }
+          
+          // Ensure scroll happens after all updates
+          setTimeout(scrollToBottom, 300);
+          
+          console.log(`[Apply Suggestion Debug] OVERRIDE: Facilities handling complete`);
+          return;
+        }
+      } catch (err) {
+        console.error(`[Apply Suggestion Debug] ERROR in Facilities override:`, err);
+        // If there's an error, let's still try the standard approach
+        console.log(`[Apply Suggestion Debug] Falling back to standard processing after error`);
+      }
+    }
+    
+    // Direct fix for Technology Requirements - hardcode when detected
+    if ((lowerFieldId.includes('technology') && lowerFieldId.includes('requirement')) ||
+        lowerFieldId === 'technology' ||
+        lowerFieldId.includes('tech requirement') ||
+        lowerFieldId.includes('tech infrastructure') ||
+        lowerFieldId.includes('tech stack') ||
+        lowerFieldId.includes('software') ||
+        lowerFieldId.includes('hardware') ||
+        lowerFieldId.includes('it infrastructure') ||
+        lowerFieldId.includes('technical needs') ||
+        lowerFieldId.includes('technical resources') ||
+        lowerFieldId.includes('technology needs') ||
+        lowerFieldId.includes('digital infrastructure')) {
+      
+      console.log(`[Apply Suggestion Debug] OVERRIDE: Directly applying to technology field, bypassing all other logic`);
+      
+      try {
+        // Force direct apply with hardcoded values
+        if (onApplySuggestion) {
+          // Apply directly to the known correct field ID as specified in the editor
+          onApplySuggestion('technology', content);
+          
+          console.log(`[Apply Suggestion Debug] OVERRIDE: Successfully applied content to technology field`);
+          
+          // Manually update all tracking state to ensure consistency
+          setCurrentSubfield('technology');
+          setLastAppliedSuggestion({ fieldId: 'technology', content });
+          setShowSectionPrompt(true);
+          
+          // Force section navigation and focus with explicit section ID
+          if (onSectionChange) {
+            // Ensure we're in the correct section first - operationsPlan is the correct section
+            console.log(`[Apply Suggestion Debug] OVERRIDE: Force setting operations plan section and technology focus`);
+            
+            // Give editor time to update by using a timeout
+            setTimeout(() => {
+              // First navigation attempt
+              onSectionChange('operationsPlan', 'technology');
+              
+              // Double-check focus with multiple attempts to ensure it takes
+              setTimeout(() => {
+                if (onSectionChange) {
+                  console.log(`[Apply Suggestion Debug] OVERRIDE: Second focus attempt for technology`);
+                  onSectionChange('operationsPlan', 'technology');
+                  
+                  // Third attempt with longer delay as a failsafe
+                  setTimeout(() => {
+                    if (onSectionChange) {
+                      console.log(`[Apply Suggestion Debug] OVERRIDE: Final focus attempt for technology`);
+                      onSectionChange('operationsPlan', 'technology');
+                    }
+                  }, 500);
+                }
+              }, 300);
+            }, 100);
+          }
+          
+          // Ensure scroll happens after all updates
+          setTimeout(scrollToBottom, 300);
+          
+          console.log(`[Apply Suggestion Debug] OVERRIDE: Technology Requirements handling complete`);
+          return;
+        }
+      } catch (err) {
+        console.error(`[Apply Suggestion Debug] ERROR in Technology Requirements override:`, err);
+        // If there's an error, let's still try the standard approach
+        console.log(`[Apply Suggestion Debug] Falling back to standard processing after error`);
+      }
+    }
+    
+    // Direct fix for Production Process - hardcode when detected
+    if ((lowerFieldId.includes('production') && lowerFieldId.includes('process')) ||
+        lowerFieldId === 'productionprocess' ||
+        lowerFieldId === 'production process' ||
+        lowerFieldId.includes('manufacturing process') ||
+        lowerFieldId.includes('service delivery') ||
+        lowerFieldId.includes('operational process') ||
+        lowerFieldId.includes('product creation') ||
+        lowerFieldId.includes('workflow') ||
+        lowerFieldId.includes('process flow') ||
+        lowerFieldId.includes('assembly') ||
+        lowerFieldId.includes('production method') ||
+        lowerFieldId.includes('service process')) {
+      
+      console.log(`[Apply Suggestion Debug] OVERRIDE: Directly applying to productionProcess field, bypassing all other logic`);
+      
+      try {
+        // Force direct apply with hardcoded values
+        if (onApplySuggestion) {
+          // Apply directly to the known correct field ID as specified in the editor
+          onApplySuggestion('productionProcess', content);
+          
+          console.log(`[Apply Suggestion Debug] OVERRIDE: Successfully applied content to productionProcess field`);
+          
+          // Manually update all tracking state to ensure consistency
+          setCurrentSubfield('productionProcess');
+          setLastAppliedSuggestion({ fieldId: 'productionProcess', content });
+          setShowSectionPrompt(true);
+          
+          // Force section navigation and focus with explicit section ID
+          if (onSectionChange) {
+            // Ensure we're in the correct section first - operationsPlan is the correct section
+            console.log(`[Apply Suggestion Debug] OVERRIDE: Force setting operations plan section and productionProcess focus`);
+            
+            // Give editor time to update by using a timeout
+            setTimeout(() => {
+              // First navigation attempt
+              onSectionChange('operationsPlan', 'productionProcess');
+              
+              // Double-check focus with multiple attempts to ensure it takes
+              setTimeout(() => {
+                if (onSectionChange) {
+                  console.log(`[Apply Suggestion Debug] OVERRIDE: Second focus attempt for productionProcess`);
+                  onSectionChange('operationsPlan', 'productionProcess');
+                  
+                  // Third attempt with longer delay as a failsafe
+                  setTimeout(() => {
+                    if (onSectionChange) {
+                      console.log(`[Apply Suggestion Debug] OVERRIDE: Final focus attempt for productionProcess`);
+                      onSectionChange('operationsPlan', 'productionProcess');
+                    }
+                  }, 500);
+                }
+              }, 300);
+            }, 100);
+          }
+          
+          // Ensure scroll happens after all updates
+          setTimeout(scrollToBottom, 300);
+          
+          console.log(`[Apply Suggestion Debug] OVERRIDE: Production Process handling complete`);
+          return;
+        }
+      } catch (err) {
+        console.error(`[Apply Suggestion Debug] ERROR in Production Process override:`, err);
+        // If there's an error, let's still try the standard approach
+        console.log(`[Apply Suggestion Debug] Falling back to standard processing after error`);
+      }
+    }
+    
+    // Direct fix for Quality Control - hardcode when detected
+    if ((lowerFieldId.includes('quality') && lowerFieldId.includes('control')) ||
+        lowerFieldId === 'qualitycontrol' ||
+        lowerFieldId === 'quality control' ||
+        lowerFieldId.includes('quality assurance') ||
+        lowerFieldId.includes('quality management') ||
+        lowerFieldId.includes('qa process') ||
+        lowerFieldId.includes('quality standards') ||
+        lowerFieldId.includes('quality checks') ||
+        lowerFieldId.includes('quality procedures') ||
+        lowerFieldId.includes('quality system') ||
+        lowerFieldId.includes('quality inspection') ||
+        lowerFieldId.includes('quality testing')) {
+      
+      console.log(`[Apply Suggestion Debug] OVERRIDE: Directly applying to qualityControl field, bypassing all other logic`);
+      
+      try {
+        // Force direct apply with hardcoded values
+        if (onApplySuggestion) {
+          // Apply directly to the known correct field ID as specified in the editor
+          onApplySuggestion('qualityControl', content);
+          
+          console.log(`[Apply Suggestion Debug] OVERRIDE: Successfully applied content to qualityControl field`);
+          
+          // Manually update all tracking state to ensure consistency
+          setCurrentSubfield('qualityControl');
+          setLastAppliedSuggestion({ fieldId: 'qualityControl', content });
+          setShowSectionPrompt(true);
+          
+          // Force section navigation and focus with explicit section ID
+          if (onSectionChange) {
+            // Ensure we're in the correct section first - operationsPlan is the correct section
+            console.log(`[Apply Suggestion Debug] OVERRIDE: Force setting operations plan section and qualityControl focus`);
+            
+            // Give editor time to update by using a timeout
+            setTimeout(() => {
+              // First navigation attempt
+              onSectionChange('operationsPlan', 'qualityControl');
+              
+              // Double-check focus with multiple attempts to ensure it takes
+              setTimeout(() => {
+                if (onSectionChange) {
+                  console.log(`[Apply Suggestion Debug] OVERRIDE: Second focus attempt for qualityControl`);
+                  onSectionChange('operationsPlan', 'qualityControl');
+                  
+                  // Third attempt with longer delay as a failsafe
+                  setTimeout(() => {
+                    if (onSectionChange) {
+                      console.log(`[Apply Suggestion Debug] OVERRIDE: Final focus attempt for qualityControl`);
+                      onSectionChange('operationsPlan', 'qualityControl');
+                    }
+                  }, 500);
+                }
+              }, 300);
+            }, 100);
+          }
+          
+          // Ensure scroll happens after all updates
+          setTimeout(scrollToBottom, 300);
+          
+          console.log(`[Apply Suggestion Debug] OVERRIDE: Quality Control handling complete`);
+          return;
+        }
+      } catch (err) {
+        console.error(`[Apply Suggestion Debug] ERROR in Quality Control override:`, err);
+        // If there's an error, let's still try the standard approach
+        console.log(`[Apply Suggestion Debug] Falling back to standard processing after error`);
+      }
+    }
+    
+    // Direct fix for Logistics - hardcode when detected
+    if ((lowerFieldId.includes('logistics') && lowerFieldId.includes('supply')) ||
+        lowerFieldId === 'logistics' ||
+        lowerFieldId.includes('supply chain') ||
+        lowerFieldId.includes('inventory management') ||
+        lowerFieldId.includes('warehousing') ||
+        lowerFieldId.includes('shipping') ||
+        lowerFieldId.includes('distribution') ||
+        lowerFieldId.includes('order fulfillment') ||
+        lowerFieldId.includes('vendor management') ||
+        lowerFieldId.includes('supplier') ||
+        lowerFieldId.includes('procurement') ||
+        lowerFieldId.includes('transportation')) {
+      
+      console.log(`[Apply Suggestion Debug] OVERRIDE: Directly applying to logistics field, bypassing all other logic`);
+      
+      try {
+        // Force direct apply with hardcoded values
+        if (onApplySuggestion) {
+          // Apply directly to the known correct field ID as specified in the editor
+          onApplySuggestion('logistics', content);
+          
+          console.log(`[Apply Suggestion Debug] OVERRIDE: Successfully applied content to logistics field`);
+          
+          // Manually update all tracking state to ensure consistency
+          setCurrentSubfield('logistics');
+          setLastAppliedSuggestion({ fieldId: 'logistics', content });
+          setShowSectionPrompt(true);
+          
+          // Force section navigation and focus with explicit section ID
+          if (onSectionChange) {
+            // Ensure we're in the correct section first - operationsPlan is the correct section
+            console.log(`[Apply Suggestion Debug] OVERRIDE: Force setting operations plan section and logistics focus`);
+            
+            // Give editor time to update by using a timeout
+            setTimeout(() => {
+              // First navigation attempt
+              onSectionChange('operationsPlan', 'logistics');
+              
+              // Double-check focus with multiple attempts to ensure it takes
+              setTimeout(() => {
+                if (onSectionChange) {
+                  console.log(`[Apply Suggestion Debug] OVERRIDE: Second focus attempt for logistics`);
+                  onSectionChange('operationsPlan', 'logistics');
+                  
+                  // Third attempt with longer delay as a failsafe
+                  setTimeout(() => {
+                    if (onSectionChange) {
+                      console.log(`[Apply Suggestion Debug] OVERRIDE: Final focus attempt for logistics`);
+                      onSectionChange('operationsPlan', 'logistics');
+                    }
+                  }, 500);
+                }
+              }, 300);
+            }, 100);
+          }
+          
+          // Ensure scroll happens after all updates
+          setTimeout(scrollToBottom, 300);
+          
+          console.log(`[Apply Suggestion Debug] OVERRIDE: Logistics handling complete`);
+          return;
+        }
+      } catch (err) {
+        console.error(`[Apply Suggestion Debug] ERROR in Logistics override:`, err);
+        // If there's an error, let's still try the standard approach
+        console.log(`[Apply Suggestion Debug] Falling back to standard processing after error`);
+      }
+    }
+    
+    // Direct fix for Organizational Structure - hardcode when detected
+    if ((lowerFieldId.includes('organizational') && lowerFieldId.includes('structure')) ||
+        lowerFieldId === 'structure' ||
+        lowerFieldId === 'org structure' ||
+        lowerFieldId === 'organization structure' ||
+        lowerFieldId.includes('company structure') ||
+        lowerFieldId.includes('business structure') ||
+        lowerFieldId.includes('reporting structure') ||
+        lowerFieldId.includes('team structure') ||
+        lowerFieldId.includes('hierarchy') ||
+        lowerFieldId.includes('organizational chart') ||
+        lowerFieldId.includes('org chart') ||
+        lowerFieldId.includes('management structure')) {
+      
+      console.log(`[Apply Suggestion Debug] OVERRIDE: Directly applying to structure field, bypassing all other logic`);
+      
+      try {
+        // Force direct apply with hardcoded values
+        if (onApplySuggestion) {
+          // Apply directly to the known correct field ID as specified in the editor
+          onApplySuggestion('structure', content);
+          
+          console.log(`[Apply Suggestion Debug] OVERRIDE: Successfully applied content to structure field`);
+          
+          // Manually update all tracking state to ensure consistency
+          setCurrentSubfield('structure');
+          setLastAppliedSuggestion({ fieldId: 'structure', content });
+          setShowSectionPrompt(true);
+          
+          // Force section navigation and focus with explicit section ID
+          if (onSectionChange) {
+            // Ensure we're in the correct section first - organizationAndManagement is the correct section
+            console.log(`[Apply Suggestion Debug] OVERRIDE: Force setting organization and management section and structure focus`);
+            
+            // Give editor time to update by using a timeout
+            setTimeout(() => {
+              // First navigation attempt
+              onSectionChange('organizationAndManagement', 'structure');
+              
+              // Double-check focus with multiple attempts to ensure it takes
+              setTimeout(() => {
+                if (onSectionChange) {
+                  console.log(`[Apply Suggestion Debug] OVERRIDE: Second focus attempt for structure`);
+                  onSectionChange('organizationAndManagement', 'structure');
+                  
+                  // Third attempt with longer delay as a failsafe
+                  setTimeout(() => {
+                    if (onSectionChange) {
+                      console.log(`[Apply Suggestion Debug] OVERRIDE: Final focus attempt for structure`);
+                      onSectionChange('organizationAndManagement', 'structure');
+                    }
+                  }, 500);
+                }
+              }, 300);
+            }, 100);
+          }
+          
+          // Ensure scroll happens after all updates
+          setTimeout(scrollToBottom, 300);
+          
+          console.log(`[Apply Suggestion Debug] OVERRIDE: Organizational Structure handling complete`);
+          return;
+        }
+      } catch (err) {
+        console.error(`[Apply Suggestion Debug] ERROR in Organizational Structure override:`, err);
+        // If there's an error, let's still try the standard approach
+        console.log(`[Apply Suggestion Debug] Falling back to standard processing after error`);
+      }
+    }
+    
+    // Direct fix for HR Plan - hardcode when detected
+    if ((lowerFieldId.includes('hr') && lowerFieldId.includes('plan')) ||
+        lowerFieldId === 'hrplan' ||
+        lowerFieldId === 'hr plan' ||
+        lowerFieldId.includes('human resources') ||
+        lowerFieldId.includes('staffing plan') ||
+        lowerFieldId.includes('recruitment plan') ||
+        lowerFieldId.includes('hiring plan') ||
+        lowerFieldId.includes('workforce plan') ||
+        lowerFieldId.includes('personnel plan') ||
+        lowerFieldId.includes('employee plan') ||
+        lowerFieldId.includes('talent management') ||
+        lowerFieldId.includes('compensation strategy')) {
+    
+      console.log(`[Apply Suggestion Debug] OVERRIDE: Directly applying to hrPlan field, bypassing all other logic`);
+    
+      try {
+        // Force direct apply with hardcoded values
+        if (onApplySuggestion) {
+          // Apply directly to the known correct field ID as specified in the editor
+          onApplySuggestion('hrPlan', content);
+          
+          console.log(`[Apply Suggestion Debug] OVERRIDE: Successfully applied content to hrPlan field`);
+          
+          // Manually update all tracking state to ensure consistency
+          setCurrentSubfield('hrPlan');
+          setLastAppliedSuggestion({ fieldId: 'hrPlan', content });
+          setShowSectionPrompt(true);
+          
+          // Force section navigation and focus with explicit section ID
+          if (onSectionChange) {
+            // Ensure we're in the correct section first - organizationAndManagement is the correct section
+            console.log(`[Apply Suggestion Debug] OVERRIDE: Force setting organization and management section and hrPlan focus`);
+            
+            // Give editor time to update by using a timeout
+            setTimeout(() => {
+              // First navigation attempt
+              onSectionChange('organizationAndManagement', 'hrPlan');
+              
+              // Double-check focus with multiple attempts to ensure it takes
+              setTimeout(() => {
+                if (onSectionChange) {
+                  console.log(`[Apply Suggestion Debug] OVERRIDE: Second focus attempt for hrPlan`);
+                  onSectionChange('organizationAndManagement', 'hrPlan');
+                  
+                  // Third attempt with longer delay as a failsafe
+                  setTimeout(() => {
+                    if (onSectionChange) {
+                      console.log(`[Apply Suggestion Debug] OVERRIDE: Final focus attempt for hrPlan`);
+                      onSectionChange('organizationAndManagement', 'hrPlan');
+                    }
+                  }, 500);
+                }
+              }, 300);
+            }, 100);
+          }
+          
+          // Ensure scroll happens after all updates
+          setTimeout(scrollToBottom, 300);
+          
+          console.log(`[Apply Suggestion Debug] OVERRIDE: HR Plan handling complete`);
+          return;
+        }
+      } catch (err) {
+        console.error(`[Apply Suggestion Debug] ERROR in HR Plan override:`, err);
+        // If there's an error, let's still try the standard approach
+        console.log(`[Apply Suggestion Debug] Falling back to standard processing after error`);
+      }
+    }
+    
+    // Direct fix for Advisors - hardcode when detected
+    if ((lowerFieldId.includes('advisor') && lowerFieldId.includes('board')) ||
+        lowerFieldId === 'advisors' ||
+        lowerFieldId === 'board of advisors' ||
+        lowerFieldId === 'advisory board' ||
+        lowerFieldId.includes('mentor') ||
+        lowerFieldId.includes('board member') ||
+        lowerFieldId.includes('director') ||
+        lowerFieldId.includes('advisory team') ||
+        lowerFieldId.includes('external expertise') ||
+        lowerFieldId.includes('advisory council') ||
+        lowerFieldId.includes('board of directors') ||
+        lowerFieldId.includes('business advisor')) {
+    
+      console.log(`[Apply Suggestion Debug] OVERRIDE: Directly applying to advisors field, bypassing all other logic`);
+    
+      try {
+        // Force direct apply with hardcoded values
+        if (onApplySuggestion) {
+          // Apply directly to the known correct field ID as specified in the editor
+          onApplySuggestion('advisors', content);
+          
+          console.log(`[Apply Suggestion Debug] OVERRIDE: Successfully applied content to advisors field`);
+          
+          // Manually update all tracking state to ensure consistency
+          setCurrentSubfield('advisors');
+          setLastAppliedSuggestion({ fieldId: 'advisors', content });
+          setShowSectionPrompt(true);
+          
+          // Force section navigation and focus with explicit section ID
+          if (onSectionChange) {
+            // Ensure we're in the correct section first - organizationAndManagement is the correct section
+            console.log(`[Apply Suggestion Debug] OVERRIDE: Force setting organization and management section and advisors focus`);
+            
+            // Give editor time to update by using a timeout
+            setTimeout(() => {
+              // First navigation attempt
+              onSectionChange('organizationAndManagement', 'advisors');
+              
+              // Double-check focus with multiple attempts to ensure it takes
+              setTimeout(() => {
+                if (onSectionChange) {
+                  console.log(`[Apply Suggestion Debug] OVERRIDE: Second focus attempt for advisors`);
+                  onSectionChange('organizationAndManagement', 'advisors');
+                  
+                  // Third attempt with longer delay as a failsafe
+                  setTimeout(() => {
+                    if (onSectionChange) {
+                      console.log(`[Apply Suggestion Debug] OVERRIDE: Final focus attempt for advisors`);
+                      onSectionChange('organizationAndManagement', 'advisors');
+                    }
+                  }, 500);
+                }
+              }, 300);
+            }, 100);
+          }
+          
+          // Ensure scroll happens after all updates
+          setTimeout(scrollToBottom, 300);
+          
+          console.log(`[Apply Suggestion Debug] OVERRIDE: Advisors handling complete`);
+          return;
+        }
+      } catch (err) {
+        console.error(`[Apply Suggestion Debug] ERROR in Advisors override:`, err);
+        // If there's an error, let's still try the standard approach
+        console.log(`[Apply Suggestion Debug] Falling back to standard processing after error`);
+      }
+    }
+    
+    // Direct fix for Financial Projections - hardcode when detected
+    if ((lowerFieldId.includes('financial') && lowerFieldId.includes('projection')) ||
+        lowerFieldId === 'projections' ||
+        lowerFieldId === 'financial projections' ||
+        lowerFieldId.includes('financial forecast') ||
+        lowerFieldId.includes('revenue projection') ||
+        lowerFieldId.includes('profit forecast') ||
+        lowerFieldId.includes('expense projection') ||
+        lowerFieldId.includes('pro forma') ||
+        lowerFieldId.includes('cash flow projection') ||
+        lowerFieldId.includes('income projection') ||
+        lowerFieldId.includes('financial model') ||
+        lowerFieldId.includes('revenue forecast')) {
+    
+      console.log(`[Apply Suggestion Debug] OVERRIDE: Directly applying to projections field, bypassing all other logic`);
+    
+      try {
+        // Force direct apply with hardcoded values
+        if (onApplySuggestion) {
+          // Apply directly to the known correct field ID as specified in the editor
+          onApplySuggestion('projections', content);
+          
+          console.log(`[Apply Suggestion Debug] OVERRIDE: Successfully applied content to projections field`);
+          
+          // Manually update all tracking state to ensure consistency
+          setCurrentSubfield('projections');
+          setLastAppliedSuggestion({ fieldId: 'projections', content });
+          setShowSectionPrompt(true);
+          
+          // Force section navigation and focus with explicit section ID
+          if (onSectionChange) {
+            // Ensure we're in the correct section first - financialPlan is the correct section
+            console.log(`[Apply Suggestion Debug] OVERRIDE: Force setting financial plan section and projections focus`);
+            
+            // Give editor time to update by using a timeout
+            setTimeout(() => {
+              // First navigation attempt
+              onSectionChange('financialPlan', 'projections');
+              
+              // Double-check focus with multiple attempts to ensure it takes
+              setTimeout(() => {
+                if (onSectionChange) {
+                  console.log(`[Apply Suggestion Debug] OVERRIDE: Second focus attempt for projections`);
+                  onSectionChange('financialPlan', 'projections');
+                  
+                  // Third attempt with longer delay as a failsafe
+                  setTimeout(() => {
+                    if (onSectionChange) {
+                      console.log(`[Apply Suggestion Debug] OVERRIDE: Final focus attempt for projections`);
+                      onSectionChange('financialPlan', 'projections');
+                    }
+                  }, 500);
+                }
+              }, 300);
+            }, 100);
+          }
+          
+          // Ensure scroll happens after all updates
+          setTimeout(scrollToBottom, 300);
+          
+          console.log(`[Apply Suggestion Debug] OVERRIDE: Financial Projections handling complete`);
+          return;
+        }
+      } catch (err) {
+        console.error(`[Apply Suggestion Debug] ERROR in Financial Projections override:`, err);
+        // If there's an error, let's still try the standard approach
+        console.log(`[Apply Suggestion Debug] Falling back to standard processing after error`);
+      }
+    }
+    
+    // Direct fix for Funding Requirements - hardcode when detected
+    if ((lowerFieldId.includes('funding') && lowerFieldId.includes('requirement')) ||
+        lowerFieldId === 'fundingneeds' ||
+        lowerFieldId === 'funding needs' ||
+        lowerFieldId.includes('funding requirements') ||
+        lowerFieldId.includes('capital needs') ||
+        lowerFieldId.includes('investment needs') ||
+        lowerFieldId.includes('financing requirements') ||
+        lowerFieldId.includes('capital requirements') ||
+        lowerFieldId.includes('startup capital') ||
+        lowerFieldId.includes('financial needs') ||
+        lowerFieldId.includes('investment requirements') ||
+        lowerFieldId.includes('funding request')) {
+    
+      console.log(`[Apply Suggestion Debug] OVERRIDE: Directly applying to fundingNeeds field, bypassing all other logic`);
+    
+      try {
+        // Force direct apply with hardcoded values
+        if (onApplySuggestion) {
+          // Apply directly to the known correct field ID as specified in the editor
+          onApplySuggestion('fundingNeeds', content);
+          
+          console.log(`[Apply Suggestion Debug] OVERRIDE: Successfully applied content to fundingNeeds field`);
+          
+          // Manually update all tracking state to ensure consistency
+          setCurrentSubfield('fundingNeeds');
+          setLastAppliedSuggestion({ fieldId: 'fundingNeeds', content });
+          setShowSectionPrompt(true);
+          
+          // Force section navigation and focus with explicit section ID
+          if (onSectionChange) {
+            // Ensure we're in the correct section first - financialPlan is the correct section
+            console.log(`[Apply Suggestion Debug] OVERRIDE: Force setting financial plan section and fundingNeeds focus`);
+            
+            // Give editor time to update by using a timeout
+            setTimeout(() => {
+              // First navigation attempt
+              onSectionChange('financialPlan', 'fundingNeeds');
+              
+              // Double-check focus with multiple attempts to ensure it takes
+              setTimeout(() => {
+                if (onSectionChange) {
+                  console.log(`[Apply Suggestion Debug] OVERRIDE: Second focus attempt for fundingNeeds`);
+                  onSectionChange('financialPlan', 'fundingNeeds');
+                  
+                  // Third attempt with longer delay as a failsafe
+                  setTimeout(() => {
+                    if (onSectionChange) {
+                      console.log(`[Apply Suggestion Debug] OVERRIDE: Final focus attempt for fundingNeeds`);
+                      onSectionChange('financialPlan', 'fundingNeeds');
+                    }
+                  }, 500);
+                }
+              }, 300);
+            }, 100);
+          }
+          
+          // Ensure scroll happens after all updates
+          setTimeout(scrollToBottom, 300);
+          
+          console.log(`[Apply Suggestion Debug] OVERRIDE: Funding Requirements handling complete`);
+          return;
+        }
+      } catch (err) {
+        console.error(`[Apply Suggestion Debug] ERROR in Funding Requirements override:`, err);
+        // If there's an error, let's still try the standard approach
+        console.log(`[Apply Suggestion Debug] Falling back to standard processing after error`);
+      }
+    }
+    
+    // Direct fix for Use of Funds - hardcode when detected
+    if ((lowerFieldId.includes('use') && lowerFieldId.includes('funds')) ||
+        lowerFieldId === 'useoffunds' ||
+        lowerFieldId === 'use of funds' ||
+        lowerFieldId.includes('fund allocation') ||
+        lowerFieldId.includes('capital allocation') ||
+        lowerFieldId.includes('fund usage') ||
+        lowerFieldId.includes('investment allocation') ||
+        lowerFieldId.includes('funding allocation') ||
+        lowerFieldId.includes('how funds will be used') ||
+        lowerFieldId.includes('spending plan') ||
+        lowerFieldId.includes('capital utilization') ||
+        lowerFieldId.includes('money allocation')) {
+    
+      console.log(`[Apply Suggestion Debug] OVERRIDE: Directly applying to useOfFunds field, bypassing all other logic`);
+    
+      try {
+        // Force direct apply with hardcoded values
+        if (onApplySuggestion) {
+          // Apply directly to the known correct field ID as specified in the editor
+          onApplySuggestion('useOfFunds', content);
+          
+          console.log(`[Apply Suggestion Debug] OVERRIDE: Successfully applied content to useOfFunds field`);
+          
+          // Manually update all tracking state to ensure consistency
+          setCurrentSubfield('useOfFunds');
+          setLastAppliedSuggestion({ fieldId: 'useOfFunds', content });
+          setShowSectionPrompt(true);
+          
+          // Force section navigation and focus with explicit section ID
+          if (onSectionChange) {
+            // Ensure we're in the correct section first - financialPlan is the correct section
+            console.log(`[Apply Suggestion Debug] OVERRIDE: Force setting financial plan section and useOfFunds focus`);
+            
+            // Give editor time to update by using a timeout
+            setTimeout(() => {
+              // First navigation attempt
+              onSectionChange('financialPlan', 'useOfFunds');
+              
+              // Double-check focus with multiple attempts to ensure it takes
+              setTimeout(() => {
+                if (onSectionChange) {
+                  console.log(`[Apply Suggestion Debug] OVERRIDE: Second focus attempt for useOfFunds`);
+                  onSectionChange('financialPlan', 'useOfFunds');
+                  
+                  // Third attempt with longer delay as a failsafe
+                  setTimeout(() => {
+                    if (onSectionChange) {
+                      console.log(`[Apply Suggestion Debug] OVERRIDE: Final focus attempt for useOfFunds`);
+                      onSectionChange('financialPlan', 'useOfFunds');
+                    }
+                  }, 500);
+                }
+              }, 300);
+            }, 100);
+          }
+          
+          // Ensure scroll happens after all updates
+          setTimeout(scrollToBottom, 300);
+          
+          console.log(`[Apply Suggestion Debug] OVERRIDE: Use of Funds handling complete`);
+          return;
+        }
+      } catch (err) {
+        console.error(`[Apply Suggestion Debug] ERROR in Use of Funds override:`, err);
+        // If there's an error, let's still try the standard approach
+        console.log(`[Apply Suggestion Debug] Falling back to standard processing after error`);
+      }
+    }
+    
+    // Direct fix for Break-Even Analysis - hardcode when detected
+    if ((lowerFieldId.includes('break') && lowerFieldId.includes('even')) ||
+        lowerFieldId === 'breakevenanalysis' ||
+        lowerFieldId === 'break even analysis' ||
+        lowerFieldId === 'breakeven' ||
+        lowerFieldId === 'break even' ||
+        lowerFieldId.includes('break-even') ||
+        lowerFieldId.includes('breakeven point') ||
+        lowerFieldId.includes('profitability analysis') ||
+        lowerFieldId.includes('cost recovery') ||
+        lowerFieldId.includes('profit threshold') ||
+        lowerFieldId.includes('profitability threshold') ||
+        lowerFieldId.includes('cost coverage')) {
+    
+      console.log(`[Apply Suggestion Debug] OVERRIDE: Directly applying to breakEvenAnalysis field, bypassing all other logic`);
+    
+      try {
+        // Force direct apply with hardcoded values
+        if (onApplySuggestion) {
+          // Apply directly to the known correct field ID as specified in the editor
+          onApplySuggestion('breakEvenAnalysis', content);
+          
+          console.log(`[Apply Suggestion Debug] OVERRIDE: Successfully applied content to breakEvenAnalysis field`);
+          
+          // Manually update all tracking state to ensure consistency
+          setCurrentSubfield('breakEvenAnalysis');
+          setLastAppliedSuggestion({ fieldId: 'breakEvenAnalysis', content });
+          setShowSectionPrompt(true);
+          
+          // Force section navigation and focus with explicit section ID
+          if (onSectionChange) {
+            // Ensure we're in the correct section first - financialPlan is the correct section
+            console.log(`[Apply Suggestion Debug] OVERRIDE: Force setting financial plan section and breakEvenAnalysis focus`);
+            
+            // Give editor time to update by using a timeout
+            setTimeout(() => {
+              // First navigation attempt
+              onSectionChange('financialPlan', 'breakEvenAnalysis');
+              
+              // Double-check focus with multiple attempts to ensure it takes
+              setTimeout(() => {
+                if (onSectionChange) {
+                  console.log(`[Apply Suggestion Debug] OVERRIDE: Second focus attempt for breakEvenAnalysis`);
+                  onSectionChange('financialPlan', 'breakEvenAnalysis');
+                  
+                  // Third attempt with longer delay as a failsafe
+                  setTimeout(() => {
+                    if (onSectionChange) {
+                      console.log(`[Apply Suggestion Debug] OVERRIDE: Final focus attempt for breakEvenAnalysis`);
+                      onSectionChange('financialPlan', 'breakEvenAnalysis');
+                    }
+                  }, 500);
+                }
+              }, 300);
+            }, 100);
+          }
+          
+          // Ensure scroll happens after all updates
+          setTimeout(scrollToBottom, 300);
+          
+          console.log(`[Apply Suggestion Debug] OVERRIDE: Break-Even Analysis handling complete`);
+          return;
+        }
+      } catch (err) {
+        console.error(`[Apply Suggestion Debug] ERROR in Break-Even Analysis override:`, err);
+        // If there's an error, let's still try the standard approach
+        console.log(`[Apply Suggestion Debug] Falling back to standard processing after error`);
+      }
+    }
+    
+    // Direct fix for Exit Strategy - hardcode when detected
+    if ((lowerFieldId.includes('exit') && lowerFieldId.includes('strategy')) ||
+        lowerFieldId === 'exitstrategy' ||
+        lowerFieldId === 'exit strategy' ||
+        lowerFieldId.includes('exit plan') ||
+        lowerFieldId.includes('business exit') ||
+        lowerFieldId.includes('company exit') ||
+        lowerFieldId.includes('exit opportunities') ||
+        lowerFieldId.includes('liquidity event') ||
+        lowerFieldId.includes('exit options') ||
+        lowerFieldId.includes('exit scenario') ||
+        lowerFieldId.includes('end game') ||
+        lowerFieldId.includes('harvest strategy')) {
+    
+      console.log(`[Apply Suggestion Debug] OVERRIDE: Directly applying to exitStrategy field, bypassing all other logic`);
+    
+      try {
+        // Force direct apply with hardcoded values
+        if (onApplySuggestion) {
+          // Apply directly to the known correct field ID as specified in the editor
+          onApplySuggestion('exitStrategy', content);
+          
+          console.log(`[Apply Suggestion Debug] OVERRIDE: Successfully applied content to exitStrategy field`);
+          
+          // Manually update all tracking state to ensure consistency
+          setCurrentSubfield('exitStrategy');
+          setLastAppliedSuggestion({ fieldId: 'exitStrategy', content });
+          setShowSectionPrompt(true);
+          
+          // Force section navigation and focus with explicit section ID
+          if (onSectionChange) {
+            // Ensure we're in the correct section first - financialPlan is the correct section
+            console.log(`[Apply Suggestion Debug] OVERRIDE: Force setting financial plan section and exitStrategy focus`);
+            
+            // Give editor time to update by using a timeout
+            setTimeout(() => {
+              // First navigation attempt
+              onSectionChange('financialPlan', 'exitStrategy');
+              
+              // Double-check focus with multiple attempts to ensure it takes
+              setTimeout(() => {
+                if (onSectionChange) {
+                  console.log(`[Apply Suggestion Debug] OVERRIDE: Second focus attempt for exitStrategy`);
+                  onSectionChange('financialPlan', 'exitStrategy');
+                  
+                  // Third attempt with longer delay as a failsafe
+                  setTimeout(() => {
+                    if (onSectionChange) {
+                      console.log(`[Apply Suggestion Debug] OVERRIDE: Final focus attempt for exitStrategy`);
+                      onSectionChange('financialPlan', 'exitStrategy');
+                    }
+                  }, 500);
+                }
+              }, 300);
+            }, 100);
+          }
+          
+          // Ensure scroll happens after all updates
+          setTimeout(scrollToBottom, 300);
+          
+          console.log(`[Apply Suggestion Debug] OVERRIDE: Exit Strategy handling complete`);
+          return;
+        }
+      } catch (err) {
+        console.error(`[Apply Suggestion Debug] ERROR in Exit Strategy override:`, err);
+        // If there's an error, let's still try the standard approach
+        console.log(`[Apply Suggestion Debug] Falling back to standard processing after error`);
+      }
+    }
+    
     // Normalize the field ID for other fields
     const normalizedFieldId = normalizeFieldId(fieldId);
     console.log(`[Apply Suggestion Debug] Normalized field ID: ${fieldId} → ${normalizedFieldId}`);
@@ -1732,23 +3130,79 @@ export default function BusinessPlanAIAssistant({
             }
             
             return (
-              <div key={index} className="rounded-md border border-blue-100 bg-blue-50 p-3">
-                <div className="text-sm text-blue-700 mb-1 font-medium">
+            <div key={index} className="rounded-md border border-blue-100 bg-blue-50 p-3">
+              <div className="text-sm text-blue-700 mb-1 font-medium">
                   {fieldName}
-                </div>
-                <div className="text-sm text-gray-700 mb-2">{suggestion.content}</div>
-                <button
-                  onClick={() => handleApplySuggestion(fieldIdToUse, suggestion.content)}
-                  className="text-xs bg-blue-100 hover:bg-blue-200 text-blue-700 px-2 py-1 rounded"
-                >
-                  Apply to field
-                </button>
               </div>
+              <div className="text-sm text-gray-700 mb-2">{suggestion.content}</div>
+              <div className="text-xs text-gray-600 italic mb-1">
+                {fieldIdToUse === 'branding' ? 
+                  "Does this resonate with your vision for your brand?" :
+                 fieldIdToUse === 'valueProposition' ?
+                  "Does this value proposition capture what makes your offering unique?" :
+                 fieldIdToUse === 'targetMarket' ?
+                  "Does this accurately describe your target customers?" :
+                 fieldIdToUse === 'competitiveAnalysis' ?
+                  "Is this competitive analysis reflective of your market position?" :
+                 fieldIdToUse === 'marketSegmentation' ?
+                  "Does this segmentation approach make sense for your business?" :
+                 fieldIdToUse === 'swotAnalysis' ?
+                  "Does this SWOT analysis identify your key factors accurately?" :
+                 fieldIdToUse === 'industryOverview' ?
+                  "Does this overview capture the key aspects of your industry?" :
+                 fieldIdToUse === 'futureProducts' ?
+                  "Does this align with your future product roadmap?" :
+                 fieldIdToUse === 'intellectualProperty' ?
+                  "Is this description of your intellectual property assets accurate?" :
+                 fieldIdToUse === 'pricing' ?
+                  "Does this pricing strategy align with your business model and market positioning?" :
+                 fieldIdToUse === 'promotion' ?
+                  "Does this promotion plan effectively address how you'll reach and attract customers?" :
+                 fieldIdToUse === 'salesStrategy' ?
+                  "Does this sales strategy outline an effective approach to converting leads into customers?" :
+                 fieldIdToUse === 'channels' ?
+                  "Does this distribution channel strategy effectively cover how your products/services will reach customers?" :
+                 fieldIdToUse === 'customerRetention' ?
+                  "Does this retention strategy outline how you'll keep customers engaged and coming back?" :
+                 fieldIdToUse === 'businessModel' ?
+                  "Does this business model accurately describe how your company creates, delivers, and captures value?" :
+                 fieldIdToUse === 'facilities' ?
+                  "Does this facilities description adequately address your physical location needs?" :
+                 fieldIdToUse === 'technology' ?
+                  "Does this technology overview properly outline your software, hardware, and tech infrastructure needs?" :
+                 fieldIdToUse === 'productionProcess' ?
+                  "Does this production process description accurately outline how you'll create and deliver your offerings?" :
+                 fieldIdToUse === 'qualityControl' ?
+                  "Does this quality control section effectively explain how you'll ensure consistent product/service quality?" :
+                 fieldIdToUse === 'logistics' ?
+                  "Does this logistics plan effectively outline how you'll manage inventory, shipping, and suppliers?" :
+                 fieldIdToUse === 'structure' ?
+                  "Does this organizational structure accurately reflect your company's hierarchy and reporting relationships?" :
+                 fieldIdToUse === 'hrPlan' ?
+                  "Does this HR plan effectively cover your hiring plans, staffing requirements, and compensation strategy?" :
+                 fieldIdToUse === 'advisors' ?
+                  "Does this advisors section appropriately highlight the external expertise supporting your business?" :
+                 fieldIdToUse === 'projections' ?
+                  "Do these financial projections effectively forecast your revenue, expenses, and profit for the coming years?" :
+                 fieldIdToUse === 'fundingNeeds' ?
+                  "Does this funding requirements section clearly outline how much funding you need and why?" :
+                 fieldIdToUse === 'useOfFunds' ?
+                  "Does this use of funds section clearly detail how the investment will be allocated?" :
+                 fieldIdToUse === 'breakEvenAnalysis' ?
+                  "Does this break-even analysis effectively show when your business will become profitable?" :
+                 fieldIdToUse === 'exitStrategy' ?
+                  "Does this exit strategy clearly outline your long-term plans for the business and potential exit opportunities?" :
+                  "Would you like to use this suggestion for your business plan?"}
+              </div>
+              <div className="text-xs text-gray-500">
+                Reply "yes" to apply this suggestion, or provide feedback for adjustments.
+              </div>
+            </div>
             );
           })}
         </div>
         <div className="text-xs text-gray-500 mt-1">
-          Tip: Just type "yes" to apply the suggestion.
+          These suggestions are based on my understanding of your business plan so far.
         </div>
       </div>
     );
@@ -1807,16 +3261,16 @@ export default function BusinessPlanAIAssistant({
   const renderSectionMenu = () => {
     if (!isMenuOpen) {
       // When menu is collapsed, just show the dropdown button
-      return (
+    return (
         <div className="border-b border-gray-200 py-1 px-2 bg-white">
-          <button 
+                <button 
             onClick={() => setIsMenuOpen(true)}
             className="flex items-center text-xs font-medium text-gray-700 hover:text-blue-600"
-          >
+                >
             <ChevronRight className="h-3 w-3 mr-1" />
             Menu
-          </button>
-        </div>
+                </button>
+              </div>
       );
     }
     
@@ -1825,23 +3279,23 @@ export default function BusinessPlanAIAssistant({
       <div className="border rounded-md bg-white p-2 text-xs">
         <div className="flex justify-between items-center mb-1">
           <h4 className="text-xs font-medium text-gray-700">Business Plan Sections</h4>
-          <button 
+                  <button
             onClick={() => setIsMenuOpen(false)}
             className="text-xs text-gray-500 hover:text-gray-700"
-          >
+                  >
             <X className="h-3 w-3" />
-          </button>
-        </div>
+                  </button>
+              </div>
         <div className="space-y-1">
-          {SECTION_ORDER.map(section => (
+              {SECTION_ORDER.map(section => (
             <div key={section} className="rounded border border-gray-200">
-              <button
+                <button
                 onClick={() => handleSelectMainSection(section)}
                 className={`w-full text-left px-2 py-1 flex justify-between items-center text-xs ${
                   section === sectionId ? 'bg-blue-50 text-blue-700' : 'hover:bg-gray-50'
-                }`}
-              >
-                <span>{SECTION_NAMES[section]}</span>
+                  }`}
+                >
+                  <span>{SECTION_NAMES[section]}</span>
                 <span>{selectedMainSection === section ? '▼' : '►'}</span>
               </button>
               
@@ -1856,13 +3310,13 @@ export default function BusinessPlanAIAssistant({
                       }`}
                     >
                       {SUBFIELD_NAMES[subsection] || subsection}
-                    </button>
-                  ))}
-                </div>
-              )}
+                </button>
+              ))}
             </div>
-          ))}
+          )}
         </div>
+          ))}
+      </div>
       </div>
     );
   };
@@ -1889,18 +3343,18 @@ export default function BusinessPlanAIAssistant({
         </div>
         
         {/* Just close button */}
-        <button
-          onClick={() => setIsOpen(!isOpen)}
-          className="text-gray-500 hover:text-gray-700 p-1"
-        >
-          {isOpen ? <X className="h-4 w-4" /> : <MessageSquare className="h-4 w-4" />}
-        </button>
+          <button
+            onClick={() => setIsOpen(!isOpen)}
+            className="text-gray-500 hover:text-gray-700 p-1"
+          >
+            {isOpen ? <X className="h-4 w-4" /> : <MessageSquare className="h-4 w-4" />}
+          </button>
       </div>
       
       {/* Adjust the message container to take full height */}
       {isOpen && (
         <div className="flex-grow overflow-hidden flex flex-col">
-          <div
+          <div 
             ref={messagesContainerRef}
             className={`flex-grow overflow-y-auto pt-0 px-3 pb-3 ${
               isCompactMode ? 'max-h-[350px]' : 'max-h-[450px]'
@@ -1914,22 +3368,22 @@ export default function BusinessPlanAIAssistant({
             </div>
             
             {/* Messages UI */}
-            {messages.length === 0 ? (
-              <div className="text-center py-2 text-gray-500">
-                {/* Render section navigation immediately in empty state, without any messages */}
-                <div className="mt-1">
+              {messages.length === 0 ? (
+                <div className="text-center py-2 text-gray-500">
+                  {/* Render section navigation immediately in empty state, without any messages */}
+                  <div className="mt-1">
                   {renderFieldSuggestions()}
+                  </div>
                 </div>
-              </div>
-            ) : (
-              <>
-                <div className="flex flex-col space-y-4">
-                  {messages.map((message, index) => (
-                    <div
-                      key={index}
-                      className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                    >
+              ) : (
+                <>
+                  <div className="flex flex-col space-y-4">
+                    {messages.map((message, index) => (
                       <div
+                        key={index}
+                      className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                      >
+                        <div
                         className={`px-3 py-1.5 rounded-lg ${
                           message.role === 'user' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-800'
                         } ${isCompactMode ? 'text-sm' : 'text-base'} max-w-[85%]`}
@@ -1941,35 +3395,35 @@ export default function BusinessPlanAIAssistant({
                             {isLoading && messages.length === index + 1 ? (
                               <div className="text-gray-500">Thinking...</div>
                             ) : (
-                              <div className="whitespace-pre-wrap">
+                          <div className="whitespace-pre-wrap">
                                 {message.content}
-                              </div>
+                          </div>
                             )}
                           </div>
                         )}
+                        </div>
+                      </div>
+                    ))}
+                    <div ref={messagesEndRef} />
+                  </div>
+                  {isLoading && (
+                    <div className="bg-gray-100 text-gray-800 p-2 rounded-lg max-w-[85%] mt-2">
+                      <div className="flex space-x-2">
+                        <div className="w-2 h-2 rounded-full bg-gray-400 animate-pulse"></div>
+                        <div className="w-2 h-2 rounded-full bg-gray-400 animate-pulse delay-100"></div>
+                        <div className="w-2 h-2 rounded-full bg-gray-400 animate-pulse delay-200"></div>
                       </div>
                     </div>
-                  ))}
-                  <div ref={messagesEndRef} />
-                </div>
-                {isLoading && (
-                  <div className="bg-gray-100 text-gray-800 p-2 rounded-lg max-w-[85%] mt-2">
-                    <div className="flex space-x-2">
-                      <div className="w-2 h-2 rounded-full bg-gray-400 animate-pulse"></div>
-                      <div className="w-2 h-2 rounded-full bg-gray-400 animate-pulse delay-100"></div>
-                      <div className="w-2 h-2 rounded-full bg-gray-400 animate-pulse delay-200"></div>
-                    </div>
-                  </div>
-                )}
-                
-                {/* Show section navigation if enabled */}
+                  )}
+                  
+                  {/* Show section navigation if enabled */}
                 {showSectionPrompt && (
-                  <div className="mt-2 border-t border-gray-200 pt-2">
+                    <div className="mt-2 border-t border-gray-200 pt-2">
                     {renderFieldSuggestions()}
-                  </div>
-                )}
-              </>
-            )}
+                    </div>
+                  )}
+                </>
+              )}
           </div>
           
           {/* Input area - make more compact when needed */}
