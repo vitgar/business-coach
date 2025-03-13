@@ -165,11 +165,11 @@ const prepareAIContext = (businessPlan: any, currentField: string) => {
       if (ma.competitiveAnalysis) {
         contextData += `Competitive Analysis: ${ma.competitiveAnalysis}\n\n`;
       }
-      if (ma.targetMarket) {
-        contextData += `Target Market: ${ma.targetMarket}\n\n`;
-      }
       if (ma.swotAnalysis) {
         contextData += `SWOT Analysis: ${ma.swotAnalysis}\n\n`;
+      }
+      if (ma.targetMarket) {
+        contextData += `Target Market: ${ma.targetMarket}\n\n`;
       }
     }
     
@@ -181,6 +181,14 @@ const prepareAIContext = (businessPlan: any, currentField: string) => {
       }
       if (ms.pricing) {
         contextData += `Pricing Strategy: ${ms.pricing}\n\n`;
+      }
+    }
+    
+    // Add Product/Service Overview for consistency
+    if (content.productsAndServices) {
+      const ps = content.productsAndServices;
+      if (ps.overview) {
+        contextData += `Product/Service Overview: ${ps.overview}\n\n`;
       }
     }
   }
@@ -284,6 +292,10 @@ const prepareAIContext = (businessPlan: any, currentField: string) => {
       if (ma.targetMarket) {
         contextData += `Target Market: ${ma.targetMarket}\n\n`;
       }
+      // Add Competitive Analysis to understand competitors' market segments
+      if (ma.competitiveAnalysis) {
+        contextData += `Competitive Analysis: ${ma.competitiveAnalysis}\n\n`;
+      }
     }
     
     // Add Marketing Strategy information for channel alignment
@@ -334,6 +346,61 @@ const prepareAIContext = (businessPlan: any, currentField: string) => {
     }
   }
   
+  // For Legal Structure Details field, include Business Structure and Ownership information
+  else if (currentField === 'legalStructure') {
+    // Add Business Structure for legal context
+    if (content.companyDescription) {
+      const cd = content.companyDescription;
+      if (cd.businessStructure) {
+        contextData += `Business Structure: ${cd.businessStructure}\n\n`;
+      }
+      if (cd.ownershipDetails) {
+        contextData += `Ownership Details: ${cd.ownershipDetails}\n\n`;
+      }
+    }
+  }
+  
+  // For Ownership Details field, include Business Structure and Funding Requirements information
+  else if (currentField === 'ownershipDetails') {
+    // Add Business Structure for ownership context
+    if (content.companyDescription) {
+      const cd = content.companyDescription;
+      if (cd.businessStructure) {
+        contextData += `Business Structure: ${cd.businessStructure}\n\n`;
+      }
+    }
+    
+    // Add Funding Requirements for investment/ownership context
+    if (content.financialPlan) {
+      const fp = content.financialPlan;
+      if (fp.fundingNeeds) {
+        contextData += `Funding Requirements: ${fp.fundingNeeds}\n\n`;
+      }
+    }
+  }
+  
+  // For Intellectual Property field, include Legal Structure and Product/Service Overview information
+  else if (currentField === 'intellectualProperty') {
+    // Add Legal Structure Details for IP context
+    if (content.companyDescription) {
+      const cd = content.companyDescription;
+      if (cd.legalStructure) {
+        contextData += `Legal Structure Details: ${cd.legalStructure}\n\n`;
+      }
+      if (cd.businessStructure) {
+        contextData += `Business Structure: ${cd.businessStructure}\n\n`;
+      }
+    }
+    
+    // Add Product/Service Overview for IP protection context
+    if (content.productsAndServices) {
+      const ps = content.productsAndServices;
+      if (ps.overview) {
+        contextData += `Product/Service Overview: ${ps.overview}\n\n`;
+      }
+    }
+  }
+  
   // For SWOT Analysis field, include information from various sections
   else if (currentField === 'swotAnalysis') {
     // Add Financial information for strengths/weaknesses
@@ -375,6 +442,535 @@ const prepareAIContext = (businessPlan: any, currentField: string) => {
     }
   }
   
+  // MARKETING STRATEGY SECTION FIELDS
+  // For Branding Strategy field, include value proposition and target market information
+  else if (currentField === 'branding') {
+    // Add Value Proposition to ensure branding reinforces what makes you unique
+    if (content.productsAndServices) {
+      const ps = content.productsAndServices;
+      if (ps.valueProposition) {
+        contextData += `Value Proposition: ${ps.valueProposition}\n\n`;
+      }
+    }
+    
+    // Add Target Market information to ensure branding speaks to customer needs
+    if (content.marketAnalysis) {
+      const ma = content.marketAnalysis;
+      if (ma.targetMarket) {
+        contextData += `Target Market: ${ma.targetMarket}\n\n`;
+      }
+      if (ma.marketSegmentation) {
+        contextData += `Market Segmentation: ${ma.marketSegmentation}\n\n`;
+      }
+    }
+  }
+  
+  // For Pricing Strategy field, include financial projections and competitive analysis
+  else if (currentField === 'pricing') {
+    // Add Financial Projections to ensure pricing is profitable
+    if (content.financialPlan) {
+      const fp = content.financialPlan;
+      if (fp.projections) {
+        contextData += `Financial Projections: ${fp.projections}\n\n`;
+      }
+    }
+    
+    // Add Competitive Analysis to ensure pricing is competitive
+    if (content.marketAnalysis) {
+      const ma = content.marketAnalysis;
+      if (ma.competitiveAnalysis) {
+        contextData += `Competitive Analysis: ${ma.competitiveAnalysis}\n\n`;
+      }
+    }
+    
+    // Add Value Proposition to align pricing with value delivered
+    if (content.productsAndServices) {
+      const ps = content.productsAndServices;
+      if (ps.valueProposition) {
+        contextData += `Value Proposition: ${ps.valueProposition}\n\n`;
+      }
+    }
+  }
+  
+  // For Promotion Plan field, include target market, market segmentation and sales strategy
+  else if (currentField === 'promotion') {
+    // Add Target Market and Market Segmentation to dictate where and how to advertise
+    if (content.marketAnalysis) {
+      const ma = content.marketAnalysis;
+      if (ma.targetMarket) {
+        contextData += `Target Market: ${ma.targetMarket}\n\n`;
+      }
+      if (ma.marketSegmentation) {
+        contextData += `Market Segmentation: ${ma.marketSegmentation}\n\n`;
+      }
+    }
+    
+    // Add Sales Strategy to ensure marketing aligns with sales goals
+    if (content.marketingStrategy) {
+      const ms = content.marketingStrategy;
+      if (ms.salesStrategy) {
+        contextData += `Sales Strategy: ${ms.salesStrategy}\n\n`;
+      }
+    }
+    
+    // Add Branding Strategy for promotional consistency
+    if (content.marketingStrategy) {
+      const ms = content.marketingStrategy;
+      if (ms.branding) {
+        contextData += `Branding Strategy: ${ms.branding}\n\n`;
+      }
+    }
+  }
+  
+  // For Sales Strategy field, include product overview and pricing information
+  else if (currentField === 'salesStrategy') {
+    // Add Product/Service Overview to know what you're selling
+    if (content.productsAndServices) {
+      const ps = content.productsAndServices;
+      if (ps.overview) {
+        contextData += `Product/Service Overview: ${ps.overview}\n\n`;
+      }
+    }
+    
+    // Add Pricing Strategy to impact how sales are structured
+    if (content.marketingStrategy) {
+      const ms = content.marketingStrategy;
+      if (ms.pricing) {
+        contextData += `Pricing Strategy: ${ms.pricing}\n\n`;
+      }
+    }
+    
+    // Add Target Market information to understand customer buying behavior
+    if (content.marketAnalysis) {
+      const ma = content.marketAnalysis;
+      if (ma.targetMarket) {
+        contextData += `Target Market: ${ma.targetMarket}\n\n`;
+      }
+    }
+  }
+  
+  // For Distribution Channels field, include logistics and competitive analysis
+  else if (currentField === 'channels') {
+    // Add Logistics & Supply Chain to define how products are delivered
+    if (content.operationsPlan) {
+      const op = content.operationsPlan;
+      if (op.logistics) {
+        contextData += `Logistics & Supply Chain: ${op.logistics}\n\n`;
+      }
+    }
+    
+    // Add Competitive Analysis to understand how competitors distribute products
+    if (content.marketAnalysis) {
+      const ma = content.marketAnalysis;
+      if (ma.competitiveAnalysis) {
+        contextData += `Competitive Analysis: ${ma.competitiveAnalysis}\n\n`;
+      }
+    }
+    
+    // Add Target Market information to align distribution channels with customer preferences
+    if (content.marketAnalysis) {
+      const ma = content.marketAnalysis;
+      if (ma.targetMarket) {
+        contextData += `Target Market: ${ma.targetMarket}\n\n`;
+      }
+    }
+    
+    // Add Product/Service information for context on what's being distributed
+    if (content.productsAndServices) {
+      const ps = content.productsAndServices;
+      if (ps.overview) {
+        contextData += `Product/Service Overview: ${ps.overview}\n\n`;
+      }
+    }
+  }
+  
+  // For Customer Retention field, include sales strategy and use of funds
+  else if (currentField === 'customerRetention') {
+    // Add Sales Strategy to understand how customers interact with your business
+    if (content.marketingStrategy) {
+      const ms = content.marketingStrategy;
+      if (ms.salesStrategy) {
+        contextData += `Sales Strategy: ${ms.salesStrategy}\n\n`;
+      }
+    }
+    
+    // Add Use of Funds to understand budget for customer retention strategies
+    if (content.financialPlan) {
+      const fp = content.financialPlan;
+      if (fp.useOfFunds) {
+        contextData += `Use of Funds: ${fp.useOfFunds}\n\n`;
+      }
+    }
+    
+    // Add Target Market information to customize retention strategies
+    if (content.marketAnalysis) {
+      const ma = content.marketAnalysis;
+      if (ma.targetMarket) {
+        contextData += `Target Market: ${ma.targetMarket}\n\n`;
+      }
+    }
+    
+    // Add Value Proposition to align retention strategies with your value
+    if (content.productsAndServices) {
+      const ps = content.productsAndServices;
+      if (ps.valueProposition) {
+        contextData += `Value Proposition: ${ps.valueProposition}\n\n`;
+      }
+    }
+  }
+  
+  // OPERATIONS PLAN SECTION FIELDS
+  // For Business Model field, include business concept and financial projections
+  else if (currentField === 'businessModel') {
+    // Add Business Concept to define how the business operates
+    if (content.executiveSummary) {
+      const es = content.executiveSummary;
+      if (es.businessConcept) {
+        contextData += `Business Concept: ${es.businessConcept}\n\n`;
+      }
+    }
+    
+    // Add Financial Projections to ensure the business model is viable
+    if (content.financialPlan) {
+      const fp = content.financialPlan;
+      if (fp.projections) {
+        contextData += `Financial Projections: ${fp.projections}\n\n`;
+      }
+    }
+    
+    // Add Value Proposition to align business model with value delivery
+    if (content.productsAndServices) {
+      const ps = content.productsAndServices;
+      if (ps.valueProposition) {
+        contextData += `Value Proposition: ${ps.valueProposition}\n\n`;
+      }
+    }
+    
+    // Add Target Market information to tailor business model to customer needs
+    if (content.marketAnalysis) {
+      const ma = content.marketAnalysis;
+      if (ma.targetMarket) {
+        contextData += `Target Market: ${ma.targetMarket}\n\n`;
+      }
+    }
+  }
+  
+  // For Facilities & Location field, include target market and use of funds
+  else if (currentField === 'facilities') {
+    // Add Target Market to ensure location is near customers if applicable
+    if (content.marketAnalysis) {
+      const ma = content.marketAnalysis;
+      if (ma.targetMarket) {
+        contextData += `Target Market: ${ma.targetMarket}\n\n`;
+      }
+    }
+    
+    // Add Use of Funds to ensure budget for facilities is accounted for
+    if (content.financialPlan) {
+      const fp = content.financialPlan;
+      if (fp.useOfFunds) {
+        contextData += `Use of Funds: ${fp.useOfFunds}\n\n`;
+      }
+    }
+    
+    // Add Business Model to align facilities with operational needs
+    if (content.operationsPlan) {
+      const op = content.operationsPlan;
+      if (op.businessModel) {
+        contextData += `Business Model: ${op.businessModel}\n\n`;
+      }
+    }
+    
+    // Add Production Process for space and facility requirements
+    if (content.operationsPlan) {
+      const op = content.operationsPlan;
+      if (op.productionProcess) {
+        contextData += `Production Process: ${op.productionProcess}\n\n`;
+      }
+    }
+  }
+  
+  // For Technology Requirements field, include product overview and production process
+  else if (currentField === 'technology') {
+    // Add Product/Service Overview to understand if product/service requires special tech
+    if (content.productsAndServices) {
+      const ps = content.productsAndServices;
+      if (ps.overview) {
+        contextData += `Product/Service Overview: ${ps.overview}\n\n`;
+      }
+    }
+    
+    // Add Production Process to understand tech needs for production methods
+    if (content.operationsPlan) {
+      const op = content.operationsPlan;
+      if (op.productionProcess) {
+        contextData += `Production Process: ${op.productionProcess}\n\n`;
+      }
+    }
+    
+    // Add Business Model to align technology with business operations
+    if (content.operationsPlan) {
+      const op = content.operationsPlan;
+      if (op.businessModel) {
+        contextData += `Business Model: ${op.businessModel}\n\n`;
+      }
+    }
+    
+    // Add Financial Plan to understand technology budget constraints
+    if (content.financialPlan) {
+      const fp = content.financialPlan;
+      if (fp.useOfFunds) {
+        contextData += `Use of Funds: ${fp.useOfFunds}\n\n`;
+      }
+    }
+  }
+  
+  // For Production Process field, include product overview and logistics & supply chain
+  else if (currentField === 'productionProcess') {
+    // Add Product/Service Overview to understand what's being produced
+    if (content.productsAndServices) {
+      const ps = content.productsAndServices;
+      if (ps.overview) {
+        contextData += `Product/Service Overview: ${ps.overview}\n\n`;
+      }
+    }
+    
+    // Add Logistics & Supply Chain to ensure efficient production and delivery
+    if (content.operationsPlan) {
+      const op = content.operationsPlan;
+      if (op.logistics) {
+        contextData += `Logistics & Supply Chain: ${op.logistics}\n\n`;
+      }
+    }
+    
+    // Add Technology Requirements for production technology context
+    if (content.operationsPlan) {
+      const op = content.operationsPlan;
+      if (op.technology) {
+        contextData += `Technology Requirements: ${op.technology}\n\n`;
+      }
+    }
+    
+    // Add Facilities & Location for production space context
+    if (content.operationsPlan) {
+      const op = content.operationsPlan;
+      if (op.facilities) {
+        contextData += `Facilities & Location: ${op.facilities}\n\n`;
+      }
+    }
+  }
+  
+  // For Quality Control field, include production process and SWOT analysis
+  else if (currentField === 'qualityControl') {
+    // Add Production Process to understand QC as part of production steps
+    if (content.operationsPlan) {
+      const op = content.operationsPlan;
+      if (op.productionProcess) {
+        contextData += `Production Process: ${op.productionProcess}\n\n`;
+      }
+    }
+    
+    // Add SWOT Analysis to identify quality risks from weaknesses
+    if (content.marketAnalysis) {
+      const ma = content.marketAnalysis;
+      if (ma.swotAnalysis) {
+        contextData += `SWOT Analysis: ${ma.swotAnalysis}\n\n`;
+      }
+    }
+    
+    // Add Product/Service Overview to understand quality requirements
+    if (content.productsAndServices) {
+      const ps = content.productsAndServices;
+      if (ps.overview) {
+        contextData += `Product/Service Overview: ${ps.overview}\n\n`;
+      }
+    }
+    
+    // Add Technology Requirements for quality control technology
+    if (content.operationsPlan) {
+      const op = content.operationsPlan;
+      if (op.technology) {
+        contextData += `Technology Requirements: ${op.technology}\n\n`;
+      }
+    }
+  }
+  
+  // For Logistics & Supply Chain field, include distribution channels and competitive analysis
+  else if (currentField === 'logistics') {
+    // Add Distribution Channels to ensure logistics support smooth distribution
+    if (content.marketingStrategy) {
+      const ms = content.marketingStrategy;
+      if (ms.channels) {
+        contextData += `Distribution Channels: ${ms.channels}\n\n`;
+      }
+    }
+    
+    // Add Competitive Analysis as supply chain can be a competitive advantage
+    if (content.marketAnalysis) {
+      const ma = content.marketAnalysis;
+      if (ma.competitiveAnalysis) {
+        contextData += `Competitive Analysis: ${ma.competitiveAnalysis}\n\n`;
+      }
+    }
+    
+    // Add Product/Service Overview to understand logistical requirements
+    if (content.productsAndServices) {
+      const ps = content.productsAndServices;
+      if (ps.overview) {
+        contextData += `Product/Service Overview: ${ps.overview}\n\n`;
+      }
+    }
+    
+    // Add Facilities & Location for logistics hub information
+    if (content.operationsPlan) {
+      const op = content.operationsPlan;
+      if (op.facilities) {
+        contextData += `Facilities & Location: ${op.facilities}\n\n`;
+      }
+    }
+  }
+  
+  // ORGANIZATION AND MANAGEMENT SECTION FIELDS
+  // For Organizational Structure field, include business structure and business model
+  else if (currentField === 'structure') {
+    // Add Business Structure to understand how legal structure impacts org chart
+    if (content.companyDescription) {
+      const cd = content.companyDescription;
+      if (cd.businessStructure) {
+        contextData += `Business Structure: ${cd.businessStructure}\n\n`;
+      }
+    }
+    
+    // Add Business Model to understand necessary roles
+    if (content.operationsPlan) {
+      const op = content.operationsPlan;
+      if (op.businessModel) {
+        contextData += `Business Model: ${op.businessModel}\n\n`;
+      }
+    }
+    
+    // Add Company Size/Growth Plans for staffing requirements
+    if (content.financialPlan) {
+      const fp = content.financialPlan;
+      if (fp.projections) {
+        contextData += `Financial Projections: ${fp.projections}\n\n`;
+      }
+    }
+    
+    // Add Management Team information if available
+    if (content.organizationAndManagement) {
+      const om = content.organizationAndManagement;
+      if (om.managementTeam) {
+        contextData += `Management Team: ${om.managementTeam}\n\n`;
+      }
+    }
+  }
+  
+  // For Management Team field, include organizational structure and use of funds
+  else if (currentField === 'managementTeam') {
+    // Add Organizational Structure to understand hierarchy
+    if (content.organizationAndManagement) {
+      const om = content.organizationAndManagement;
+      if (om.structure) {
+        contextData += `Organizational Structure: ${om.structure}\n\n`;
+      }
+    }
+    
+    // Add Use of Funds to understand budget for hiring key personnel
+    if (content.financialPlan) {
+      const fp = content.financialPlan;
+      if (fp.useOfFunds) {
+        contextData += `Use of Funds: ${fp.useOfFunds}\n\n`;
+      }
+    }
+    
+    // Add Business Model information to understand roles needed
+    if (content.operationsPlan) {
+      const op = content.operationsPlan;
+      if (op.businessModel) {
+        contextData += `Business Model: ${op.businessModel}\n\n`;
+      }
+    }
+    
+    // Add Company Description for background context
+    if (content.companyDescription) {
+      const cd = content.companyDescription;
+      if (cd.companyHistory) {
+        contextData += `Company History: ${cd.companyHistory}\n\n`;
+      }
+    }
+  }
+  
+  // For Advisors & Board field, include funding requirements, business concept, and competitive analysis
+  else if (currentField === 'advisors') {
+    // Add Funding Requirements as investors often want a strong advisory board
+    if (content.financialPlan) {
+      const fp = content.financialPlan;
+      if (fp.fundingNeeds) {
+        contextData += `Funding Requirements: ${fp.fundingNeeds}\n\n`;
+      }
+    }
+    
+    // Add Business Concept to help identify expertise gaps that advisors can fill
+    if (content.executiveSummary) {
+      const es = content.executiveSummary;
+      if (es.businessConcept) {
+        contextData += `Business Concept: ${es.businessConcept}\n\n`;
+      }
+    }
+    
+    // Add Competitive Analysis to understand strategic expertise needed
+    if (content.marketAnalysis) {
+      const ma = content.marketAnalysis;
+      if (ma.competitiveAnalysis) {
+        contextData += `Competitive Analysis: ${ma.competitiveAnalysis}\n\n`;
+      }
+    }
+    
+    // Add Management Team information to complement with advisors
+    if (content.organizationAndManagement) {
+      const om = content.organizationAndManagement;
+      if (om.managementTeam) {
+        contextData += `Management Team: ${om.managementTeam}\n\n`;
+      }
+    }
+  }
+  
+  // For HR Plan field, include operations plan and financial projections
+  else if (currentField === 'hrPlan') {
+    // Add Production Process to understand personnel needs for operations
+    if (content.operationsPlan) {
+      const op = content.operationsPlan;
+      if (op.productionProcess) {
+        contextData += `Production Process: ${op.productionProcess}\n\n`;
+      }
+    }
+    
+    // Add Financial Projections to understand budget constraints for staffing
+    if (content.financialPlan) {
+      const fp = content.financialPlan;
+      if (fp.projections) {
+        contextData += `Financial Projections: ${fp.projections}\n\n`;
+      }
+    }
+    
+    // Add Business Model to understand personnel needs for the business
+    if (content.operationsPlan) {
+      const op = content.operationsPlan;
+      if (op.businessModel) {
+        contextData += `Business Model: ${op.businessModel}\n\n`;
+      }
+    }
+    
+    // Add Organizational Structure to understand how HR fits in
+    if (content.organizationAndManagement) {
+      const om = content.organizationAndManagement;
+      if (om.structure) {
+        contextData += `Organizational Structure: ${om.structure}\n\n`;
+      }
+    }
+  }
+  
   // FINANCIAL PLAN SECTION FIELDS
   // For Financial Projections field, include product, market, and operations information
   else if (currentField === 'projections') {
@@ -404,18 +1000,18 @@ const prepareAIContext = (businessPlan: any, currentField: string) => {
         contextData += `Pricing Strategy: ${ms.pricing}\n\n`;
       }
       if (ms.salesStrategy) {
-        contextData += `Sales Strategy: ${ms.salesStrategy}\n\n`;
+        contextData += `Revenue Model & Sales Strategy: ${ms.salesStrategy}\n\n`;
       }
     }
     
-    // Add Operations Plan for cost structure
+    // Add Operations Plan information for cost projections
     if (content.operationsPlan) {
       const op = content.operationsPlan;
-      if (op.businessModel) {
-        contextData += `Business Model: ${op.businessModel}\n\n`;
+      if (op.productionProcess) {
+        contextData += `Production Process: ${op.productionProcess}\n\n`;
       }
-      if (op.facilities) {
-        contextData += `Facilities & Location: ${op.facilities}\n\n`;
+      if (op.logistics) {
+        contextData += `Logistics & Supply Chain: ${op.logistics}\n\n`;
       }
     }
   }
@@ -427,6 +1023,20 @@ const prepareAIContext = (businessPlan: any, currentField: string) => {
       const fp = content.financialPlan;
       if (fp.projections) {
         contextData += `Financial Projections: ${fp.projections}\n\n`;
+      }
+      if (fp.useOfFunds) {
+        contextData += `Use of Funds: ${fp.useOfFunds}\n\n`;
+      }
+    }
+    
+    // Add Business Structure & Ownership Details for investment structure context
+    if (content.companyDescription) {
+      const cd = content.companyDescription;
+      if (cd.businessStructure) {
+        contextData += `Business Structure: ${cd.businessStructure}\n\n`;
+      }
+      if (cd.ownershipDetails) {
+        contextData += `Ownership Details: ${cd.ownershipDetails}\n\n`;
       }
     }
     
@@ -509,7 +1119,7 @@ const prepareAIContext = (businessPlan: any, currentField: string) => {
       }
     }
     
-    // Add Marketing Strategy for pricing structure
+    // Add Marketing Strategy for pricing structure and sales approach
     if (content.marketingStrategy) {
       const ms = content.marketingStrategy;
       if (ms.pricing) {
@@ -518,27 +1128,71 @@ const prepareAIContext = (businessPlan: any, currentField: string) => {
       if (ms.salesStrategy) {
         contextData += `Sales Strategy: ${ms.salesStrategy}\n\n`;
       }
+      if (ms.channels) {
+        contextData += `Distribution Channels: ${ms.channels}\n\n`;
+      }
     }
     
-    // Add Operations Plan for fixed and variable costs
+    // Add Operations Plan for cost structure
     if (content.operationsPlan) {
       const op = content.operationsPlan;
-      if (op.businessModel) {
-        contextData += `Business Model: ${op.businessModel}\n\n`;
+      if (op.productionProcess) {
+        contextData += `Production Process: ${op.productionProcess}\n\n`;
+      }
+      if (op.logistics) {
+        contextData += `Logistics & Supply Chain: ${op.logistics}\n\n`;
       }
       if (op.facilities) {
         contextData += `Facilities & Location: ${op.facilities}\n\n`;
       }
-      if (op.productionProcess) {
-        contextData += `Production Process: ${op.productionProcess}\n\n`;
+    }
+    
+    // Add Target Market information for sales volume estimates
+    if (content.marketAnalysis) {
+      const ma = content.marketAnalysis;
+      if (ma.targetMarket) {
+        contextData += `Target Market: ${ma.targetMarket}\n\n`;
+      }
+    }
+  }
+  
+  // For Exit Strategy field, include ownership details and market trends
+  else if (currentField === 'exitStrategy') {
+    // Add Ownership Details to understand current ownership structure
+    if (content.companyDescription) {
+      const cd = content.companyDescription;
+      if (cd.ownershipDetails) {
+        contextData += `Ownership Details: ${cd.ownershipDetails}\n\n`;
+      }
+      if (cd.businessStructure) {
+        contextData += `Business Structure: ${cd.businessStructure}\n\n`;
       }
     }
     
-    // Add Organization & Management for staffing costs
-    if (content.organizationAndManagement) {
-      const om = content.organizationAndManagement;
-      if (om.hrPlan) {
-        contextData += `HR Plan: ${om.hrPlan}\n\n`;
+    // Add Funding Requirements for investment context
+    if (content.financialPlan) {
+      const fp = content.financialPlan;
+      if (fp.fundingNeeds) {
+        contextData += `Funding Requirements: ${fp.fundingNeeds}\n\n`;
+      }
+    }
+    
+    // Add Competitive Analysis to identify potential acquirers
+    if (content.marketAnalysis) {
+      const ma = content.marketAnalysis;
+      if (ma.competitiveAnalysis) {
+        contextData += `Competitive Analysis: ${ma.competitiveAnalysis}\n\n`;
+      }
+      if (ma.industryOverview) {
+        contextData += `Market Trends: ${ma.industryOverview}\n\n`;
+      }
+    }
+    
+    // Add Financial Projections for valuation context
+    if (content.financialPlan) {
+      const fp = content.financialPlan;
+      if (fp.projections) {
+        contextData += `Financial Projections: ${fp.projections}\n\n`;
       }
     }
   }
@@ -771,7 +1425,7 @@ export default function BusinessPlanEditor({
       setFieldToFocus(fields[0].id)
     }
   }
-  
+
   // Make the focusField function available to the parent component
   useEffect(() => {
     // Attach the focusField function to the window object
@@ -1256,25 +1910,6 @@ export default function BusinessPlanEditor({
                   : 'border-gray-300'
               } rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[80px] resize-none transition-all duration-200`}
             />
-            
-            {/* Add AI assistance button for fields with special context */}
-            {(currentSection === 'executiveSummary' || 
-              (currentSection === 'productsAndServices' && 
-                ['overview', 'valueProposition', 'futureProducts'].includes(field.id)) ||
-              (currentSection === 'marketAnalysis' && 
-                ['industryOverview', 'targetMarket', 'marketSegmentation', 'competitiveAnalysis', 'swotAnalysis'].includes(field.id)) ||
-              (currentSection === 'financialPlan' && 
-                ['projections', 'fundingNeeds', 'useOfFunds', 'breakEvenAnalysis'].includes(field.id))) && (
-              <div className="mt-2 flex justify-end">
-                <button
-                  type="button"
-                  onClick={() => handleGetAIAssistance(field.id)}
-                  className="text-sm text-blue-600 hover:text-blue-800 flex items-center"
-                >
-                  <span className="mr-1">✨</span> Get AI assistance
-                </button>
-              </div>
-            )}
           </div>
         )}
         
@@ -1319,7 +1954,6 @@ export default function BusinessPlanEditor({
   // Add useEffect to adjust textarea heights when form data changes 
   // (handles initial load and external changes like AI suggestions)
   useEffect(() => {
-    // Wait for the DOM to be updated
     setTimeout(() => {
       // For each field in the form data
       Object.keys(formData).forEach(fieldId => {
