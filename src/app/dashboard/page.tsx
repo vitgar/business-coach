@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { 
   FileText, Target, Settings, 
   ChevronRight, BarChart2, Users, DollarSign,
-  MessageSquare, PlusCircle
+  MessageSquare, PlusCircle, ListTodo, HelpCircle
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import BusinessSelector from '@/components/BusinessSelector'
@@ -43,6 +43,13 @@ export default function Dashboard() {
       description: 'Get personalized guidance through AI chat',
       href: `/consultation`,
       color: 'bg-indigo-100 text-indigo-600'
+    },
+    {
+      title: 'How To Helper',
+      icon: HelpCircle,
+      description: 'Get step-by-step guidance on business activities',
+      href: `/action-planner`,
+      color: 'bg-emerald-100 text-emerald-600'
     },
     {
       title: 'Strategic Planning',

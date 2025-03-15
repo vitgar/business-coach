@@ -9,6 +9,13 @@ interface ChatMessage {
   content: string;
   role: 'user' | 'assistant';
   contentAnalysis?: any;
+  actionItemsData?: {
+    hasActionItems: boolean;
+    items: string[];
+    count: number;
+    saved: boolean;
+    savedCount: number;
+  };
 }
 
 interface ChatProps {
@@ -68,14 +75,19 @@ export default function Chat({ conversationId }: ChatProps) {
     setError(null);
     
     try {
+      // Get the current conversation context - all messages including the new one
+      const currentMessages = [...messages, userMessage];
+      const isFirstMessageInConversation = !conversationId && messages.length <= 1;
+      
       const response = await fetch(API_ENDPOINTS.CHAT, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          messages: [...messages, userMessage],
-          isFirstMessage: messages.length <= 1
+          messages: currentMessages,
+          conversationId: conversationId, // Include the conversation ID if it exists
+          isFirstMessage: isFirstMessageInConversation
         }),
       });
       
@@ -86,19 +98,23 @@ export default function Chat({ conversationId }: ChatProps) {
       
       const data = await response.json();
       
-      // Add assistant message
+      // Add assistant message with action items data if available
       setMessages(prev => [
         ...prev, 
         {
           id: data.id,
           role: 'assistant',
           content: data.message.content,
+          // Add action items data to the message object
+          actionItemsData: data.actionItemsData,
           // Ensure contentAnalysis always exists for testing
           contentAnalysis: data.contentAnalysis || {
             // Force contentAnalysis for the marketing plan message
             hasActionableItems: data.message.content.includes('Define Your Business Vision') || 
                                data.message.content.includes('steps to creating a marketing plan') ||
-                               /\d+\.\s+[^\n]+\n+\s*\d+\.\s+/.test(data.message.content),
+                               /\d+\.\s+[^\n]+\n+\s*\d+\.\s+/.test(data.message.content) ||
+                               // Use the action items data if available
+                               (data.actionItemsData && data.actionItemsData.hasActionItems),
             hasBusinessInsight: data.message.content.length > 200,
             actionItemsSummary: "Marketing Plan Steps",
             insightSummary: "Business Strategy"
@@ -126,6 +142,9 @@ export default function Chat({ conversationId }: ChatProps) {
             role={message.role}
             content={message.content}
             contentAnalysis={message.contentAnalysis}
+            actionItemsData={message.actionItemsData}
+            messageId={message.id || `msg_${index}_${Date.now()}`}
+            conversationId={conversationId}
           />
         ))}
         
