@@ -1,11 +1,22 @@
 'use client'
 
-import React, { useState } from 'react'
-import { ListTodo, RefreshCw, Plus, X, Send, Loader2 } from 'lucide-react'
+import React, { useState, useEffect } from 'react'
+import { ListTodo, RefreshCw, Plus, X, Send, Loader2, TagIcon, BookOpen, Folder } from 'lucide-react'
 import ClientLayout from '@/components/ClientLayout'
 import ActionItemsList from '@/components/action-items/ActionItemsList'
 import { useAuth } from '@/contexts/AuthContext'
 import { toast } from 'react-toastify'
+
+/**
+ * Interface for categorized action items
+ */
+interface Category {
+  name: string;
+  count: number;
+  completedCount: number; // Number of completed items in this category
+  isParent: boolean;
+  parentName?: string;
+}
 
 /**
  * Action Items Page
@@ -20,10 +31,202 @@ export default function ActionItemsPage() {
   const [isAddingItem, setIsAddingItem] = useState(false)
   const [newItemText, setNewItemText] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [categories, setCategories] = useState<Category[]>([])
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
+  const [isLoadingCategories, setIsLoadingCategories] = useState(false)
+  const [totalItems, setTotalItems] = useState(0)
+  const [completedItems, setCompletedItems] = useState(0)
+
+  /**
+   * Determines if a category name represents a parent category
+   */
+  const isParentCategory = (name: string): boolean => {
+    // Categories that are clearly parent categories
+    const parentPhrases = [
+      'Steps to',
+      'How to',
+      'Guide to',
+      'Process for',
+      'Checklist for',
+      'Stages of',
+      'Phases of'
+    ];
+    
+    // Check for parent phrases
+    if (parentPhrases.some(phrase => name.includes(phrase))) {
+      return true;
+    }
+    
+    // Business Plan is a special case that should be a parent
+    if (name === 'Steps to Create a Business Plan') {
+      return true;
+    }
+    
+    return false;
+  }
+
+  /**
+   * Finds the best parent match for a child category
+   */
+  const findBestParentMatch = (childName: string, parentCategories: Category[]): string | undefined => {
+    // First, check for known business plan sections
+    const businessPlanSections = [
+      'Executive Summary',
+      'Company Description',
+      'Market Research',
+      'Organization and Management',
+      'Products or Services',
+      'Marketing and Sales Strategy',
+      'Funding Request',
+      'Financial Projections',
+      'Appendix'
+    ];
+    
+    if (businessPlanSections.includes(childName)) {
+      // Look for a business plan parent
+      const businessPlanParent = parentCategories.find(parent => 
+        parent.name.includes('Business Plan'));
+      
+      if (businessPlanParent) {
+        return businessPlanParent.name;
+      }
+    }
+    
+    // If no special case match, use generic semantic matching
+    // Look for parent that seems most related to the child
+    // For each parent, calculate how relevant it might be to this child
+    const scoredParents = parentCategories.map(parent => {
+      let score = 0;
+      
+      // If child name appears anywhere in parent name, strong connection
+      if (parent.name.includes(childName)) score += 5;
+      
+      // If parent name appears anywhere in child name, strong connection
+      if (childName.includes(parent.name)) score += 5;
+      
+      // Look for common words (basic semantic matching)
+      const parentWords = parent.name.toLowerCase().split(/\s+/);
+      const childWords = childName.toLowerCase().split(/\s+/);
+      
+      for (const word of childWords) {
+        if (word.length > 3 && parentWords.includes(word)) {
+          score += 2;
+        }
+      }
+      
+      return { parent, score };
+    });
+    
+    // Sort parents by score in descending order
+    scoredParents.sort((a, b) => b.score - a.score);
+    
+    // Return the highest scoring parent if it has a minimum relevance score
+    if (scoredParents.length > 0 && scoredParents[0].score >= 2) {
+      return scoredParents[0].parent.name;
+    }
+    
+    return undefined;
+  }
+
+  /**
+   * Fetches categories from action items
+   */
+  const fetchCategories = async () => {
+    if (!isAuthenticated) return;
+    
+    setIsLoadingCategories(true);
+    
+    try {
+      // Fetch all action items to extract categories
+      const response = await fetch('/api/action-items');
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch action items');
+      }
+      
+      const items = await response.json();
+      
+      // Track total and completed items
+      let totalCount = 0;
+      let completedCount = 0;
+      
+      // Extract categories from items with bracketed prefixes
+      const categoryMap = new Map<string, { total: number, completed: number }>();
+      
+      items.forEach((item: any) => {
+        // Count all items
+        totalCount++;
+        if (item.isCompleted) {
+          completedCount++;
+        }
+        
+        // Look for patterns like [Title] or {Title} at the beginning of the content
+        const bracketMatch = item.content.match(/^\s*[\[\{](.*?)[\]\}]/);
+        
+        if (bracketMatch) {
+          const categoryName = bracketMatch[1].trim();
+          
+          // Skip empty category names
+          if (!categoryName) return;
+          
+          // If category doesn't exist yet, initialize it
+          if (!categoryMap.has(categoryName)) {
+            categoryMap.set(categoryName, { total: 0, completed: 0 });
+          }
+          
+          // Get current counts
+          const counts = categoryMap.get(categoryName)!;
+          
+          // Increment total count
+          counts.total += 1;
+          
+          // Increment completed count if item is completed
+          if (item.isCompleted) {
+            counts.completed += 1;
+          }
+          
+          // Update the map
+          categoryMap.set(categoryName, counts);
+        }
+      });
+      
+      // Update total counts
+      setTotalItems(totalCount);
+      setCompletedItems(completedCount);
+      
+      // Convert to array and identify parent/child relationships
+      const categoriesArray: Category[] = Array.from(categoryMap.entries())
+        .map(([name, counts]) => ({
+          name,
+          count: counts.total,
+          completedCount: counts.completed,
+          isParent: isParentCategory(name),
+          parentName: undefined
+        }));
+      
+      // Find parent categories
+      const parentCategories = categoriesArray.filter(cat => cat.isParent);
+      
+      // Establish parent-child relationships
+      categoriesArray.forEach(category => {
+        if (!category.isParent) {
+          category.parentName = findBestParentMatch(category.name, parentCategories);
+        }
+      });
+      
+      setCategories(categoriesArray);
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+      toast.error('Failed to load item categories');
+    } finally {
+      setIsLoadingCategories(false);
+    }
+  };
 
   // Refresh action items list
   const refreshList = () => {
-    setKey(prev => prev + 1)
+    setKey(prev => prev + 1);
+    fetchCategories();
   }
 
   // Open the new item form
@@ -70,6 +273,19 @@ export default function ActionItemsPage() {
       setIsSubmitting(false)
     }
   }
+
+  // Select a category to filter items
+  const selectCategory = (categoryName: string | null) => {
+    setSelectedCategory(categoryName);
+    setKey(prev => prev + 1); // Force re-render with new filter
+  }
+
+  // Fetch categories on component mount
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchCategories();
+    }
+  }, [isAuthenticated]);
 
   return (
     <ClientLayout>
@@ -158,17 +374,167 @@ export default function ActionItemsPage() {
             </button>
           </div>
         ) : (
-          /* Action items content */
-          <div className="bg-white border border-gray-200 rounded-lg shadow-sm">
-            <div className="p-6">
-              <h2 className="text-xl font-semibold mb-4 text-gray-800">Your Action Items</h2>
-              
-              {/* The action items list component */}
-              <ActionItemsList 
-                key={key} 
-                rootItemsOnly={true}
-                onCreateNewItem={openNewItemForm}
-              />
+          <div className="flex flex-col md:flex-row gap-6">
+            {/* Categories sidebar */}
+            <div className="md:w-64 flex-shrink-0">
+              <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-4">
+                <h2 className="text-lg font-semibold mb-3 text-gray-800">Categories</h2>
+                
+                {isLoadingCategories ? (
+                  <div className="flex justify-center items-center p-4">
+                    <Loader2 className="h-5 w-5 animate-spin text-blue-500 mr-2" />
+                    <span className="text-gray-600">Loading...</span>
+                  </div>
+                ) : categories.length === 0 ? (
+                  <div className="text-gray-500 text-sm p-2">
+                    No categories found
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <button
+                      onClick={() => selectCategory(null)}
+                      className={`w-full flex items-center justify-between p-2 rounded-md text-left ${
+                        selectedCategory === null 
+                          ? 'bg-blue-50 text-blue-700' 
+                          : 'text-gray-700 hover:bg-gray-50'
+                      }`}
+                    >
+                      <span className="flex items-center gap-2">
+                        <ListTodo size={16} />
+                        All Items
+                      </span>
+                      {totalItems > 0 && (
+                        <span className={`text-xs px-2 py-0.5 rounded-full ${
+                          completedItems === totalItems 
+                            ? 'bg-green-100 text-green-700' 
+                            : 'bg-gray-100 text-gray-700'
+                        }`}>
+                          {completedItems}/{totalItems}
+                        </span>
+                      )}
+                    </button>
+                    
+                    {/* Parent categories */}
+                    {categories
+                      .filter(cat => cat.isParent)
+                      .map(category => (
+                        <div key={category.name} className="space-y-1">
+                          <button
+                            onClick={() => selectCategory(category.name)}
+                            className={`w-full flex items-center justify-between p-2 rounded-md text-left ${
+                              selectedCategory === category.name 
+                                ? 'bg-blue-50 text-blue-700' 
+                                : 'text-gray-700 hover:bg-gray-50'
+                            }`}
+                          >
+                            <span className="flex items-center gap-2">
+                              <Folder size={16} />
+                              {category.name}
+                            </span>
+                            <span className={`text-xs px-2 py-0.5 rounded-full ${
+                              category.completedCount === category.count && category.count > 0
+                                ? 'bg-green-100 text-green-700'
+                                : 'bg-gray-100 text-gray-700'
+                            }`}>
+                              {category.completedCount}/{category.count}
+                            </span>
+                          </button>
+                          
+                          {/* Child categories for this parent */}
+                          <div className="pl-4 border-l-2 border-gray-100 ml-2 space-y-1">
+                            {categories
+                              .filter(cat => cat.parentName === category.name)
+                              .map(childCategory => (
+                                <button
+                                  key={childCategory.name}
+                                  onClick={() => selectCategory(childCategory.name)}
+                                  className={`w-full flex items-center justify-between p-2 rounded-md text-left ${
+                                    selectedCategory === childCategory.name 
+                                      ? 'bg-blue-50 text-blue-700' 
+                                      : 'text-gray-700 hover:bg-gray-50'
+                                  }`}
+                                >
+                                  <span className="flex items-center gap-2 text-sm">
+                                    <TagIcon size={14} />
+                                    {childCategory.name}
+                                  </span>
+                                  <span className={`text-xs px-2 py-0.5 rounded-full ${
+                                    childCategory.completedCount === childCategory.count && childCategory.count > 0
+                                      ? 'bg-green-100 text-green-700'
+                                      : 'bg-gray-100 text-gray-700'
+                                  }`}>
+                                    {childCategory.completedCount}/{childCategory.count}
+                                  </span>
+                                </button>
+                              ))}
+                          </div>
+                        </div>
+                      ))}
+                    
+                    {/* Uncategorized parent categories */}
+                    {categories
+                      .filter(cat => !cat.isParent && !cat.parentName)
+                      .map(category => (
+                        <button
+                          key={category.name}
+                          onClick={() => selectCategory(category.name)}
+                          className={`w-full flex items-center justify-between p-2 rounded-md text-left ${
+                            selectedCategory === category.name 
+                              ? 'bg-blue-50 text-blue-700' 
+                              : 'text-gray-700 hover:bg-gray-50'
+                          }`}
+                        >
+                          <span className="flex items-center gap-2">
+                            <TagIcon size={16} />
+                            {category.name}
+                          </span>
+                          <span className={`text-xs px-2 py-0.5 rounded-full ${
+                            category.completedCount === category.count && category.count > 0
+                              ? 'bg-green-100 text-green-700'
+                              : 'bg-gray-100 text-gray-700'
+                          }`}>
+                            {category.completedCount}/{category.count}
+                          </span>
+                        </button>
+                      ))}
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            {/* Action items content */}
+            <div className="flex-1">
+              <div className="bg-white border border-gray-200 rounded-lg shadow-sm">
+                <div className="p-6">
+                  <h2 className="text-xl font-semibold mb-4 text-gray-800 flex items-center">
+                    {selectedCategory ? (
+                      <>
+                        <span className="flex items-center gap-2">
+                          <TagIcon size={18} className="text-blue-500" />
+                          {selectedCategory}
+                        </span>
+                        <button 
+                          onClick={() => selectCategory(null)}
+                          className="ml-2 text-xs text-blue-500 hover:text-blue-700"
+                        >
+                          (view all)
+                        </button>
+                      </>
+                    ) : (
+                      "All Action Items"
+                    )}
+                  </h2>
+                  
+                  {/* The action items list component with category filter */}
+                  <ActionItemsList 
+                    key={key} 
+                    rootItemsOnly={true}
+                    onCreateNewItem={openNewItemForm}
+                    categoryFilter={selectedCategory}
+                    onItemStatusChange={fetchCategories}
+                  />
+                </div>
+              </div>
             </div>
           </div>
         )}

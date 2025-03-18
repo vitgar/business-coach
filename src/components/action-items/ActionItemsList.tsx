@@ -26,7 +26,9 @@ interface ActionItemsListProps {
   messageId?: string // Optional filter by message
   parentId?: string // Optional filter by parent action item 
   rootItemsOnly?: boolean // Only show root items (no parents)
+  categoryFilter?: string | null // Filter by category prefix like [Category]
   onCreateNewItem?: () => void // Optional callback for creating a new item
+  onItemStatusChange?: () => void // Optional callback for when item status changes
 }
 
 /**
@@ -42,10 +44,13 @@ export default function ActionItemsList({
   messageId,
   parentId,
   rootItemsOnly = true,
-  onCreateNewItem
+  categoryFilter = null,
+  onCreateNewItem,
+  onItemStatusChange
 }: ActionItemsListProps) {
   const { userId } = useAuth()
   const [actionItems, setActionItems] = useState<ActionItem[]>([])
+  const [filteredItems, setFilteredItems] = useState<ActionItem[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [updateInProgress, setUpdateInProgress] = useState<string | null>(null)
@@ -86,6 +91,27 @@ export default function ActionItemsList({
   }
 
   /**
+   * Filters action items based on the category filter
+   */
+  useEffect(() => {
+    if (categoryFilter === null) {
+      // If no category filter, use all items
+      setFilteredItems(actionItems)
+    } else {
+      // Filter items that match the specified category
+      const filtered = actionItems.filter(item => {
+        const bracketMatch = item.content.match(/^\s*[\[\{](.*?)[\]\}]/)
+        if (bracketMatch) {
+          const itemCategory = bracketMatch[1].trim()
+          return itemCategory === categoryFilter
+        }
+        return false
+      })
+      setFilteredItems(filtered)
+    }
+  }, [actionItems, categoryFilter])
+
+  /**
    * Toggles the completion status of an action item
    * @param {string} id - ID of the action item to toggle
    * @param {boolean} currentStatus - Current completion status
@@ -117,6 +143,11 @@ export default function ActionItemsList({
             : item
         )
       )
+      
+      // Notify parent component about the status change
+      if (onItemStatusChange) {
+        onItemStatusChange()
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update')
       console.error('Error updating action item:', err)
@@ -144,6 +175,11 @@ export default function ActionItemsList({
       
       // Remove item from local state
       setActionItems(prev => prev.filter(item => item.id !== id))
+      
+      // Notify parent component about the change
+      if (onItemStatusChange) {
+        onItemStatusChange()
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to delete')
       console.error('Error deleting action item:', err)
@@ -217,6 +253,19 @@ export default function ActionItemsList({
     setNoteText('')
   }
 
+  /**
+   * Cleans action item content by removing the category prefix if it matches the current filter
+   * @param content The original content text
+   * @returns Cleaned content with category prefix removed if appropriate
+   */
+  const getDisplayContent = (content: string): string => {
+    if (!categoryFilter) return content;
+    
+    // If we're filtering by a category, remove that prefix from the content
+    const prefixPattern = new RegExp(`^\\s*\\[${categoryFilter}\\]\\s*|^\\s*\\{${categoryFilter}\\}\\s*`, 'i');
+    return content.replace(prefixPattern, '').trim();
+  }
+
   // Fetch action items on component mount and when filters change
   useEffect(() => {
     fetchActionItems()
@@ -263,11 +312,33 @@ export default function ActionItemsList({
       </div>
     )
   }
+  
+  // If filtered items are empty but we have action items, show empty state for the filter
+  if (filteredItems.length === 0 && actionItems.length > 0) {
+    return (
+      <div className="text-center p-8 border border-dashed border-gray-300 rounded-lg bg-gray-50">
+        <p className="text-gray-500 mb-2">No matching action items found</p>
+        <p className="text-sm text-gray-400 mb-4">
+          There are no action items in the selected category.
+        </p>
+        
+        {onCreateNewItem && (
+          <button
+            onClick={onCreateNewItem}
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700 mt-2"
+          >
+            <Plus size={16} />
+            Create New Action Item
+          </button>
+        )}
+      </div>
+    )
+  }
 
   // Render the action items list
   return (
     <div className="space-y-3">
-      {actionItems
+      {filteredItems
         .map(item => (
         <div 
           key={item.id} 
@@ -297,7 +368,7 @@ export default function ActionItemsList({
             {/* Action item content */}
             <div className="flex-1">
               <p className={`${item.isCompleted ? 'line-through text-gray-500' : 'text-gray-800'}`}>
-                {item.content}
+                {getDisplayContent(item.content)}
               </p>
               
               {/* Show notes if available */}
