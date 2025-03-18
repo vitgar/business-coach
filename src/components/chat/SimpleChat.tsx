@@ -74,6 +74,8 @@ const LIST_COLORS = [
  * @param {Array<EnhancedActionItemList>} props.actionItemLists - Available action item lists
  * @param {Function} props.onListChange - Callback when the selected list changes
  * @param {Function} props.onCreateList - Callback when a new list is created
+ * @param {Function} props.onNewAssistantMessage - Callback when a new assistant message is received
+ * @param {Function} props.onUserMessage - Callback when a user message is received
  */
 export default function SimpleChat({ 
   businessId,
@@ -82,7 +84,9 @@ export default function SimpleChat({
   currentListId = 'default',
   actionItemLists = [],
   onListChange,
-  onCreateList
+  onCreateList,
+  onNewAssistantMessage,
+  onUserMessage
 }: { 
   businessId?: string;
   onCreateActionItem?: (content: string, listId?: string) => void;
@@ -91,6 +95,8 @@ export default function SimpleChat({
   actionItemLists?: Array<EnhancedActionItemList>;
   onListChange?: (listId: string) => void;
   onCreateList?: (name: string, color: string, topicId?: string, parentId?: string) => Promise<string>;
+  onNewAssistantMessage?: (content: string, messageId?: string, conversationId?: string, allMessages?: Array<{role: string; content: string}>, conversationContext?: any) => void;
+  onUserMessage?: (content: string) => void;
 }) {
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -210,6 +216,11 @@ export default function SimpleChat({
     setInputValue('');
     setIsLoading(true);
     
+    // Call the onUserMessage callback if provided
+    if (onUserMessage) {
+      onUserMessage(inputValue.trim());
+    }
+    
     try {
       // Prepare message history for the API (last 6 messages)
       const messageHistory = messages.slice(-6).map(msg => ({
@@ -257,7 +268,7 @@ export default function SimpleChat({
       
       // Create assistant message from the processed response
       const assistantMessage: Message = {
-        id: (Date.now() + 1).toString(),
+        id: Date.now().toString(),
         content: processedMessageContent.trim() || data.messageContent,
         role: 'assistant',
         timestamp: new Date()
@@ -278,6 +289,75 @@ export default function SimpleChat({
         // Create action item in the topic-specific list if available
         const listIdToUse = topicListId || currentListId;
         createActionItem(actionItemContent, listIdToUse);
+      }
+      
+      // Check if this is the first message (no existing conversation ID)
+      const isFirstMessage = !conversationContext.currentTopicId && messages.length <= 2;
+      
+      // If this is the first message, save the conversation and use the title
+      if (isFirstMessage && data.title) {
+        // Create a new conversation with this title
+        const newConversationResponse = await fetch('/api/conversations', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            title: data.title,
+            businessId: businessId
+          })
+        })
+        
+        if (newConversationResponse.ok) {
+          const conversationData = await newConversationResponse.json()
+          // Set the current conversation ID
+          setConversationContext(prev => ({
+            ...prev,
+            currentTopicId: conversationData.id
+          }))
+          
+          // If the onNewAssistantMessage callback is provided, call it
+          if (onNewAssistantMessage) {
+            // Pass all messages for complete history
+            const allMessagesHistory = messages.map(msg => ({
+              role: msg.role,
+              content: msg.content
+            }));
+            allMessagesHistory.push({
+              role: 'assistant',
+              content: processedMessageContent
+            });
+            
+            onNewAssistantMessage(
+              processedMessageContent, 
+              assistantMessage.id, 
+              conversationData.id, 
+              allMessagesHistory,
+              data.conversationContext
+            )
+          }
+        }
+      } else {
+        // If the onNewAssistantMessage callback is provided, call it
+        if (onNewAssistantMessage) {
+          // Pass all messages for complete history
+          const allMessagesHistory = messages.map(msg => ({
+            role: msg.role,
+            content: msg.content
+          }));
+          allMessagesHistory.push({
+            role: 'assistant',
+            content: processedMessageContent
+          });
+          
+          onNewAssistantMessage(
+            processedMessageContent, 
+            assistantMessage.id, 
+            conversationContext.currentTopicId, 
+            allMessagesHistory,
+            data.conversationContext
+          )
+        }
       }
       
     } catch (error) {

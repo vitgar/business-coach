@@ -45,11 +45,25 @@ export default function Dashboard() {
       color: 'bg-indigo-100 text-indigo-600'
     },
     {
-      title: 'How To Helper',
+      title: 'How To Guide',
       icon: HelpCircle,
-      description: 'Get step-by-step guidance on business activities',
-      href: `/action-planner`,
-      color: 'bg-emerald-100 text-emerald-600'
+      description: 'Get step-by-step guidance with actionable lists',
+      href: `/howto`,
+      color: 'bg-green-100 text-green-600'
+    },
+    {
+      title: 'Action Lists',
+      icon: ListTodo,
+      description: 'View and manage your organized action lists',
+      href: `/action-lists`,
+      color: 'bg-yellow-100 text-yellow-600'
+    },
+    {
+      title: 'Action Items',
+      icon: Target,
+      description: 'Track and manage tasks from conversations',
+      href: `/action-items`,
+      color: 'bg-orange-100 text-orange-600'
     },
     {
       title: 'Strategic Planning',

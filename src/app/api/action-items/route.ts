@@ -145,8 +145,8 @@ export async function POST(request: Request) {
 
       // Add user ID to each item and safely handle listId
       const itemsWithUserId = body.map((item, index) => {
-        // Create a clean copy of the item without listId if schema doesn't support it yet
-        const { listId, ...cleanItem } = item;
+        // Create a clean copy of the item without fields not in schema
+        const { listId, businessId, ...cleanItem } = item;
         return {
           ...cleanItem,
           userId: tempUser.id,
@@ -176,8 +176,8 @@ export async function POST(request: Request) {
         )
       }
 
-      // Create a clean copy of the item without listId if schema doesn't support it yet
-      const { listId, ...cleanData } = body;
+      // Remove fields that don't exist in the schema
+      const { listId, businessId, ...cleanData } = body;
       
       // Ensure ordinal is a number
       const ordinal = typeof body.ordinal === 'number' ? body.ordinal : 0;
@@ -190,8 +190,10 @@ export async function POST(request: Request) {
           ...cleanData,
           userId: tempUser.id,
           ordinal, // Use the validated ordinal value
-          // Include the listId in the data if provided
-          listId: body.listId || undefined
+          // Include the listId in the data if provided and if the schema supports it
+          ...(body.listId ? { listId: body.listId } : {}),
+          conversationId: body.conversationId ?? null,
+          messageId: null // Always set to null to avoid foreign key constraint errors
         }
       })
 
@@ -202,8 +204,10 @@ export async function POST(request: Request) {
     
     // Check if the error is related to the listId field not existing in the database
     const errorMessage = error instanceof Error ? error.message : String(error);
-    if (errorMessage.includes("The column `ActionItem.listId` does not exist")) {
-      console.warn("Using ActionItem.listId which is not available in the database schema. Please update your database schema.");
+    
+    // Handle the case where fields don't exist in the schema
+    if (errorMessage.includes("Unknown argument")) {
+      console.warn("Schema mismatch detected. Retrying with only supported fields.");
       
       try {
         // Get or create the temporary user again for the retry attempt
@@ -223,50 +227,60 @@ export async function POST(request: Request) {
           });
         }
         
-        // Retry the creation without the listId field
+        // Retry the creation with only the minimum required fields
         const body = await requestClone.json();
         
         if (Array.isArray(body)) {
           // Handle batch operation
-          const itemsWithoutListId = body.map(item => {
-            const { listId, ...rest } = item;
+          const itemsWithMinimalFields = body.map(item => {
+            // Keep only fields we know are in the schema
             return {
-              ...rest,
+              content: item.content,
               userId: tempUser.id,
-              ordinal: item.ordinal ?? 0
+              ordinal: item.ordinal ?? 0,
+              isCompleted: item.isCompleted ?? false,
+              notes: item.notes ?? null,
+              parentId: item.parentId ?? null,
+              conversationId: item.conversationId ?? null,
+              messageId: item.messageId ?? null
             };
           });
           
           const createdItems = await prisma.actionItem.createMany({
-            data: itemsWithoutListId
+            data: itemsWithMinimalFields
           });
           
           return NextResponse.json({
             success: true,
             count: createdItems.count,
-            warning: "listId field was ignored because it's not in the database schema"
+            warning: "Some fields were ignored because they're not in the database schema"
           }, { status: 201 });
         } else {
-          // Handle single item
-          const { listId, ...dataWithoutListId } = body;
+          // Handle single item with only known schema fields
+          const item = {
+            content: body.content,
+            userId: tempUser.id,
+            ordinal: body.ordinal ?? 0,
+            isCompleted: body.isCompleted ?? false,
+            notes: body.notes ?? null,
+            parentId: body.parentId ?? null,
+            conversationId: body.conversationId ?? null,
+            messageId: null // Always set to null to avoid foreign key constraint errors
+          };
           
           const actionItem = await prisma.actionItem.create({
-            data: {
-              ...dataWithoutListId,
-              userId: tempUser.id,
-              ordinal: body.ordinal ?? 0
-            }
+            data: item
           });
           
           return NextResponse.json({
             ...actionItem,
-            warning: "listId field was ignored because it's not in the database schema"
+            warning: "Some fields were ignored because they're not in the database schema"
           }, { status: 201 });
         }
       } catch (retryError) {
         console.error('Error in retry attempt:', retryError);
         return NextResponse.json(
-          { error: 'Failed to create action item(s) even without listId', details: retryError instanceof Error ? retryError.message : String(retryError) },
+          { error: 'Failed to create action item(s) even with schema-compatible fields', details: String(retryError) },
           { status: 500 }
         );
       }
