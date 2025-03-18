@@ -6,7 +6,7 @@ import '@/app/api/_init'
 /**
  * GET /api/action-items
  * 
- * Retrieves all action items, optionally filtered by conversationId, parentId, or messageId.
+ * Retrieves all action items, optionally filtered by conversationId, parentId, messageId, or listId.
  * For a real application, this would include user authentication.
  */
 export async function GET(request: Request) {
@@ -17,6 +17,7 @@ export async function GET(request: Request) {
     const parentId = url.searchParams.get('parentId')
     const messageId = url.searchParams.get('messageId')
     const rootItemsOnly = url.searchParams.get('rootItemsOnly') === 'true'
+    const listId = url.searchParams.get('listId')
 
     // In a production app, we would get the user from the session
     // For demo purposes, we'll use a temporary user ID
@@ -47,6 +48,23 @@ export async function GET(request: Request) {
 
     if (messageId) {
       whereClause.messageId = messageId
+    }
+    
+    // Add listId filter if provided
+    if (listId) {
+      // Check if list exists
+      if (listId !== 'default') {
+        const list = await prisma.actionItemList.findUnique({
+          where: { id: listId }
+        });
+        
+        // If list doesn't exist, just return empty array (don't throw error)
+        if (!list) {
+          return NextResponse.json([]);
+        }
+      }
+      
+      whereClause.listId = listId;
     }
 
     // Handle root items vs. items with specific parent
@@ -171,7 +189,9 @@ export async function POST(request: Request) {
         data: {
           ...cleanData,
           userId: tempUser.id,
-          ordinal // Use the validated ordinal value
+          ordinal, // Use the validated ordinal value
+          // Include the listId in the data if provided
+          listId: body.listId || undefined
         }
       })
 

@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Loader2, Plus, Filter, ChevronDown } from 'lucide-react'
+import { Loader2, Plus } from 'lucide-react'
 import { toast } from 'react-toastify'
 import { ActionItem, EnhancedActionItem } from '@/types/actionItem'
 import CollapsibleActionItem from './CollapsibleActionItem'
@@ -15,31 +15,24 @@ import CollapsibleActionItem from './CollapsibleActionItem'
  * @param {Object} props - Component properties
  * @param {string} props.conversationId - Optional filter by conversation ID
  * @param {string} props.businessId - Optional filter by business ID
- * @param {boolean} props.showFilters - Whether to display the filter controls
  * @param {string} props.listId - Optional filter by list ID
  */
 export default function EnhancedActionItemsList({ 
   conversationId,
   businessId,
-  showFilters = true,
   listId = 'default'
 }: { 
   conversationId?: string;
   businessId?: string;
-  showFilters?: boolean;
   listId?: string;
 }) {
   const [items, setItems] = useState<EnhancedActionItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [showCompleted, setShowCompleted] = useState(false);
-  const [priorityFilter, setPriorityFilter] = useState<string | null>(null);
-  const [progressFilter, setProgressFilter] = useState<string | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<EnhancedActionItem | null>(null);
   const [isAddingSubItem, setIsAddingSubItem] = useState(false);
   const [parentId, setParentId] = useState<string | null>(null);
-  const [isFiltersExpanded, setIsFiltersExpanded] = useState(false);
 
   /**
    * Fetch action items from the API with proper filtering
@@ -121,8 +114,11 @@ export default function EnhancedActionItemsList({
     }
   };
 
-  // Initial data load
+  // Initial data load and refresh when props change
   useEffect(() => {
+    // Clear items first to show loading state and prevent showing stale data
+    setItems([]);
+    setIsLoading(true);
     fetchActionItems();
   }, [conversationId, businessId, listId]);
 
@@ -225,28 +221,6 @@ export default function EnhancedActionItemsList({
     });
   };
 
-  /**
-   * Apply filters to the items
-   */
-  const filteredItems = items.filter(item => {
-    // Filter by completion status
-    if (!showCompleted && item.isCompleted) {
-      return false;
-    }
-    
-    // Filter by priority
-    if (priorityFilter && item.priorityLevel !== priorityFilter) {
-      return false;
-    }
-    
-    // Filter by progress
-    if (progressFilter && item.progress !== progressFilter) {
-      return false;
-    }
-    
-    return true;
-  });
-
   // Loading state
   if (isLoading) {
     return (
@@ -269,11 +243,21 @@ export default function EnhancedActionItemsList({
 
   // Empty state
   if (items.length === 0) {
+    // Extract the list name from the list ID for a more friendly display
+    const friendlyListName = listId === 'default' 
+      ? "Default" 
+      : listId.startsWith('list-') 
+        ? `"${listId.replace('list-', 'List ')}"` 
+        : `"${listId}"`;
+    
     return (
       <div className="text-center p-8 border border-dashed border-gray-300 rounded-lg bg-gray-50">
-        <p className="text-gray-500 mb-2">No action items found</p>
+        <p className="text-gray-500 mb-2">No action items in this list</p>
         <p className="text-sm text-gray-400 mb-4">
-          Start by creating some action items from the chat interface.
+          {listId === 'default' 
+            ? "Start by creating some action items from the chat interface."
+            : `Start by creating some action items in the ${friendlyListName} list.`
+          }
         </p>
       </div>
     );
@@ -281,89 +265,18 @@ export default function EnhancedActionItemsList({
 
   return (
     <div className="space-y-4">
-      {/* Filters section */}
-      {showFilters && (
-        <div className="bg-gray-50 p-3 rounded-lg border border-gray-200 mb-4">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center gap-2">
-              <Filter size={16} className="text-gray-500" />
-              <span className="font-medium text-gray-700 text-sm">Filters</span>
-            </div>
-            <button 
-              onClick={() => setIsFiltersExpanded(!isFiltersExpanded)}
-              className="text-gray-500 hover:text-gray-700"
-            >
-              <ChevronDown size={16} className={`transform transition-transform ${isFiltersExpanded ? 'rotate-180' : ''}`} />
-            </button>
-          </div>
-          
-          {isFiltersExpanded && (
-            <div className="mt-3 space-y-3">
-              {/* Completion filter */}
-              <div>
-                <label className="flex items-center gap-2 text-gray-700 text-sm font-medium">
-                  <input
-                    type="checkbox"
-                    checked={showCompleted}
-                    onChange={() => setShowCompleted(!showCompleted)}
-                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                  />
-                  Show completed items
-                </label>
-              </div>
-              
-              {/* Priority filter */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
-                <select
-                  value={priorityFilter || ''}
-                  onChange={(e) => setPriorityFilter(e.target.value || null)}
-                  className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
-                >
-                  <option value="">All priorities</option>
-                  <option value="high">High</option>
-                  <option value="medium">Medium</option>
-                  <option value="low">Low</option>
-                </select>
-              </div>
-              
-              {/* Progress filter */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Progress</label>
-                <select
-                  value={progressFilter || ''}
-                  onChange={(e) => setProgressFilter(e.target.value || null)}
-                  className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
-                >
-                  <option value="">All status</option>
-                  <option value="not started">Not started</option>
-                  <option value="in progress">In progress</option>
-                  <option value="complete">Complete</option>
-                </select>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-      
       {/* Action items list */}
       <div className="space-y-2">
-        {filteredItems.length === 0 ? (
-          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-center text-gray-500">
-            No items match the selected filters
-          </div>
-        ) : (
-          filteredItems.map(item => (
-            <CollapsibleActionItem
-              key={item.id}
-              item={item}
-              onToggleComplete={handleToggleComplete}
-              onDelete={handleDeleteItem}
-              onEdit={handleEditItem}
-              onAddSubItem={handleAddSubItem}
-            />
-          ))
-        )}
+        {items.map(item => (
+          <CollapsibleActionItem
+            key={item.id}
+            item={item}
+            onToggleComplete={handleToggleComplete}
+            onDelete={handleDeleteItem}
+            onEdit={handleEditItem}
+            onAddSubItem={handleAddSubItem}
+          />
+        ))}
       </div>
       
       {/* Edit Modal would go here in a full implementation */}

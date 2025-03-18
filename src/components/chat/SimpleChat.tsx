@@ -1,7 +1,7 @@
 'use client'
 
-import React, { useState, useRef, useEffect } from 'react'
-import { Send, User, Bot, PlusCircle, Loader2 } from 'lucide-react'
+import React, { useState, useEffect, useRef } from 'react'
+import { Send, User, Bot, PlusCircle, Loader2, List } from 'lucide-react'
 import { toast } from 'react-toastify'
 
 /**
@@ -39,6 +39,29 @@ interface ExtractedActionItem {
 }
 
 /**
+ * Enhanced action item list interface with color and topic information
+ */
+interface EnhancedActionItemList {
+  id: string;
+  name: string;
+  color?: string;
+  topicId?: string;
+  parentId?: string;
+}
+
+// Available colors for lists
+const LIST_COLORS = [
+  'light-blue',
+  'light-green',
+  'light-purple',
+  'light-orange',
+  'light-pink',
+  'light-teal',
+  'light-yellow',
+  'light-red',
+];
+
+/**
  * SimpleChat Component
  * 
  * Provides a basic chat interface for the action items page
@@ -48,8 +71,9 @@ interface ExtractedActionItem {
  * @param {Function} props.onCreateActionItem - Callback when an action item is created
  * @param {string[]} props.placeholderExamples - Optional array of example questions to rotate in the placeholder
  * @param {string} props.currentListId - Current action item list ID to add items to
- * @param {Array<{id: string, name: string}>} props.actionItemLists - Available action item lists
+ * @param {Array<EnhancedActionItemList>} props.actionItemLists - Available action item lists
  * @param {Function} props.onListChange - Callback when the selected list changes
+ * @param {Function} props.onCreateList - Callback when a new list is created
  */
 export default function SimpleChat({ 
   businessId,
@@ -57,14 +81,16 @@ export default function SimpleChat({
   placeholderExamples = ["Type your message..."],
   currentListId = 'default',
   actionItemLists = [],
-  onListChange
+  onListChange,
+  onCreateList
 }: { 
   businessId?: string;
-  onCreateActionItem?: (content: string) => void;
+  onCreateActionItem?: (content: string, listId?: string) => void;
   placeholderExamples?: string[];
   currentListId?: string;
-  actionItemLists?: Array<{id: string, name: string}>;
+  actionItemLists?: Array<EnhancedActionItemList>;
   onListChange?: (listId: string) => void;
+  onCreateList?: (name: string, color: string, topicId?: string, parentId?: string) => Promise<string>;
 }) {
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -86,6 +112,21 @@ export default function SimpleChat({
     completedSteps: 0
   });
   
+  // Store the topic-specific list ID
+  const [topicListId, setTopicListId] = useState<string | null>(null);
+  
+  // Use refs to keep track of the latest values without triggering re-renders
+  const actionItemListsRef = useRef(actionItemLists);
+  const onCreateListRef = useRef(onCreateList);
+  const onListChangeRef = useRef(onListChange);
+  
+  // Update refs when props change
+  useEffect(() => {
+    actionItemListsRef.current = actionItemLists;
+    onCreateListRef.current = onCreateList;
+    onListChangeRef.current = onListChange;
+  }, [actionItemLists, onCreateList, onListChange]);
+  
   // Scroll to bottom of chat when messages change
   useEffect(() => {
     scrollToBottom();
@@ -105,6 +146,43 @@ export default function SimpleChat({
     
     return () => clearInterval(interval);
   }, [placeholderExamples]);
+  
+  // Handle topic change and create a list for new topics
+  useEffect(() => {
+    // Skip if there's no topic ID
+    if (!conversationContext.currentTopicId) {
+      return;
+    }
+    
+    // Check if we already have a list for this topic
+    const existingList = actionItemListsRef.current.find(list => 
+      list.topicId === conversationContext.currentTopicId
+    );
+    
+    if (existingList) {
+      // If list exists, set it as the current list
+      setTopicListId(existingList.id);
+      if (onListChangeRef.current) {
+        onListChangeRef.current(existingList.id);
+      }
+    } else if (onCreateListRef.current) {
+      // If no list exists for this topic, create one
+      const topicName = conversationContext.currentTopicId.replace(/-/g, ' ');
+      const randomColor = LIST_COLORS[Math.floor(Math.random() * LIST_COLORS.length)];
+      
+      // Create a new list for this topic
+      onCreateListRef.current(topicName, randomColor, conversationContext.currentTopicId)
+        .then(newListId => {
+          setTopicListId(newListId);
+          if (onListChangeRef.current) {
+            onListChangeRef.current(newListId);
+          }
+        })
+        .catch(err => {
+          console.error('Error creating list for topic:', err);
+        });
+    }
+  }, [conversationContext.currentTopicId]); // Only depend on the topic ID changing
   
   /**
    * Scroll to the bottom of the chat container
@@ -162,10 +240,25 @@ export default function SimpleChat({
       
       const data = await response.json();
       
-      // Create assistant message from the response
+      // Process the response to remove option selection patterns that cause branching
+      let processedMessageContent = data.messageContent;
+      
+      // Remove "Would you like to continue with one of these topics?" pattern
+      processedMessageContent = processedMessageContent.replace(
+        /Would you like to continue with one of these topics\?[\s\S]*?(I'd like to discuss something else)/g,
+        ''
+      );
+      
+      // Remove "Continue with:" options
+      processedMessageContent = processedMessageContent.replace(
+        /Continue with: [^\n]+\n/g,
+        ''
+      );
+      
+      // Create assistant message from the processed response
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
-        content: data.messageContent,
+        content: processedMessageContent.trim() || data.messageContent,
         role: 'assistant',
         timestamp: new Date()
       };
@@ -182,8 +275,9 @@ export default function SimpleChat({
       if (data.containsActionItem && data.actionItem && onCreateActionItem) {
         // Format action item content
         const actionItemContent = formatActionItemContent(data.actionItem);
-        // Create action item
-        createActionItem(actionItemContent);
+        // Create action item in the topic-specific list if available
+        const listIdToUse = topicListId || currentListId;
+        createActionItem(actionItemContent, listIdToUse);
       }
       
     } catch (error) {
@@ -236,55 +330,122 @@ export default function SimpleChat({
   
   /**
    * Create an action item from a message
+   * @param content Content of the action item
+   * @param listId Optional list ID to create in (defaults to current list)
    */
-  const createActionItem = (content: string) => {
+  const createActionItem = (content: string, listId?: string) => {
     if (onCreateActionItem) {
-      onCreateActionItem(content);
-      toast.success(`Action item added to "${currentListId}" list`);
+      // Use the provided list ID, or fall back to topic list or current list
+      const listIdToUse = listId || topicListId || currentListId;
+      onCreateActionItem(content, listIdToUse);
+      
+      // Find the list name for the toast message
+      const listName = actionItemListsRef.current.find(list => list.id === listIdToUse)?.name || listIdToUse;
+      toast.success(`Action item added to "${listName}" list`);
     }
   };
   
+  /**
+   * Create a new sublist
+   */
+  const createNewSublist = () => {
+    if (!onCreateListRef.current) return;
+    
+    const listName = prompt('Enter a name for the new sublist:');
+    if (!listName || !listName.trim()) return;
+    
+    const randomColor = LIST_COLORS[Math.floor(Math.random() * LIST_COLORS.length)];
+    const parentListId = topicListId || currentListId;
+    
+    onCreateListRef.current(listName.trim(), randomColor, conversationContext.currentTopicId, parentListId)
+      .then(newListId => {
+        if (onListChangeRef.current) {
+          onListChangeRef.current(newListId);
+        }
+      })
+      .catch(err => {
+        console.error('Error creating sublist:', err);
+        toast.error('Failed to create sublist');
+      });
+  };
+  
+  // Use a fixed color for the UI instead of dynamically changing based on list color
+  const fixedUIColor = 'light-blue';
+  
+  // Map color names to actual CSS classes
+  const getColorClass = (color: string) => {
+    switch(color) {
+      case 'light-blue': return 'bg-blue-600';
+      case 'light-green': return 'bg-green-600';
+      case 'light-purple': return 'bg-purple-600';
+      case 'light-orange': return 'bg-orange-600';
+      case 'light-pink': return 'bg-pink-600';
+      case 'light-teal': return 'bg-teal-600';
+      case 'light-yellow': return 'bg-yellow-600';
+      case 'light-red': return 'bg-red-600';
+      default: return 'bg-blue-600';
+    }
+  };
+
   return (
     <div className="flex flex-col h-full border border-gray-200 rounded-lg overflow-hidden bg-white">
-      {/* Chat header */}
-      <div className="bg-blue-600 text-white px-4 py-3 flex justify-between items-center">
+      {/* Chat header with fixed color instead of dynamic color */}
+      <div className={`${getColorClass(fixedUIColor)} text-white px-4 py-3 flex justify-between items-center`}>
         <div className="flex items-center">
           <Bot className="w-5 h-5 mr-2" />
           <h3 className="font-medium">How To Helper</h3>
+          {conversationContext.currentTopicId && (
+            <span className="ml-2 text-xs bg-white bg-opacity-20 rounded px-1.5 py-0.5">
+              Topic: {conversationContext.currentTopicId.replace(/-/g, ' ')}
+            </span>
+          )}
         </div>
         
-        {/* List selector - only show if we have lists */}
-        {actionItemLists.length > 1 && (
-          <div className="flex items-center">
-            <span className="text-xs mr-2">Add to:</span>
-            <select 
-              value={currentListId}
-              onChange={(e) => {
-                if (e.target.value === 'new-list') {
-                  // Create a new list
-                  const listName = prompt('Enter a name for the new list:');
-                  if (listName && listName.trim() && onListChange) {
-                    const newListId = `list-${Date.now()}`;
-                    // We need to notify the parent component to create the new list
-                    // This is a basic implementation - in a real app, you'd use a proper function
-                    window.dispatchEvent(new CustomEvent('create-list', { 
-                      detail: { id: newListId, name: listName.trim() } 
-                    }));
-                    onListChange(newListId);
-                  }
-                } else if (onListChange) {
-                  onListChange(e.target.value);
+        {/* List selector with create sublist option */}
+        <div className="flex items-center">
+          <span className="text-xs mr-2">Add to:</span>
+          <select 
+            value={topicListId || currentListId}
+            onChange={(e) => {
+              if (e.target.value === 'new-list') {
+                // Create a new list
+                const listName = prompt('Enter a name for the new list:');
+                if (listName && listName.trim() && onCreateListRef.current) {
+                  const randomColor = LIST_COLORS[Math.floor(Math.random() * LIST_COLORS.length)];
+                  onCreateListRef.current(listName.trim(), randomColor, conversationContext.currentTopicId)
+                    .then(newListId => {
+                      if (onListChangeRef.current) {
+                        onListChangeRef.current(newListId);
+                        setTopicListId(newListId);
+                      }
+                    });
                 }
-              }}
-              className="text-xs bg-blue-700 text-white border border-blue-500 rounded px-1 py-0.5"
+              } else if (onListChangeRef.current) {
+                onListChangeRef.current(e.target.value);
+                setTopicListId(e.target.value);
+              }
+            }}
+            className="text-xs bg-opacity-20 bg-white text-white border border-white border-opacity-30 rounded px-1 py-0.5 mr-2"
+          >
+            {actionItemListsRef.current.map(list => (
+              <option key={list.id} value={list.id}>
+                {list.name} {list.parentId ? '(sub)' : ''}
+              </option>
+            ))}
+            <option value="new-list">+ New List</option>
+          </select>
+          
+          {/* Create sublist button */}
+          {(topicListId || currentListId) && (
+            <button 
+              onClick={createNewSublist}
+              className="text-xs bg-white bg-opacity-20 rounded p-1"
+              title="Create a sublist"
             >
-              {actionItemLists.map(list => (
-                <option key={list.id} value={list.id}>{list.name}</option>
-              ))}
-              <option value="new-list">+ New List</option>
-            </select>
-          </div>
-        )}
+              <List size={12} />
+            </button>
+          )}
+        </div>
       </div>
       
       {/* Messages container */}
@@ -297,7 +458,7 @@ export default function SimpleChat({
             <div 
               className={`max-w-[80%] rounded-lg p-3 ${
                 message.role === 'user' 
-                  ? 'bg-blue-600 text-white rounded-tr-none'
+                  ? `${getColorClass(fixedUIColor)} text-white rounded-tr-none`
                   : 'bg-white border border-gray-200 shadow-sm rounded-tl-none'
               }`}
             >
@@ -321,11 +482,13 @@ export default function SimpleChat({
                   <button
                     onClick={() => createActionItem(message.content)}
                     className="inline-flex items-center text-xs text-blue-600 hover:text-blue-800"
-                    title={`Add to ${currentListId} list`}
+                    title={`Add to ${actionItemListsRef.current.find(list => list.id === (topicListId || currentListId))?.name || 'current'} list`}
                   >
                     <PlusCircle className="w-3 h-3 mr-1" />
                     Create Action Item
-                    <span className="ml-1 text-xs text-gray-500 italic">({currentListId})</span>
+                    <span className="ml-1 text-xs text-gray-500 italic">
+                      ({actionItemListsRef.current.find(list => list.id === (topicListId || currentListId))?.name || 'current'})
+                    </span>
                   </button>
                 </div>
               )}

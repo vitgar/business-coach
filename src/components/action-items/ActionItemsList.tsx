@@ -26,7 +26,6 @@ interface ActionItemsListProps {
   messageId?: string // Optional filter by message
   parentId?: string // Optional filter by parent action item 
   rootItemsOnly?: boolean // Only show root items (no parents)
-  filter?: (item: ActionItem) => boolean // Optional filter function for items
   onCreateNewItem?: () => void // Optional callback for creating a new item
 }
 
@@ -43,7 +42,6 @@ export default function ActionItemsList({
   messageId,
   parentId,
   rootItemsOnly = true,
-  filter,
   onCreateNewItem
 }: ActionItemsListProps) {
   const { userId } = useAuth()
@@ -270,8 +268,6 @@ export default function ActionItemsList({
   return (
     <div className="space-y-3">
       {actionItems
-        // Apply any custom filter function provided as a prop
-        .filter(item => filter ? filter(item) : true)
         .map(item => (
         <div 
           key={item.id} 

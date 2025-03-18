@@ -45,6 +45,5 @@ export interface ActionItemsListProps {
   messageId?: string;            // Optional filter by message
   parentId?: string;             // Optional filter by parent action item 
   rootItemsOnly?: boolean;       // Only show root items (no parents)
-  filter?: (item: ActionItem) => boolean; // Optional filter function for items
   onCreateNewItem?: () => void;  // Optional callback for creating a new item
 } 

@@ -1,12 +1,35 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
-import { HelpCircle, ListTodo, PlusCircle, ChevronLeft, RefreshCw } from 'lucide-react'
+import React, { useState, useEffect, useCallback } from 'react'
+import { HelpCircle, ListTodo, PlusCircle, ChevronLeft, RefreshCw, Palette } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import ClientLayout from '@/components/ClientLayout'
 import SimpleChat from '@/components/chat/SimpleChat'
 import EnhancedActionItemsList from '@/components/action-items/EnhancedActionItemsList'
 import { toast } from 'react-toastify'
+
+/**
+ * Interface for enhanced action item lists with color and topic tracking
+ */
+interface EnhancedActionItemList {
+  id: string;
+  name: string;
+  color?: string;
+  topicId?: string;
+  parentId?: string;
+}
+
+// Available colors for lists
+const LIST_COLORS = [
+  'light-blue',
+  'light-green',
+  'light-purple',
+  'light-orange',
+  'light-pink',
+  'light-teal',
+  'light-yellow',
+  'light-red',
+];
 
 /**
  * HowToHelper Page (formerly ActionPlanner)
@@ -20,6 +43,8 @@ import { toast } from 'react-toastify'
  * 3. Maintains conversation context for detailed topic assistance
  * 4. Enables hierarchical action item creation (parent-child relationships)
  * 5. Supports multiple action item lists for different topics or projects
+ * 6. Tracks topics and creates color-coded lists for different topics
+ * 7. Supports sublists for organizing related items
  */
 export default function ActionPlannerPage() {
   const { isAuthenticated, currentBusinessId } = useAuth()
@@ -27,37 +52,109 @@ export default function ActionPlannerPage() {
   const [isMobileChatVisible, setIsMobileChatVisible] = useState(true)
   const [currentActionItemId, setCurrentActionItemId] = useState<string | null>(null)
   
-  // State for managing multiple action item lists
-  const [actionItemLists, setActionItemLists] = useState<Array<{id: string, name: string}>>([
-    {id: 'default', name: 'Default Action Items'}
+  // State for managing multiple action item lists with enhanced properties
+  const [actionItemLists, setActionItemLists] = useState<Array<EnhancedActionItemList>>([
+    {id: 'default', name: 'Default Action Items', color: 'light-blue'}
   ])
   const [currentListId, setCurrentListId] = useState('default')
   
-  // Listen for create-list events from the SimpleChat component
+  // Load lists from API on component mount
   useEffect(() => {
-    const handleCreateList = (event: CustomEvent) => {
-      const { id, name } = event.detail;
-      createNewList(name, id);
-    };
-    
-    window.addEventListener('create-list', handleCreateList as EventListener);
-    
-    return () => {
-      window.removeEventListener('create-list', handleCreateList as EventListener);
-    };
-  }, []);
+    if (isAuthenticated) {
+      fetchActionItemLists();
+    }
+  }, [isAuthenticated]);
+  
+  /**
+   * Fetch action item lists from the API
+   */
+  const fetchActionItemLists = async () => {
+    try {
+      const response = await fetch('/api/action-item-lists');
+      if (response.ok) {
+        const lists = await response.json();
+        if (lists.length > 0) {
+          setActionItemLists(lists);
+          // If no current list is selected, select the first one
+          if (currentListId === 'default' && lists.some((list: EnhancedActionItemList) => list.id !== 'default')) {
+            setCurrentListId(lists[0].id);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching action item lists:', error);
+    }
+  };
+  
+  /**
+   * Handle list change - sets the current list ID and refreshes the action items
+   * Memoized to prevent unnecessary re-renders
+   */
+  const handleListChange = useCallback((listId: string) => {
+    setCurrentListId(listId);
+    setRefreshKey(Date.now());
+    const listName = actionItemLists.find(list => list.id === listId)?.name || listId;
+    toast.info(`Switched to "${listName}" list`);
+  }, [actionItemLists]);
   
   /**
    * Create a new action item list
-   * 
-   * @param name - The name of the new list
-   * @param id - Optional ID for the new list (if not provided, one will be generated)
    */
-  const createNewList = (name: string, id?: string) => {
-    const newId = id || `list-${Date.now()}`
-    setActionItemLists(prev => [...prev, {id: newId, name}])
-    setCurrentListId(newId)
-  }
+  const createNewList = useCallback(async (
+    name: string, 
+    color: string = LIST_COLORS[Math.floor(Math.random() * LIST_COLORS.length)],
+    topicId?: string,
+    parentId?: string
+  ): Promise<string> => {
+    if (!isAuthenticated) {
+      toast.error('Please sign in to create lists');
+      return Promise.reject('Not authenticated');
+    }
+    
+    try {
+      const response = await fetch('/api/action-item-lists', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          title: name,
+          color,
+          topicId,
+          parentId,
+          businessId: currentBusinessId || undefined
+        })
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create list');
+      }
+      
+      const newList = await response.json();
+      
+      // Add the new list to our state
+      setActionItemLists(prev => [...prev, {
+        id: newList.id,
+        name: newList.title || name,
+        color: newList.color || color,
+        topicId: newList.topicId || topicId,
+        parentId: newList.parentId || parentId
+      }]);
+      
+      // Set as current list
+      setCurrentListId(newList.id);
+      
+      // Force refresh to reset the action items display when creating a new list
+      setRefreshKey(Date.now());
+      
+      return newList.id;
+    } catch (error) {
+      console.error('Error creating action item list:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to create list');
+      return Promise.reject(error);
+    }
+  }, [isAuthenticated, currentBusinessId]);
   
   /**
    * Create an action item from chat message
@@ -66,15 +163,15 @@ export default function ActionPlannerPage() {
    * in a response or when the user manually creates an action item from a message.
    * 
    * @param content - The content of the action item
+   * @param listId - Optional list ID to specify which list to add to
    * @param parentId - Optional parent ID if this is a child action item
    * @param callback - Optional callback that receives the created action item ID
-   * @param listId - Optional list ID to specify which list to add to (defaults to current list)
    */
   const handleCreateActionItem = async (
-    content: string, 
+    content: string,
+    listId?: string,
     parentId?: string, 
-    callback?: (id: string) => void,
-    listId?: string
+    callback?: (id: string) => void
   ) => {
     if (!isAuthenticated) {
       toast.error('Please sign in to create action items')
@@ -127,17 +224,77 @@ export default function ActionPlannerPage() {
   const handleCreateNewList = () => {
     const listName = prompt('Enter a name for the new action item list')
     if (listName && listName.trim()) {
-      createNewList(listName.trim())
-      toast.success(`Created new list: ${listName}`)
+      // Choose a random color from our color list
+      const randomColor = LIST_COLORS[Math.floor(Math.random() * LIST_COLORS.length)];
+      createNewList(listName.trim(), randomColor)
+        .then(() => {
+          toast.success(`Created new list: ${listName}`);
+        })
+        .catch(() => {
+          // Error is already handled in createNewList
+        });
     }
+  }
+  
+  /**
+   * Handle setting a specific color for a list
+   */
+  const handleSetListColor = () => {
+    const currentList = actionItemLists.find(list => list.id === currentListId);
+    if (!currentList) return;
+    
+    // Simple color selection implementation - in a real app you'd use a color picker
+    const colorIndex = prompt(`Choose a color number (1-${LIST_COLORS.length}):`);
+    const index = parseInt(colorIndex || '1') - 1;
+    
+    if (isNaN(index) || index < 0 || index >= LIST_COLORS.length) {
+      toast.error('Invalid color selection');
+      return;
+    }
+    
+    const newColor = LIST_COLORS[index];
+    
+    // Update the list color on the server
+    fetch(`/api/action-item-lists/${currentListId}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        color: newColor
+      })
+    })
+    .then(response => {
+      if (!response.ok) throw new Error('Failed to update list color');
+      
+      // Update local state
+      setActionItemLists(prev => prev.map(list => 
+        list.id === currentListId ? {...list, color: newColor} : list
+      ));
+      
+      toast.success(`Updated color for "${currentList.name}"`);
+    })
+    .catch(error => {
+      console.error('Error updating list color:', error);
+      toast.error('Failed to update list color');
+    });
   }
   
   /**
    * Refresh the action items list
    */
   const refreshActionItems = () => {
-    setRefreshKey(prev => prev + 1)
+    fetchActionItemLists();
+    setRefreshKey(prev => prev + 1);
   }
+  
+  // Find parent lists and child lists for the current list
+  const parentLists = actionItemLists.filter(list => !list.parentId);
+  const currentListItem = actionItemLists.find(list => list.id === currentListId);
+  const childLists = actionItemLists.filter(list => list.parentId === currentListId);
+  
+  // Use a fixed color for UI elements instead of the list's color
+  const fixedUIColor = 'light-blue';
   
   // Example questions for the placeholder rotation
   const placeholderExamples = [
@@ -150,6 +307,21 @@ export default function ActionPlannerPage() {
     "How do I manage business taxes?",
     "How do I price my products?"
   ]
+  
+  // Map color names to CSS classes for the UI
+  const getColorClass = (color: string) => {
+    switch(color) {
+      case 'light-blue': return 'bg-blue-600 text-white';
+      case 'light-green': return 'bg-green-600 text-white';
+      case 'light-purple': return 'bg-purple-600 text-white';
+      case 'light-orange': return 'bg-orange-600 text-white';
+      case 'light-pink': return 'bg-pink-600 text-white';
+      case 'light-teal': return 'bg-teal-600 text-white';
+      case 'light-yellow': return 'bg-yellow-600 text-white';
+      case 'light-red': return 'bg-red-600 text-white';
+      default: return 'bg-blue-600 text-white';
+    }
+  };
   
   return (
     <ClientLayout>
@@ -218,24 +390,22 @@ export default function ActionPlannerPage() {
             <div className={`${!isMobileChatVisible ? 'hidden md:block' : ''} md:h-[calc(100vh-12rem)]`}>
               <SimpleChat 
                 businessId={currentBusinessId || undefined}
-                onCreateActionItem={(content) => handleCreateActionItem(content, undefined, undefined, currentListId)}
+                onCreateActionItem={handleCreateActionItem}
                 placeholderExamples={placeholderExamples}
                 currentListId={currentListId}
                 actionItemLists={actionItemLists}
-                onListChange={(listId) => {
-                  setCurrentListId(listId);
-                  toast.info(`Switched to "${actionItemLists.find(list => list.id === listId)?.name || listId}" list`);
-                }}
+                onListChange={handleListChange}
+                onCreateList={createNewList}
               />
             </div>
             
             {/* Action items section - Hidden on mobile when viewing chat */}
             <div className={`${isMobileChatVisible ? 'hidden md:block' : ''} md:h-[calc(100vh-12rem)] overflow-y-auto pb-6`}>
               <div className="bg-white border border-gray-200 rounded-lg shadow-sm h-full overflow-hidden flex flex-col">
-                <div className="p-4 border-b border-gray-200 flex justify-between items-center bg-gray-50">
+                <div className={`p-4 border-b border-gray-200 flex justify-between items-center ${getColorClass(fixedUIColor)}`}>
                   <div className="flex flex-col">
-                    <h2 className="text-lg font-semibold text-gray-800 flex items-center">
-                      <ListTodo className="mr-2 text-blue-600" size={18} />
+                    <h2 className="text-lg font-semibold flex items-center">
+                      <ListTodo className="mr-2" size={18} />
                       Action Items
                     </h2>
                     
@@ -244,28 +414,56 @@ export default function ActionPlannerPage() {
                       <select
                         value={currentListId}
                         onChange={(e) => setCurrentListId(e.target.value)}
-                        className="text-sm border border-gray-300 rounded px-2 py-1 mr-2"
+                        className="text-sm bg-white bg-opacity-20 border border-white border-opacity-30 rounded px-2 py-1 mr-2 text-white"
                       >
-                        {actionItemLists.map(list => (
-                          <option key={list.id} value={list.id}>{list.name}</option>
-                        ))}
+                        <optgroup label="Main Lists">
+                          {parentLists.map(list => (
+                            <option key={list.id} value={list.id}>{list.name}</option>
+                          ))}
+                        </optgroup>
+                        
+                        {childLists.length > 0 && (
+                          <optgroup label="Sublists">
+                            {childLists.map(list => (
+                              <option key={list.id} value={list.id}>{list.name}</option>
+                            ))}
+                          </optgroup>
+                        )}
                       </select>
                       
-                      <button
-                        onClick={handleCreateNewList}
-                        className="inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800"
-                      >
-                        <PlusCircle size={14} />
-                        New List
-                      </button>
+                      <div className="flex gap-1">
+                        <button
+                          onClick={handleCreateNewList}
+                          className="inline-flex items-center gap-1 text-sm bg-white bg-opacity-20 px-2 py-1 rounded hover:bg-opacity-30"
+                          title="Create a new list"
+                        >
+                          <PlusCircle size={14} />
+                          New List
+                        </button>
+                        
+                        <button
+                          onClick={handleSetListColor}
+                          className="inline-flex items-center text-sm bg-white bg-opacity-20 px-2 py-1 rounded hover:bg-opacity-30"
+                          title="Change list color"
+                        >
+                          <Palette size={14} />
+                        </button>
+                      </div>
                     </div>
+                    
+                    {/* Show topic if this is a topic-specific list */}
+                    {currentListItem?.topicId && (
+                      <div className="mt-1 text-xs bg-white bg-opacity-20 inline-block px-2 py-0.5 rounded">
+                        Topic: {currentListItem.topicId.replace(/-/g, ' ')}
+                      </div>
+                    )}
                   </div>
                   
                   {/* Desktop refresh button */}
                   <div className="hidden md:block">
                     <button
                       onClick={refreshActionItems}
-                      className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-blue-50 text-blue-700 hover:bg-blue-100 text-sm"
+                      className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-white bg-opacity-20 hover:bg-opacity-30 text-sm"
                     >
                       <RefreshCw size={14} />
                       Refresh
@@ -284,9 +482,10 @@ export default function ActionPlannerPage() {
                         className="flex-1 text-sm border border-gray-300 rounded px-3 py-1.5"
                         onKeyDown={(e) => {
                           if (e.key === 'Enter' && e.currentTarget.value.trim()) {
-                            handleCreateActionItem(e.currentTarget.value, undefined, undefined, currentListId);
+                            handleCreateActionItem(e.currentTarget.value, currentListId);
                             e.currentTarget.value = '';
-                            toast.success(`Action item added to "${actionItemLists.find(list => list.id === currentListId)?.name || currentListId}" list`);
+                            const listName = actionItemLists.find(list => list.id === currentListId)?.name || currentListId;
+                            toast.success(`Action item added to "${listName}" list`);
                           }
                         }}
                       />
@@ -294,12 +493,13 @@ export default function ActionPlannerPage() {
                         onClick={(e) => {
                           const input = e.currentTarget.previousElementSibling as HTMLInputElement;
                           if (input && input.value.trim()) {
-                            handleCreateActionItem(input.value, undefined, undefined, currentListId);
+                            handleCreateActionItem(input.value, currentListId);
                             input.value = '';
-                            toast.success(`Action item added to "${actionItemLists.find(list => list.id === currentListId)?.name || currentListId}" list`);
+                            const listName = actionItemLists.find(list => list.id === currentListId)?.name || currentListId;
+                            toast.success(`Action item added to "${listName}" list`);
                           }
                         }}
-                        className="px-3 py-1.5 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
+                        className={`px-3 py-1.5 text-sm rounded hover:bg-opacity-90 ${getColorClass(fixedUIColor)}`}
                       >
                         Add
                       </button>
@@ -309,7 +509,6 @@ export default function ActionPlannerPage() {
                   <EnhancedActionItemsList 
                     key={`${refreshKey}-${currentListId}`}
                     businessId={currentBusinessId || undefined} 
-                    showFilters={true}
                     listId={currentListId}
                   />
                 </div>

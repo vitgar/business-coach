@@ -123,6 +123,8 @@ model Progress {
 model ActionItemList {
   id        String   @id @default(cuid())
   title     String
+  color     String?  // Color for the list (e.g., "light-blue", "light-green", etc.)
+  topicId   String?  // ID or name of the current topic this list is associated with
   items     Json     // Stores the array of action items with structure: {id, title, description, priority, estimatedTimeInMinutes}
   itemNotes Json?    // Stores user notes for each item with structure: {itemId, note, dateAdded, completed}
   userId    String
@@ -130,6 +132,11 @@ model ActionItemList {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   actionItems ActionItem[] // Relation to action items in this list
+  
+  // Parent-child relationship for sublists
+  parentId  String?
+  parent    ActionItemList? @relation("ListHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  sublists  ActionItemList[] @relation("ListHierarchy")
 }
 
 model BusinessNote {

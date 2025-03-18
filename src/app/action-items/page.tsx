@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
-import { ListTodo, Filter, RefreshCw, Plus, X, Send, Loader2 } from 'lucide-react'
+import { ListTodo, RefreshCw, Plus, X, Send, Loader2 } from 'lucide-react'
 import ClientLayout from '@/components/ClientLayout'
 import ActionItemsList from '@/components/action-items/ActionItemsList'
 import { useAuth } from '@/contexts/AuthContext'
@@ -10,14 +10,12 @@ import { toast } from 'react-toastify'
 /**
  * Action Items Page
  * 
- * Shows all action items for the user with filtering options
+ * Shows all action items for the user
  * These action items are extracted automatically from assistant messages
  * Users can also manually add new action items
  */
 export default function ActionItemsPage() {
   const { isAuthenticated } = useAuth()
-  const [showCompleted, setShowCompleted] = useState(true)
-  const [selectedConversation, setSelectedConversation] = useState<string | null>(null)
   const [key, setKey] = useState(0) // Used to force re-render of ActionItemsList
   const [isAddingItem, setIsAddingItem] = useState(false)
   const [newItemText, setNewItemText] = useState('')
@@ -145,43 +143,6 @@ export default function ActionItemsPage() {
             </div>
           </div>
         )}
-
-        {/* Filters section */}
-        <div className="bg-gray-50 p-4 rounded-lg mb-6 flex flex-wrap gap-4 items-center">
-          <div className="flex items-center gap-2">
-            <Filter size={18} className="text-gray-500" />
-            <span className="font-medium text-gray-700">Filters:</span>
-          </div>
-          
-          {/* Show/hide completed items */}
-          <div className="flex items-center">
-            <label htmlFor="show-completed" className="flex items-center cursor-pointer">
-              <input
-                id="show-completed"
-                type="checkbox"
-                checked={showCompleted}
-                onChange={() => setShowCompleted(!showCompleted)}
-                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 h-4 w-4"
-              />
-              <span className="ml-2 text-sm text-gray-700">Show completed items</span>
-            </label>
-          </div>
-          
-          {/* Conversation filter - would be populated from API in a full implementation */}
-          {/*
-          <div className="flex-1 min-w-[200px]">
-            <select 
-              value={selectedConversation || ''}
-              onChange={(e) => setSelectedConversation(e.target.value || null)}
-              className="w-full rounded-md border-gray-300 text-sm focus:border-blue-500 focus:ring-blue-500"
-            >
-              <option value="">All conversations</option>
-              <option value="conversation1">Marketing Plan</option>
-              <option value="conversation2">Business Strategy</option>
-            </select>
-          </div>
-          */}
-        </div>
         
         {/* Authentication check */}
         {!isAuthenticated ? (
@@ -205,9 +166,7 @@ export default function ActionItemsPage() {
               {/* The action items list component */}
               <ActionItemsList 
                 key={key} 
-                conversationId={selectedConversation || undefined}
                 rootItemsOnly={true}
-                filter={showCompleted ? undefined : (item => !item.isCompleted)}
                 onCreateNewItem={openNewItemForm}
               />
             </div>
