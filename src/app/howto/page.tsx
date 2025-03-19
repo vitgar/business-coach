@@ -162,38 +162,134 @@ export default function HowToPage() {
     setIsProcessing(true)
     
     try {
-      // Save each action list and its items
-      let totalItems = 0
+      // First, create all the list structures with proper parent-child relationships
+      const createdLists: Record<string, string> = {};
       
+      // Step 1: Create all parent lists first
       for (const list of extractedActionLists) {
-        for (const item of list.items) {
-          // Format the content to include the list title
-          const content = `[${list.title}] ${item}`
-          
-          await fetch('/api/action-items', {
+        if (!list.parentId) {
+          // This is a parent list (top level)
+          const response = await fetch('/api/action-item-lists', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-              content,
-              // Don't send businessId as it's not in the schema
-              conversationId: currentConversationId || null,
-              messageId: null // Set to null explicitly to avoid foreign key constraint errors
+              title: list.title,
+              color: getRandomColor() // Function to generate a random color
             })
-          })
+          });
           
-          totalItems++
+          if (response.ok) {
+            const newList = await response.json();
+            // Store mapping from original ID to new list ID
+            createdLists[list.id] = newList.id;
+            console.log(`Created parent list "${list.title}" with ID ${newList.id}`);
+          } else {
+            console.error(`Failed to create parent list "${list.title}"`);
+          }
         }
       }
       
-      toast.success(`Saved ${totalItems} action items from ${extractedActionLists.length} lists`)
+      // Step 2: Create all child lists with correct parent references
+      for (const list of extractedActionLists) {
+        if (list.parentId && createdLists[list.parentId]) {
+          // This is a child list with a parent we've already created
+          const response = await fetch('/api/action-item-lists', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              title: list.title,
+              color: getRandomColor(),
+              parentId: createdLists[list.parentId] // Use the actual parent list ID
+            })
+          });
+          
+          if (response.ok) {
+            const newList = await response.json();
+            // Store mapping from original ID to new list ID
+            createdLists[list.id] = newList.id;
+            console.log(`Created child list "${list.title}" with parent ID ${createdLists[list.parentId]}`);
+          } else {
+            console.error(`Failed to create child list "${list.title}"`);
+          }
+        }
+      }
+      
+      // Step 3: Now create all the action items, properly associated with their lists
+      let totalItems = 0;
+      
+      for (const list of extractedActionLists) {
+        // Get the new list ID if we successfully created it
+        const listId = createdLists[list.id];
+        
+        if (listId) {
+          // Create each item in this list
+          for (const item of list.items) {
+            await fetch('/api/action-items', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                content: item, // No need to add prefix, we're setting listId directly
+                listId: listId, // Associate with the proper list
+                conversationId: currentConversationId || null,
+                messageId: null // Set to null explicitly to avoid foreign key constraint errors
+              })
+            });
+            
+            totalItems++;
+          }
+        } else {
+          // Fallback: If list creation failed, create items with bracketed prefix
+          for (const item of list.items) {
+            // Format the content to include the list title
+            const content = `[${list.title}] ${item}`;
+            
+            await fetch('/api/action-items', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                content,
+                conversationId: currentConversationId || null,
+                messageId: null // Set to null explicitly to avoid foreign key constraint errors
+              })
+            });
+            
+            totalItems++;
+          }
+        }
+      }
+      
+      toast.success(`Saved ${totalItems} action items from ${extractedActionLists.length} lists`);
     } catch (error) {
       console.error('Error saving action lists:', error)
       toast.error(error instanceof Error ? error.message : 'Failed to save action lists')
     } finally {
       setIsProcessing(false)
     }
+  }
+  
+  /**
+   * Generates a random color for action lists
+   */
+  const getRandomColor = () => {
+    const colors = [
+      'light-blue',
+      'light-green',
+      'light-purple',
+      'light-orange',
+      'light-pink',
+      'light-teal',
+      'light-yellow',
+      'light-red'
+    ];
+    return colors[Math.floor(Math.random() * colors.length)];
   }
   
   /**

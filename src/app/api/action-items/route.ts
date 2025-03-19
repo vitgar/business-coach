@@ -18,6 +18,9 @@ export async function GET(request: Request) {
     const messageId = url.searchParams.get('messageId')
     const rootItemsOnly = url.searchParams.get('rootItemsOnly') === 'true'
     const listId = url.searchParams.get('listId')
+    const limit = parseInt(url.searchParams.get('limit') || '100')
+    
+    console.log(`GET /api/action-items with params: conversationId=${conversationId}, parentId=${parentId}, messageId=${messageId}, rootItemsOnly=${rootItemsOnly}, listId=${listId}, limit=${limit}`)
 
     // In a production app, we would get the user from the session
     // For demo purposes, we'll use a temporary user ID
@@ -52,6 +55,8 @@ export async function GET(request: Request) {
     
     // Add listId filter if provided
     if (listId) {
+      console.log(`Filtering by listId: ${listId}`)
+      
       // Check if list exists
       if (listId !== 'default') {
         const list = await prisma.actionItemList.findUnique({
@@ -60,11 +65,47 @@ export async function GET(request: Request) {
         
         // If list doesn't exist, just return empty array (don't throw error)
         if (!list) {
+          console.log(`List with ID ${listId} not found`)
           return NextResponse.json([]);
         }
+        
+        console.log(`Found list: ${list.title}`)
+        
+        // Check if we should include items from child lists
+        const showChildren = url.searchParams.get('showChildren') === 'true'
+        
+        if (showChildren) {
+          // Find child lists by checking parentId in itemNotes field
+          const childLists = await prisma.actionItemList.findMany({
+            where: {
+              userId: tempUser.id,
+              // Check parent ID in the JSON field itemNotes
+              itemNotes: {
+                path: ['parentId'],
+                equals: listId
+              }
+            }
+          });
+          
+          if (childLists.length > 0) {
+            // Include items from all child lists as well as the parent list
+            const childListIds = childLists.map(child => child.id);
+            console.log(`Including items from ${childLists.length} child lists: ${childListIds.join(', ')}`)
+            
+            whereClause.listId = {
+              in: [listId, ...childListIds]
+            };
+          } else {
+            // Only include items from this specific list if no children found
+            whereClause.listId = listId;
+          }
+        } else {
+          // Only include items from this specific list
+          whereClause.listId = listId;
+        }
+      } else {
+        whereClause.listId = listId;
       }
-      
-      whereClause.listId = listId;
     }
 
     // Handle root items vs. items with specific parent
@@ -86,8 +127,15 @@ export async function GET(request: Request) {
             children: true
           }
         }
-      }
+      },
+      take: limit
     })
+    
+    console.log(`Found ${actionItems.length} action items matching the criteria`)
+    
+    if (actionItems.length > 0) {
+      console.log(`Sample item: ${JSON.stringify(actionItems[0])}`)
+    }
 
     return NextResponse.json(actionItems)
   } catch (error) {
@@ -177,12 +225,56 @@ export async function POST(request: Request) {
       }
 
       // Remove fields that don't exist in the schema
-      const { listId, businessId, ...cleanData } = body;
+      const { listId: providedListId, businessId, ...cleanData } = body;
       
       // Ensure ordinal is a number
       const ordinal = typeof body.ordinal === 'number' ? body.ordinal : 0;
       
-      console.log('Creating action item with data:', { ...cleanData, ordinal });
+      // Check if the content has a list prefix like [List Name]
+      let listId = providedListId;
+      const bracketMatch = body.content.match(/^\s*[\[\{](.*?)[\]\}]/);
+      
+      if (bracketMatch && bracketMatch[1]) {
+        const listTitle = bracketMatch[1].trim();
+        
+        if (listTitle) {
+          // Look for existing list with matching name
+          const existingList = await prisma.actionItemList.findFirst({
+            where: {
+              title: listTitle,
+              userId: tempUser.id
+            }
+          });
+          
+          if (existingList) {
+            // Use the existing list's ID
+            console.log(`Found existing list "${listTitle}" with ID ${existingList.id}`);
+            listId = existingList.id;
+          } else {
+            // Create a new list with a proper UUID for this title
+            const newList = await prisma.actionItemList.create({
+              data: {
+                title: listTitle,
+                items: [], // Initialize with empty items array
+                userId: tempUser.id,
+                // Store metadata in the itemNotes field
+                itemNotes: {
+                  color: 'light-blue', // Default color
+                }
+              }
+            });
+            
+            console.log(`Created new list "${listTitle}" with ID ${newList.id}`);
+            listId = newList.id;
+          }
+        }
+      }
+      
+      console.log('Creating action item with data:', { 
+        ...cleanData, 
+        ordinal,
+        listId: listId || null 
+      });
       
       // Create a single action item
       const actionItem = await prisma.actionItem.create({
@@ -190,8 +282,8 @@ export async function POST(request: Request) {
           ...cleanData,
           userId: tempUser.id,
           ordinal, // Use the validated ordinal value
-          // Include the listId in the data if provided and if the schema supports it
-          ...(body.listId ? { listId: body.listId } : {}),
+          // Include the listId in the data if it exists now
+          listId: listId || null,
           conversationId: body.conversationId ?? null,
           messageId: null // Always set to null to avoid foreign key constraint errors
         }
@@ -252,35 +344,29 @@ export async function POST(request: Request) {
           
           return NextResponse.json({
             success: true,
-            count: createdItems.count,
-            warning: "Some fields were ignored because they're not in the database schema"
+            count: createdItems.count
           }, { status: 201 });
         } else {
-          // Handle single item with only known schema fields
-          const item = {
-            content: body.content,
-            userId: tempUser.id,
-            ordinal: body.ordinal ?? 0,
-            isCompleted: body.isCompleted ?? false,
-            notes: body.notes ?? null,
-            parentId: body.parentId ?? null,
-            conversationId: body.conversationId ?? null,
-            messageId: null // Always set to null to avoid foreign key constraint errors
-          };
-          
-          const actionItem = await prisma.actionItem.create({
-            data: item
+          // Handle single item creation
+          const createdItem = await prisma.actionItem.create({
+            data: {
+              content: body.content,
+              userId: tempUser.id,
+              ordinal: body.ordinal ?? 0,
+              isCompleted: body.isCompleted ?? false,
+              notes: body.notes ?? null,
+              parentId: body.parentId ?? null,
+              conversationId: body.conversationId ?? null,
+              messageId: null // Always set to null to avoid foreign key constraint errors
+            }
           });
           
-          return NextResponse.json({
-            ...actionItem,
-            warning: "Some fields were ignored because they're not in the database schema"
-          }, { status: 201 });
+          return NextResponse.json(createdItem, { status: 201 });
         }
       } catch (retryError) {
         console.error('Error in retry attempt:', retryError);
         return NextResponse.json(
-          { error: 'Failed to create action item(s) even with schema-compatible fields', details: String(retryError) },
+          { error: 'Failed to create action item(s) after retry', details: String(retryError) },
           { status: 500 }
         );
       }

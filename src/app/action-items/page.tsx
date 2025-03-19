@@ -129,7 +129,7 @@ export default function ActionItemsPage() {
   }
 
   /**
-   * Fetches categories from action items
+   * Fetches categories from action items and action lists
    */
   const fetchCategories = async () => {
     if (!isAuthenticated) return;
@@ -137,8 +137,8 @@ export default function ActionItemsPage() {
     setIsLoadingCategories(true);
     
     try {
-      // Fetch all action items to extract categories
-      const response = await fetch('/api/action-items');
+      // First fetch all action items to extract virtual categories from bracket prefixes
+      const response = await fetch('/api/action-items?limit=1000');
       
       if (!response.ok) {
         throw new Error('Failed to fetch action items');
@@ -151,7 +151,7 @@ export default function ActionItemsPage() {
       let completedCount = 0;
       
       // Extract categories from items with bracketed prefixes
-      const categoryMap = new Map<string, { total: number, completed: number }>();
+      const categoryMap = new Map<string, { total: number, completed: number, isParent: boolean, parentName?: string }>();
       
       items.forEach((item: any) => {
         // Count all items
@@ -171,7 +171,12 @@ export default function ActionItemsPage() {
           
           // If category doesn't exist yet, initialize it
           if (!categoryMap.has(categoryName)) {
-            categoryMap.set(categoryName, { total: 0, completed: 0 });
+            categoryMap.set(categoryName, { 
+              total: 0, 
+              completed: 0, 
+              isParent: isParentCategory(categoryName),
+              parentName: undefined
+            });
           }
           
           // Get current counts
@@ -194,25 +199,70 @@ export default function ActionItemsPage() {
       setTotalItems(totalCount);
       setCompletedItems(completedCount);
       
+      // Now, also fetch real action lists to include them as categories
+      const listsResponse = await fetch('/api/action-item-lists');
+      if (listsResponse.ok) {
+        const actionLists = await listsResponse.json();
+        console.log(`Fetched ${actionLists.length} action lists for categories`);
+        
+        // Process each list to get its full details (including parentId)
+        for (const list of actionLists) {
+          try {
+            const listDetailResponse = await fetch(`/api/action-item-lists/${list.id}`);
+            if (listDetailResponse.ok) {
+              const listDetails = await listDetailResponse.json();
+              
+              // Add this list as a category if it's not already in our map
+              if (!categoryMap.has(list.name)) {
+                // Count items in this list
+                const listItems = items.filter((item: any) => item.listId === list.id);
+                const listCompletedItems = listItems.filter((item: any) => item.isCompleted);
+                
+                // Create category entry
+                categoryMap.set(list.name, {
+                  total: listItems.length,
+                  completed: listCompletedItems.length,
+                  isParent: !listDetails.parentId, // It's a parent if it has no parentId
+                  parentName: listDetails.parentId ? 
+                    // Find parent list name using the parentId
+                    actionLists.find((l: any) => l.id === listDetails.parentId)?.name : 
+                    undefined
+                });
+                
+                console.log(`Added real list as category: ${list.name}, isParent: ${!listDetails.parentId}, parentName: ${
+                  listDetails.parentId ? 
+                    actionLists.find((l: any) => l.id === listDetails.parentId)?.name : 
+                    'none'
+                }`);
+              }
+            }
+          } catch (err) {
+            console.error(`Error getting details for list ${list.id}:`, err);
+          }
+        }
+      }
+      
       // Convert to array and identify parent/child relationships
       const categoriesArray: Category[] = Array.from(categoryMap.entries())
-        .map(([name, counts]) => ({
+        .map(([name, data]) => ({
           name,
-          count: counts.total,
-          completedCount: counts.completed,
-          isParent: isParentCategory(name),
-          parentName: undefined
+          count: data.total,
+          completedCount: data.completed,
+          isParent: data.isParent,
+          parentName: data.parentName
         }));
       
       // Find parent categories
       const parentCategories = categoriesArray.filter(cat => cat.isParent);
       
-      // Establish parent-child relationships
+      // For categories that don't already have a parent assigned, try to find a match
       categoriesArray.forEach(category => {
-        if (!category.isParent) {
+        if (!category.isParent && !category.parentName) {
           category.parentName = findBestParentMatch(category.name, parentCategories);
         }
       });
+      
+      console.log(`Processed ${categoriesArray.length} categories: ${categoriesArray.length - parentCategories.length} child categories and ${parentCategories.length} parent categories`);
       
       setCategories(categoriesArray);
     } catch (error) {
@@ -280,11 +330,99 @@ export default function ActionItemsPage() {
     setKey(prev => prev + 1); // Force re-render with new filter
   }
 
-  // Fetch categories on component mount
+  // Handle URL parameters on component mount
   useEffect(() => {
-    if (isAuthenticated) {
-      fetchCategories();
+    if (!isAuthenticated) return;
+    
+    // Check for listId in URL parameters
+    const params = new URLSearchParams(window.location.search);
+    const listId = params.get('listId');
+    const showChildren = params.get('showChildren') === 'true';
+    
+    console.log(`URL parameters: listId=${listId}, showChildren=${showChildren}`);
+    
+    if (listId) {
+      // Fetch list details to get the name
+      const fetchListName = async () => {
+        try {
+          console.log(`Fetching list details for ID: ${listId}`);
+          const response = await fetch(`/api/action-item-lists/${listId}`);
+          
+          if (!response.ok) {
+            throw new Error(`Failed to fetch list: ${response.status}`);
+          }
+          
+          const list = await response.json();
+          console.log('List details received:', list);
+          
+          if (!list || !list.name) {
+            console.error('Invalid list data received:', list);
+            toast.error('Could not load the requested list');
+            return;
+          }
+          
+          // Set this category as selected
+          setSelectedCategory(list.name);
+          
+          console.log(`Selected list: ${list.name} (${listId}), showing children: ${showChildren}`);
+          
+          // Always show child categories when viewing a list
+          if (showChildren) {
+            // Store that we're showing a parent with children
+            localStorage.setItem('showingParentList', listId);
+            console.log('Stored showingParentList in localStorage:', listId);
+            
+            // Also fetch child lists if this is a parent list
+            const fetchChildLists = async () => {
+              try {
+                // For simplicity, we'll check for child lists by making another API call
+                const childListsResponse = await fetch('/api/action-item-lists');
+                if (childListsResponse.ok) {
+                  const allLists = await childListsResponse.json();
+                  
+                  // Look for lists that have this listId as their parentId
+                  const childLists = allLists.filter((childList: any) => {
+                    // First check detailed information about the list
+                    return fetch(`/api/action-item-lists/${childList.id}`)
+                      .then(res => res.json())
+                      .then(listDetails => listDetails.parentId === listId)
+                      .catch(() => false);
+                  });
+                  
+                  console.log(`Found ${childLists.length} child lists for ${list.name}`);
+                  
+                  // Update categories to include these child lists
+                  if (childLists.length > 0) {
+                    // Force a refresh of categories to include child lists
+                    fetchCategories();
+                  }
+                }
+              } catch (error) {
+                console.error('Error fetching child lists:', error);
+              }
+            };
+            
+            fetchChildLists();
+          } else {
+            localStorage.removeItem('showingParentList');
+          }
+          
+          // Force refresh the action items list
+          setKey(prev => prev + 1);
+        } catch (error) {
+          console.error('Error fetching list details:', error);
+          toast.error('Failed to load the requested list');
+        }
+      };
+      
+      fetchListName();
+    } else {
+      // Clear selection if no listId in URL
+      setSelectedCategory(null);
+      localStorage.removeItem('showingParentList');
     }
+    
+    fetchCategories();
   }, [isAuthenticated]);
 
   return (
@@ -395,7 +533,7 @@ export default function ActionItemsPage() {
                       onClick={() => selectCategory(null)}
                       className={`w-full flex items-center justify-between p-2 rounded-md text-left ${
                         selectedCategory === null 
-                          ? 'bg-blue-50 text-blue-700' 
+                          ? 'bg-blue-50 text-blue-700 font-medium border-l-4 border-blue-500 pl-1' 
                           : 'text-gray-700 hover:bg-gray-50'
                       }`}
                     >
@@ -417,40 +555,46 @@ export default function ActionItemsPage() {
                     {/* Parent categories */}
                     {categories
                       .filter(cat => cat.isParent)
-                      .map(category => (
-                        <div key={category.name} className="space-y-1">
-                          <button
-                            onClick={() => selectCategory(category.name)}
-                            className={`w-full flex items-center justify-between p-2 rounded-md text-left ${
-                              selectedCategory === category.name 
-                                ? 'bg-blue-50 text-blue-700' 
-                                : 'text-gray-700 hover:bg-gray-50'
-                            }`}
-                          >
-                            <span className="flex items-center gap-2">
-                              <Folder size={16} />
-                              {category.name}
-                            </span>
-                            <span className={`text-xs px-2 py-0.5 rounded-full ${
-                              category.completedCount === category.count && category.count > 0
-                                ? 'bg-green-100 text-green-700'
-                                : 'bg-gray-100 text-gray-700'
-                            }`}>
-                              {category.completedCount}/{category.count}
-                            </span>
-                          </button>
-                          
-                          {/* Child categories for this parent */}
-                          <div className="pl-4 border-l-2 border-gray-100 ml-2 space-y-1">
-                            {categories
-                              .filter(cat => cat.parentName === category.name)
-                              .map(childCategory => (
+                      .map(category => {
+                        // Check if this category or any of its children is selected
+                        const childCategories = categories.filter(cat => cat.parentName === category.name);
+                        const isActive = selectedCategory === category.name || 
+                                       childCategories.some(child => child.name === selectedCategory);
+                        
+                        return (
+                          <div key={category.name} className={`space-y-1 ${isActive ? 'bg-blue-50 bg-opacity-50 p-1 rounded-md' : ''}`}>
+                            <button
+                              onClick={() => selectCategory(category.name)}
+                              className={`w-full flex items-center justify-between p-2 rounded-md text-left ${
+                                selectedCategory === category.name 
+                                  ? 'bg-blue-50 text-blue-700 font-medium border-l-4 border-blue-500 pl-1' 
+                                  : isActive
+                                    ? 'text-blue-600 font-medium'
+                                    : 'text-gray-700 hover:bg-gray-50'
+                              }`}
+                            >
+                              <span className="flex items-center gap-2">
+                                <Folder size={16} />
+                                {category.name}
+                              </span>
+                              <span className={`text-xs px-2 py-0.5 rounded-full ${
+                                category.completedCount === category.count && category.count > 0
+                                  ? 'bg-green-100 text-green-700'
+                                  : 'bg-gray-100 text-gray-700'
+                              }`}>
+                                {category.completedCount}/{category.count}
+                              </span>
+                            </button>
+                            
+                            {/* Child categories for this parent */}
+                            <div className={`pl-4 border-l-2 ml-2 space-y-1 ${isActive ? 'border-blue-300' : 'border-gray-100'}`}>
+                              {childCategories.map(childCategory => (
                                 <button
                                   key={childCategory.name}
                                   onClick={() => selectCategory(childCategory.name)}
                                   className={`w-full flex items-center justify-between p-2 rounded-md text-left ${
                                     selectedCategory === childCategory.name 
-                                      ? 'bg-blue-50 text-blue-700' 
+                                      ? 'bg-blue-50 text-blue-700 font-medium border-l-4 border-blue-500 pl-1' 
                                       : 'text-gray-700 hover:bg-gray-50'
                                   }`}
                                 >
@@ -467,9 +611,10 @@ export default function ActionItemsPage() {
                                   </span>
                                 </button>
                               ))}
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        )
+                      })}
                     
                     {/* Uncategorized parent categories */}
                     {categories
@@ -480,7 +625,7 @@ export default function ActionItemsPage() {
                           onClick={() => selectCategory(category.name)}
                           className={`w-full flex items-center justify-between p-2 rounded-md text-left ${
                             selectedCategory === category.name 
-                              ? 'bg-blue-50 text-blue-700' 
+                              ? 'bg-blue-50 text-blue-700 font-medium border-l-4 border-blue-500 pl-1' 
                               : 'text-gray-700 hover:bg-gray-50'
                           }`}
                         >
@@ -506,32 +651,52 @@ export default function ActionItemsPage() {
             <div className="flex-1">
               <div className="bg-white border border-gray-200 rounded-lg shadow-sm">
                 <div className="p-6">
-                  <h2 className="text-xl font-semibold mb-4 text-gray-800 flex items-center">
-                    {selectedCategory ? (
-                      <>
-                        <span className="flex items-center gap-2">
-                          <TagIcon size={18} className="text-blue-500" />
-                          {selectedCategory}
-                        </span>
-                        <button 
-                          onClick={() => selectCategory(null)}
-                          className="ml-2 text-xs text-blue-500 hover:text-blue-700"
-                        >
-                          (view all)
-                        </button>
-                      </>
-                    ) : (
-                      "All Action Items"
+                  <div className="flex items-center gap-2 mb-4">
+                    <h2 className="text-xl font-bold text-gray-800">
+                      {selectedCategory ? (
+                        <>
+                          <span>{selectedCategory}</span>
+                          <button
+                            onClick={() => selectCategory(null)}
+                            className="ml-2 text-gray-400 hover:text-gray-600"
+                            title="Clear filter"
+                          >
+                            <X size={16} />
+                          </button>
+                        </>
+                      ) : (
+                        "All Action Items"
+                      )}
+                    </h2>
+                    {isLoadingCategories && (
+                      <RefreshCw size={16} className="animate-spin text-blue-500" />
                     )}
-                  </h2>
+                  </div>
                   
-                  {/* The action items list component with category filter */}
+                  {/* Show breadcrumb path for categories with parent relationships */}
+                  {selectedCategory && categories.some(cat => cat.name === selectedCategory && cat.parentName) && (
+                    <div className="mb-4 text-sm text-gray-500 flex items-center">
+                      <span 
+                        className="hover:text-blue-600 cursor-pointer"
+                        onClick={() => selectCategory(categories.find(cat => cat.name === selectedCategory)?.parentName || null)}
+                      >
+                        {categories.find(cat => cat.name === selectedCategory)?.parentName}
+                      </span>
+                      <span className="mx-2">→</span>
+                      <span className="font-medium">{selectedCategory}</span>
+                    </div>
+                  )}
+                  
                   <ActionItemsList 
                     key={key} 
-                    rootItemsOnly={true}
-                    onCreateNewItem={openNewItemForm}
-                    categoryFilter={selectedCategory}
-                    onItemStatusChange={fetchCategories}
+                    categoryFilter={selectedCategory} 
+                    showChildCategories={localStorage.getItem('showingParentList') !== null}
+                    onItemAdded={refreshList}
+                    onItemChanged={refreshList}
+                    onItemDeleted={refreshList}
+                    listId={new URLSearchParams(window.location.search).get('listId')}
+                    hasCategories={categories.length > 0}
+                    sidebarVisible={true}
                   />
                 </div>
               </div>

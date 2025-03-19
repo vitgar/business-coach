@@ -102,13 +102,36 @@ export async function POST(request: Request) {
       const parsedResponse = JSON.parse(responseContent || '{"actionLists": []}')
       actionLists = parsedResponse.actionLists || []
       
-      // Ensure all action lists have valid IDs
-      actionLists = actionLists.map(list => ({
-        ...list,
-        id: list.id || uuidv4(),
-        // Ensure parentId is either a string or undefined/null
-        parentId: list.parentId || undefined
-      }))
+      // Create a mapping between original IDs and new UUIDs
+      const idMapping: Record<string, string> = {};
+      
+      // First pass: Generate new UUIDs for all lists
+      actionLists = actionLists.map(list => {
+        const originalId = list.id;
+        const newId = uuidv4(); // Generate a proper UUID
+        
+        // Store the mapping
+        idMapping[originalId] = newId;
+        
+        return {
+          ...list,
+          id: newId,
+          // Don't set parentId yet - we'll update it in the second pass
+          parentId: list.parentId || undefined
+        };
+      });
+      
+      // Second pass: Update parentId references using the mapping
+      actionLists = actionLists.map(list => {
+        if (list.parentId && idMapping[list.parentId]) {
+          // Replace the original parentId with the new UUID
+          return {
+            ...list,
+            parentId: idMapping[list.parentId]
+          };
+        }
+        return list;
+      });
       
       // Post-process to improve quality
       actionLists = actionLists

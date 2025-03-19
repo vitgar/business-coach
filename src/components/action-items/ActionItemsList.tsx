@@ -15,6 +15,7 @@ interface ActionItem {
   updatedAt: string
   notes?: string
   ordinal: number
+  listId?: string // ID of the action list this item belongs to
   _count?: {
     children: number
   }
@@ -27,8 +28,15 @@ interface ActionItemsListProps {
   parentId?: string // Optional filter by parent action item 
   rootItemsOnly?: boolean // Only show root items (no parents)
   categoryFilter?: string | null // Filter by category prefix like [Category]
+  showChildCategories?: boolean // Whether to show items from child categories of the selected category
+  listId?: string | null // The ID of the list to filter items by
+  hasCategories?: boolean // Whether there are categories available in the sidebar
+  sidebarVisible?: boolean // Whether the categories sidebar is visible
   onCreateNewItem?: () => void // Optional callback for creating a new item
   onItemStatusChange?: () => void // Optional callback for when item status changes
+  onItemAdded?: () => void // Callback when item is added
+  onItemChanged?: () => void // Callback when item is changed
+  onItemDeleted?: () => void // Callback when item is deleted
 }
 
 /**
@@ -45,8 +53,15 @@ export default function ActionItemsList({
   parentId,
   rootItemsOnly = true,
   categoryFilter = null,
+  showChildCategories = false,
+  listId,
+  hasCategories,
+  sidebarVisible,
   onCreateNewItem,
-  onItemStatusChange
+  onItemStatusChange,
+  onItemAdded,
+  onItemChanged,
+  onItemDeleted
 }: ActionItemsListProps) {
   const { userId } = useAuth()
   const [actionItems, setActionItems] = useState<ActionItem[]>([])
@@ -56,6 +71,8 @@ export default function ActionItemsList({
   const [updateInProgress, setUpdateInProgress] = useState<string | null>(null)
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null)
   const [noteText, setNoteText] = useState('')
+  const [childCategories, setChildCategories] = useState<string[]>([])
+  const [listNames, setListNames] = useState<Record<string, string>>({})
 
   /**
    * Fetches action items from the API based on provided filters
@@ -71,6 +88,12 @@ export default function ActionItemsList({
       if (messageId) params.append('messageId', messageId)
       if (parentId) params.append('parentId', parentId)
       if (rootItemsOnly) params.append('rootItemsOnly', 'true')
+      if (listId) params.append('listId', listId)
+      
+      // Add a larger limit to ensure we get all items
+      params.append('limit', '1000')
+      
+      console.log(`Fetching action items with params: ${params.toString()}`)
       
       // Fetch action items from API
       const response = await fetch(`/api/action-items?${params.toString()}`)
@@ -81,7 +104,64 @@ export default function ActionItemsList({
       }
       
       const data = await response.json()
+      console.log(`Received ${data.length} action items from API`)
+      
+      // Log the first few items for debugging
+      if (data.length > 0) {
+        console.log('Sample action items:', data.slice(0, 3))
+      }
+      
       setActionItems(data)
+      
+      // If we need to support child categories, identify them for filtering
+      if (showChildCategories && categoryFilter) {
+        // Extract all categories from items
+        const categories = new Set<string>();
+        data.forEach((item: ActionItem) => {
+          const bracketMatch = item.content.match(/^\s*[\[\{](.*?)[\]\}]/);
+          if (bracketMatch) {
+            categories.add(bracketMatch[1].trim());
+          }
+        });
+        
+        // Use a simplified approach to identify potential child categories
+        // based on common naming patterns
+        const potentialChildren = Array.from(categories).filter(cat => {
+          if (cat === categoryFilter) return false; // Skip the parent category itself
+          
+          // Check if this category is related to the parent category
+          // This is a simplified approach - in a real app, you'd use a more robust method
+          
+          // 1. Check if category contains the parent name
+          if (cat.includes(categoryFilter)) return true;
+          
+          // 2. Check if it's a common subcategory pattern (e.g., "Business Plan > Executive Summary")
+          if (categoryFilter.includes("Business Plan") && 
+              ["Executive Summary", "Market Analysis", "Company Description", 
+               "Organization", "Products", "Marketing", "Financials"].some(term => 
+              cat.includes(term))) {
+            return true;
+          }
+          
+          // 3. Look for other semantic connections (very simplified)
+          const parentWords = categoryFilter.toLowerCase().split(/\s+/);
+          const childWords = cat.toLowerCase().split(/\s+/);
+          let commonWords = 0;
+          
+          childWords.forEach(word => {
+            if (word.length > 3 && parentWords.includes(word)) {
+              commonWords++;
+            }
+          });
+          
+          return commonWords >= 1; // At least one meaningful common word
+        });
+        
+        setChildCategories(potentialChildren);
+        console.log(`Found ${potentialChildren.length} potential child categories for ${categoryFilter}:`, potentialChildren);
+      } else {
+        setChildCategories([]);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong')
       console.error('Error fetching action items:', err)
@@ -96,20 +176,48 @@ export default function ActionItemsList({
   useEffect(() => {
     if (categoryFilter === null) {
       // If no category filter, use all items
+      console.log(`No category filter, showing all ${actionItems.length} items`)
       setFilteredItems(actionItems)
     } else {
+      console.log(`Filtering by category: "${categoryFilter}", showChildCategories: ${showChildCategories}`)
+      console.log(`Child categories: ${childCategories.join(', ')}`)
+      
       // Filter items that match the specified category
       const filtered = actionItems.filter(item => {
-        const bracketMatch = item.content.match(/^\s*[\[\{](.*?)[\]\}]/)
-        if (bracketMatch) {
-          const itemCategory = bracketMatch[1].trim()
-          return itemCategory === categoryFilter
+        // If we have a listId and the item has a matching listId, include it
+        if (listId && item.listId === listId) {
+          console.log(`Found listId match for item: ${item.content.substring(0, 50)}...`)
+          return true;
         }
-        return false
-      })
-      setFilteredItems(filtered)
+        
+        // First look for category in bracketed prefix
+        const bracketMatch = item.content.match(/^\s*[\[\{](.*?)[\]\}]/);
+        
+        if (bracketMatch) {
+          const itemCategory = bracketMatch[1].trim();
+          
+          // For debugging
+          if (itemCategory === categoryFilter) {
+            console.log(`Found direct match for item: ${item.content.substring(0, 50)}...`)
+          }
+          
+          // Include exact category match
+          if (itemCategory === categoryFilter) return true;
+          
+          // If showing child categories, include those too
+          if (showChildCategories && childCategories.includes(itemCategory)) {
+            console.log(`Found child category match (${itemCategory}) for item: ${item.content.substring(0, 50)}...`)
+            return true;
+          }
+        }
+        
+        return false;
+      });
+      
+      console.log(`Filtered to ${filtered.length} items`)
+      setFilteredItems(filtered);
     }
-  }, [actionItems, categoryFilter])
+  }, [actionItems, categoryFilter, showChildCategories, childCategories, listId]);
 
   /**
    * Toggles the completion status of an action item
@@ -148,6 +256,11 @@ export default function ActionItemsList({
       if (onItemStatusChange) {
         onItemStatusChange()
       }
+      
+      // Call the more specific callback if provided
+      if (onItemChanged) {
+        onItemChanged()
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update')
       console.error('Error updating action item:', err)
@@ -179,6 +292,11 @@ export default function ActionItemsList({
       // Notify parent component about the change
       if (onItemStatusChange) {
         onItemStatusChange()
+      }
+      
+      // Call the more specific callback if provided
+      if (onItemDeleted) {
+        onItemDeleted()
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to delete')
@@ -266,10 +384,45 @@ export default function ActionItemsList({
     return content.replace(prefixPattern, '').trim();
   }
 
-  // Fetch action items on component mount and when filters change
+  // Fetch action items on component mount
   useEffect(() => {
     fetchActionItems()
-  }, [conversationId, messageId, parentId, rootItemsOnly, userId])
+  }, [conversationId, messageId, parentId, rootItemsOnly, showChildCategories, listId])
+
+  // Fetch list names for any listIds we have
+  useEffect(() => {
+    // First collect all unique list IDs from our items
+    const uniqueListIds = Array.from(new Set(
+      actionItems
+        .filter(item => !!item.listId)
+        .map(item => item.listId as string)
+    ));
+    
+    if (uniqueListIds.length === 0) return;
+    
+    console.log(`Fetching names for ${uniqueListIds.length} lists`);
+    
+    // Fetch each list's details to get its name
+    const fetchListNames = async () => {
+      const nameMap: Record<string, string> = {};
+      
+      for (const id of uniqueListIds) {
+        try {
+          const response = await fetch(`/api/action-item-lists/${id}`);
+          if (response.ok) {
+            const list = await response.json();
+            nameMap[id] = list.name;
+          }
+        } catch (err) {
+          console.error(`Error fetching list name for ${id}:`, err);
+        }
+      }
+      
+      setListNames(nameMap);
+    };
+    
+    fetchListNames();
+  }, [actionItems]);
 
   // If loading, show loading indicator
   if (isLoading) {
@@ -337,7 +490,7 @@ export default function ActionItemsList({
 
   // Render the action items list
   return (
-    <div className="space-y-3">
+    <div className={`space-y-3 ${sidebarVisible && hasCategories ? 'pl-0' : 'pl-0'}`}>
       {filteredItems
         .map(item => (
         <div 
@@ -370,6 +523,13 @@ export default function ActionItemsList({
               <p className={`${item.isCompleted ? 'line-through text-gray-500' : 'text-gray-800'}`}>
                 {getDisplayContent(item.content)}
               </p>
+              
+              {/* Show list name if we're in "All Items" view and not showing by category already */}
+              {!categoryFilter && item.listId && (
+                <div className="mt-1 text-xs bg-blue-50 text-blue-600 inline-block px-2 py-0.5 rounded-full">
+                  {listNames[item.listId] || item.listId}
+                </div>
+              )}
               
               {/* Show notes if available */}
               {item.notes && (
