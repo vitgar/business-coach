@@ -39,6 +39,13 @@ interface ActionItemsListProps {
   onItemDeleted?: () => void // Callback when item is deleted
 }
 
+// Declare a global interface to add the custom cache property to Window
+declare global {
+  interface Window {
+    listNameCache: Record<string, string>;
+  }
+}
+
 /**
  * ActionItemsList Component
  * 
@@ -404,29 +411,73 @@ export default function ActionItemsList({
     
     if (uniqueListIds.length === 0) return;
     
-    console.log(`Fetching names for ${uniqueListIds.length} lists`);
+    // Initialize cache if it doesn't exist
+    if (!window.listNameCache) {
+      window.listNameCache = {};
+    }
+    
+    // Check which lists we need to fetch (not in cache already)
+    const listsToFetch = uniqueListIds.filter(id => !window.listNameCache[id]);
+    
+    // If we already have all the lists in cache, just use those
+    if (listsToFetch.length === 0) {
+      const cachedNames = uniqueListIds.reduce((acc, id) => {
+        acc[id] = window.listNameCache[id];
+        return acc;
+      }, {} as Record<string, string>);
+      
+      setListNames(cachedNames);
+      console.log(`Using cached names for all ${uniqueListIds.length} lists`);
+      return;
+    }
+    
+    console.log(`Fetching ${listsToFetch.length} uncached lists out of ${uniqueListIds.length} total lists`);
     
     // Fetch each list's details to get its name
     const fetchListNames = async () => {
-      const nameMap: Record<string, string> = {};
+      // Start with existing cached names
+      const newNames: Record<string, string> = {};
       
-      for (const id of uniqueListIds) {
-        try {
-          const response = await fetch(`/api/action-item-lists/${id}`);
-          if (response.ok) {
-            const list = await response.json();
-            nameMap[id] = list.name;
-          }
-        } catch (err) {
-          console.error(`Error fetching list name for ${id}:`, err);
+      // Add already cached names first
+      uniqueListIds.forEach(id => {
+        if (window.listNameCache[id]) {
+          newNames[id] = window.listNameCache[id];
         }
+      });
+      
+      // Process in batches to avoid too many concurrent requests
+      const batchSize = 5;
+      for (let i = 0; i < listsToFetch.length; i += batchSize) {
+        const batch = listsToFetch.slice(i, i + batchSize);
+        
+        const results = await Promise.all(batch.map(async (id) => {
+          try {
+            const response = await fetch(`/api/action-item-lists/${id}`);
+            if (response.ok) {
+              const list = await response.json();
+              return { id, name: list.name };
+            }
+          } catch (err) {
+            console.error(`Error fetching list name for ${id}:`, err);
+          }
+          return null;
+        }));
+        
+        // Update names with successful results
+        results.forEach(result => {
+          if (result) {
+            newNames[result.id] = result.name;
+            window.listNameCache[result.id] = result.name; // Store in cache for future use
+          }
+        });
       }
       
-      setListNames(nameMap);
+      // Set all names at once to avoid multiple state updates
+      setListNames(newNames);
     };
     
     fetchListNames();
-  }, [actionItems]);
+  }, [actionItems]); // Remove listNames from dependencies
 
   // If loading, show loading indicator
   if (isLoading) {

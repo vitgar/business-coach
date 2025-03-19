@@ -60,12 +60,19 @@ export async function GET(request: Request) {
     const transformedLists = actionItemLists.map(list => {
       // Cast to our enhanced type to access the JSON fields
       const enhancedList = list as unknown as EnhancedActionItemList;
+      const metadata = enhancedList.itemNotes || {};
+      
+      // Log the parentId for debugging
+      if (metadata.parentId) {
+        console.log(`List "${enhancedList.title}" has parentId: ${metadata.parentId}`);
+      }
+      
       return {
         id: enhancedList.id,
         name: enhancedList.title,
-        color: enhancedList.color || 'light-blue',
-        topicId: enhancedList.topicId,
-        parentId: enhancedList.parentId
+        color: metadata.color || 'light-blue',
+        topicId: metadata.topicId,
+        parentId: metadata.parentId
       };
     })
 
