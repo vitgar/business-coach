@@ -120,7 +120,7 @@ export async function GET(request: Request) {
     const notes = await prisma.businessNote.findMany({
       where: whereClause,
       orderBy: {
-        createdAt: 'desc'
+        createdAt: 'asc'
       }
     })
     

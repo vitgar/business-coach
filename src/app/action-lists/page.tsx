@@ -428,10 +428,21 @@ export default function ActionListsPage() {
   /**
    * Gets child lists for a specific parent list
    * @param parentId ID of the parent list
-   * @returns Array of child lists
+   * @returns Array of child lists in reverse order (newest first)
    */
   const getChildLists = (parentId: string): ActionList[] => {
-    return actionLists.filter(list => list.parentId === parentId);
+    // Filter lists to get only children of the specified parent
+    const children = actionLists.filter(list => list.parentId === parentId);
+    
+    // Sort children by creation date in descending order (newest first)
+    return children.sort((a, b) => {
+      // Handle missing createdAt dates gracefully
+      const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      
+      // Return in reverse order (newest first)
+      return dateB - dateA;
+    });
   }
 
   /**
@@ -842,14 +853,25 @@ export default function ActionListsPage() {
   const renderActionList = (list: ActionList) => {
     const isExpanded = expandedLists[list.id] || false
     const items = listItems[list.id] || []
-    const hasItems = items.length > 0
+    
+    // Sort items by creation date (newest first)
+    const sortedItems = [...items].sort((a, b) => {
+      // Handle missing createdAt dates gracefully
+      const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      
+      // Return in reverse order (newest first)
+      return dateB - dateA;
+    });
+    
+    const hasItems = sortedItems.length > 0
     const isLoaded = !!listItems[list.id] || !!list.isVirtual
     const childLists = getChildLists(list.id)
     const hasChildren = childLists.length > 0
     
     // Debug the items for this list (will only show in browser console)
     if (isExpanded) {
-      console.log(`Items for list ${list.name}:`, items)
+      console.log(`Items for list ${list.name}:`, sortedItems)
     }
     
     // Get the background color class based on the list color
@@ -981,10 +1003,10 @@ export default function ActionListsPage() {
             ) : hasItems ? (
               <>
                 <div className="mb-3 text-xs text-gray-500">
-                  Showing {items.length} items in this list
+                  Showing {sortedItems.length} items in this list
                 </div>
                 <ul className="space-y-2">
-                  {items.map(item => (
+                  {sortedItems.map(item => (
                     <li key={item.id} className="flex items-center p-2 border border-gray-200 bg-white rounded-md">
                       <div className={`flex-shrink-0 w-5 h-5 mr-3 ${item.isCompleted ? 'text-green-500' : 'text-gray-300'}`}>
                         {item.isCompleted ? (
@@ -1040,6 +1062,16 @@ export default function ActionListsPage() {
     
     if (lists.length === 0) return null;
     
+    // Sort lists by creation date (newest first)
+    const sortedLists = [...lists].sort((a, b) => {
+      // Handle missing createdAt dates gracefully
+      const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      
+      // Return in reverse order (newest first)
+      return dateB - dateA;
+    });
+    
     return (
       <div>
         <h2 className="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b border-gray-200 flex items-center justify-between">
@@ -1052,7 +1084,7 @@ export default function ActionListsPage() {
           </span>
         </h2>
         <div className="space-y-2">
-          {lists.map(list => renderListWithChildren(list, 0))}
+          {sortedLists.map(list => renderListWithChildren(list, 0))}
         </div>
       </div>
     );
@@ -1239,7 +1271,7 @@ export default function ActionListsPage() {
               {/* If no lists at all, show a message */}
               {actionLists.length === 0 && !isLoading && (
                 <div className="bg-white rounded-lg p-8 text-center">
-                  <ListTodo className="h-12 w-12 mx-auto text-gray-300 mb-4" />
+                  <ListTodo className="h-12 w-12 mx-auto mb-4 text-gray-300" />
                   <h3 className="text-lg font-medium text-gray-900 mb-2">No Action Lists Yet</h3>
                   <p className="text-gray-500 mb-4">
                     Create action lists from your conversations or use the HowTo Guide to generate step-by-step action lists automatically.

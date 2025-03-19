@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import ClientLayout from '@/components/ClientLayout'
 import SimpleChat from '@/components/chat/SimpleChat'
 import { toast } from 'react-toastify'
+import Link from 'next/link'
 
 /**
  * Interface for a chat message
@@ -302,28 +303,55 @@ export default function HowToPage() {
     }
     
     try {
-      const response = await fetch('/api/notes', {
+      // First, get a concise summary of the content
+      const summarizeResponse = await fetch('/api/ai/summarize', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
           content: currentResponse,
-          title: conversationContext.mainTopic 
-            ? `HowTo: ${conversationContext.mainTopic}` 
-            : 'HowTo Highlights',
+          maxLength: 750 // Adjust for desired summary length
+        })
+      })
+      
+      if (!summarizeResponse.ok) {
+        const errorData = await summarizeResponse.json()
+        throw new Error(errorData.error || 'Failed to summarize content')
+      }
+      
+      // Get the summarized content
+      const { summary } = await summarizeResponse.json()
+      
+      // Format the title based on the conversation context
+      const title = conversationContext.mainTopic 
+        ? `HowTo: ${conversationContext.mainTopic}` 
+        : 'HowTo Highlights'
+      
+      // Add a header to the summary to indicate the original content
+      const formattedSummary = `# Key Points Summary\n\n${summary}\n\n---\n\n*This is an AI-generated summary of the key information.*`
+      
+      // Save the summary to the database
+      const saveResponse = await fetch('/api/notes', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          content: formattedSummary,
+          title,
           businessId: currentBusinessId || undefined,
           conversationId: currentConversationId || undefined,
           type: 'highlights'
         })
       })
       
-      if (!response.ok) {
-        const errorData = await response.json()
+      if (!saveResponse.ok) {
+        const errorData = await saveResponse.json()
         throw new Error(errorData.error || 'Failed to save highlights')
       }
       
-      toast.success('Highlights saved successfully')
+      toast.success('Highlights summary saved successfully')
     } catch (error) {
       console.error('Error saving highlights:', error)
       toast.error(error instanceof Error ? error.message : 'Failed to save highlights')
@@ -437,6 +465,13 @@ export default function HowToPage() {
               <p className="text-gray-600 mt-2">
                 Ask specific questions about how to accomplish different business activities.
                 Get step-by-step guidance and create action lists from the answers.
+                <Link 
+                  href="/howto/help" 
+                  className="ml-2 text-blue-600 hover:text-blue-800 underline inline-flex items-center"
+                >
+                  <HelpCircle size={14} className="mr-1" />
+                  How to use this guide
+                </Link>
               </p>
             </div>
             
@@ -552,10 +587,14 @@ export default function HowToPage() {
                   <button
                     onClick={saveHighlightsSummary}
                     disabled={!currentResponse || isProcessing}
-                    className="flex items-center justify-center gap-2 px-4 py-3 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:bg-gray-300 disabled:text-gray-500 transition-colors"
+                    className="flex items-center justify-center gap-2 px-4 py-3 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:bg-gray-300 disabled:text-gray-500 transition-colors relative group"
                   >
                     <Save size={20} />
                     <span className="font-medium">SAVE HIGHLIGHTS SUMMARY</span>
+                    <div className="absolute hidden group-hover:block w-64 bg-gray-800 text-white text-xs rounded py-2 px-3 bottom-full mb-2 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                      Creates a concise bullet-point summary of key information from this response
+                      <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-solid border-t-gray-800 border-t-8 border-x-transparent border-x-8 border-b-0"></div>
+                    </div>
                   </button>
                   
                   {/* Display conversation status */}
@@ -631,8 +670,11 @@ export default function HowToPage() {
                       <p className="mb-2">
                         <strong>CREATE ACTION LIST</strong> - AI analyzes the conversation to extract structured action lists with hierarchical relationships.
                       </p>
-                      <p>
-                        <strong>SAVE HIGHLIGHTS SUMMARY</strong> - Save the key points and highlights from this response for future reference.
+                      <p className="mb-2">
+                        <strong>SAVE HIGHLIGHTS SUMMARY</strong> - Creates a concise bullet-point summary of key information from this response. The summary focuses on the most important points, making it easier to review later.
+                      </p>
+                      <p className="text-xs mt-3 text-blue-600">
+                        Summaries are stored in the Summaries section, accessible from the navigation menu.
                       </p>
                     </div>
                   </div>

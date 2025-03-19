@@ -135,7 +135,7 @@ export async function GET(request: Request) {
     const actionItems = await prisma.actionItem.findMany({
       where: whereClause,
       orderBy: {
-        ordinal: 'asc'
+        createdAt: 'desc'
       },
       include: {
         _count: {

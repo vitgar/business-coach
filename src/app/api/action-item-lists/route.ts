@@ -52,7 +52,7 @@ export async function GET(request: Request) {
         userId: tempUser.id
       },
       orderBy: {
-        createdAt: 'desc'
+        createdAt: 'asc'
       }
     })
 

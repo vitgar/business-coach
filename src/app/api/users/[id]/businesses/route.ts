@@ -29,7 +29,7 @@ export async function GET(
         content: true // Include content to extract business name
       },
       orderBy: {
-        updatedAt: 'desc'
+        createdAt: 'desc'
       }
     })
     

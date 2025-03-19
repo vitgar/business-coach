@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { 
   Menu, User, LogOut, ChevronDown, 
-  Grid, FileText, Settings, ListTodo
+  Grid, FileText, Settings, ListTodo, BookOpen
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import BusinessSelector from '@/components/BusinessSelector'
@@ -53,6 +53,13 @@ export default function Navigation() {
               >
                 <ListTodo className="h-5 w-5 inline-block mr-1" />
                 Action Items
+              </Link>
+              <Link
+                href="/summaries"
+                className="px-3 py-2 rounded-md text-gray-700 hover:bg-gray-50"
+              >
+                <BookOpen className="h-5 w-5 inline-block mr-1" />
+                Summaries
               </Link>
               <Link
                 href="/resources"
@@ -142,6 +149,13 @@ export default function Navigation() {
               onClick={() => setIsMobileMenuOpen(false)}
             >
               Action Items
+            </Link>
+            <Link
+              href="/summaries"
+              className="block px-3 py-2 rounded-md text-gray-700 hover:bg-gray-50"
+              onClick={() => setIsMobileMenuOpen(false)}
+            >
+              Summaries
             </Link>
             <Link
               href="/resources"

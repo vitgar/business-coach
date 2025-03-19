@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
         status: true,
       },
       orderBy: {
-        updatedAt: 'desc'
+        createdAt: 'desc'
       }
     })
     
