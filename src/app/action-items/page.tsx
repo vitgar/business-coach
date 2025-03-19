@@ -143,6 +143,13 @@ export default function ActionItemsPage() {
   }
 
   /**
+   * Find parent category by ID
+   */
+  const findParentById = (parentId: string, categories: Category[]): Category | undefined => {
+    return categories.find(cat => cat.id === parentId);
+  }
+
+  /**
    * Fetches categories from action items and action lists
    */
   const fetchCategories = async () => {
