@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { ListTodo, RefreshCw, Plus, X, Send, Loader2, TagIcon, BookOpen, Folder } from 'lucide-react'
+import { ListTodo, RefreshCw, Plus, X, Send, Loader2, TagIcon, BookOpen, Folder, ChevronRight } from 'lucide-react'
 import ClientLayout from '@/components/ClientLayout'
 import ActionItemsList from '@/components/action-items/ActionItemsList'
 import { useAuth } from '@/contexts/AuthContext'
@@ -36,6 +36,8 @@ export default function ActionItemsPage() {
   const [isLoadingCategories, setIsLoadingCategories] = useState(false)
   const [totalItems, setTotalItems] = useState(0)
   const [completedItems, setCompletedItems] = useState(0)
+  const [actionLists, setActionLists] = useState<any[]>([])
+  const [expandedParents, setExpandedParents] = useState<Record<string, boolean>>({})
 
   /**
    * Determines if a category name represents a parent category
@@ -326,8 +328,102 @@ export default function ActionItemsPage() {
 
   // Select a category to filter items
   const selectCategory = (categoryName: string | null) => {
+    console.log(`Selecting category: ${categoryName}`);
+    
+    // If we're selecting a category, check if it's a child category and update URL params
+    if (categoryName) {
+      // Find the category in our categories list
+      const category = categories.find(cat => cat.name === categoryName);
+      
+      if (category) {
+        // If this category has a matching list, get its ID for URL params
+        const matchingList = actionLists.find(list => list.name === categoryName);
+        
+        if (matchingList) {
+          console.log(`Found matching list ID: ${matchingList.id} for category: ${categoryName}`);
+          
+          // Update URL with the new listId without refreshing the page
+          const url = new URL(window.location.href);
+          url.searchParams.set('listId', matchingList.id);
+          url.searchParams.set('showChildren', 'true');
+          window.history.pushState({}, '', url.toString());
+          
+          // Also update localStorage to indicate we're showing a parent with children
+          localStorage.setItem('showingParentList', matchingList.id);
+        }
+      }
+    } else {
+      // If clearing selection, also clear URL params
+      const url = new URL(window.location.href);
+      url.searchParams.delete('listId');
+      url.searchParams.delete('showChildren');
+      window.history.pushState({}, '', url.toString());
+      
+      // Clear localStorage
+      localStorage.removeItem('showingParentList');
+    }
+    
     setSelectedCategory(categoryName);
     setKey(prev => prev + 1); // Force re-render with new filter
+  }
+
+  // Fetch all action lists to use for ID lookup when selecting categories
+  useEffect(() => {
+    const fetchAllLists = async () => {
+      try {
+        const response = await fetch('/api/action-item-lists');
+        if (response.ok) {
+          const lists = await response.json();
+          setActionLists(lists);
+          
+          // Enhance with parent-child relationships
+          const enhancedLists = await Promise.all(lists.map(async (list: any) => {
+            try {
+              const detailResponse = await fetch(`/api/action-item-lists/${list.id}`);
+              if (detailResponse.ok) {
+                const details = await detailResponse.json();
+                return { ...list, ...details };
+              }
+              return list;
+            } catch (error) {
+              console.error(`Error fetching details for list ${list.id}:`, error);
+              return list;
+            }
+          }));
+          
+          setActionLists(enhancedLists);
+        }
+      } catch (error) {
+        console.error('Error fetching action lists:', error);
+      }
+    };
+    
+    if (isAuthenticated) {
+      fetchAllLists();
+    }
+  }, [isAuthenticated]);
+  
+  // Function to toggle expansion of parent categories
+  const toggleParentExpanded = (categoryName: string) => {
+    console.log(`Toggling expansion for parent category: ${categoryName}`);
+    // Update expanded state
+    setExpandedParents(prev => {
+      const newState = { ...prev };
+      newState[categoryName] = !prev[categoryName];
+      return newState;
+    });
+    
+    // If we're expanding and this category has a matching list, update URL params
+    // but don't change the selected category
+    if (!expandedParents[categoryName]) { // Means we're expanding it
+      const matchingList = actionLists.find(list => list.name === categoryName);
+      if (matchingList) {
+        console.log(`Updating URL param for parent: ${categoryName} with ID: ${matchingList.id}`);
+        // Update localStorage to indicate we're showing a parent with children
+        // but don't change the URL if we already have a different selection
+        localStorage.setItem('showingParentList', matchingList.id);
+      }
+    }
   }
 
   // Handle URL parameters on component mount
@@ -366,11 +462,30 @@ export default function ActionItemsPage() {
           
           console.log(`Selected list: ${list.name} (${listId}), showing children: ${showChildren}`);
           
+          // If this list has a parentId, expand its parent category
+          if (list.parentId) {
+            // Find the parent list to get its name
+            const parentList = actionLists.find(l => l.id === list.parentId);
+            if (parentList) {
+              console.log(`Auto-expanding parent category: ${parentList.name}`);
+              setExpandedParents(prev => ({
+                ...prev,
+                [parentList.name]: true
+              }));
+            }
+          }
+          
           // Always show child categories when viewing a list
           if (showChildren) {
             // Store that we're showing a parent with children
             localStorage.setItem('showingParentList', listId);
             console.log('Stored showingParentList in localStorage:', listId);
+            
+            // Expand this parent category 
+            setExpandedParents(prev => ({
+              ...prev,
+              [list.name]: true
+            }));
             
             // Also fetch child lists if this is a parent list
             const fetchChildLists = async () => {
@@ -381,13 +496,21 @@ export default function ActionItemsPage() {
                   const allLists = await childListsResponse.json();
                   
                   // Look for lists that have this listId as their parentId
-                  const childLists = allLists.filter((childList: any) => {
-                    // First check detailed information about the list
-                    return fetch(`/api/action-item-lists/${childList.id}`)
-                      .then(res => res.json())
-                      .then(listDetails => listDetails.parentId === listId)
-                      .catch(() => false);
+                  const childListsPromises = allLists.map(async (childList: any) => {
+                    try {
+                      const detailResponse = await fetch(`/api/action-item-lists/${childList.id}`);
+                      if (!detailResponse.ok) return null;
+                      
+                      const details = await detailResponse.json();
+                      return details.parentId === listId ? childList : null;
+                    } catch (error) {
+                      console.error(`Error checking childList ${childList.id}:`, error);
+                      return null;
+                    }
                   });
+                  
+                  const childListResults = await Promise.all(childListsPromises);
+                  const childLists = childListResults.filter(Boolean);
                   
                   console.log(`Found ${childLists.length} child lists for ${list.name}`);
                   
@@ -423,7 +546,49 @@ export default function ActionItemsPage() {
     }
     
     fetchCategories();
-  }, [isAuthenticated]);
+  }, [isAuthenticated, actionLists]);
+
+  // Initialize expanded state based on URL parameters when component mounts
+  useEffect(() => {
+    if (!isAuthenticated || categories.length === 0) return;
+    
+    // Find selected category and expand its parent if needed
+    if (selectedCategory) {
+      const selectedCat = categories.find(cat => cat.name === selectedCategory);
+      if (selectedCat && selectedCat.parentName) {
+        console.log(`Auto-expanding parent category: ${selectedCat.parentName} for selected: ${selectedCategory}`);
+        setExpandedParents(prev => {
+          const newState = { ...prev };
+          if (selectedCat.parentName) {
+            newState[selectedCat.parentName] = true;
+          }
+          return newState;
+        });
+      } else if (selectedCat && selectedCat.isParent) {
+        // If a parent category is selected, expand it
+        console.log(`Auto-expanding selected parent category: ${selectedCategory}`);
+        setExpandedParents(prev => {
+          const newState = { ...prev };
+          newState[selectedCategory] = true;
+          return newState;
+        });
+      }
+    }
+    
+    // Also expand any parent category that has the currently selected list as a child
+    const parentCategories = categories.filter(cat => cat.isParent);
+    parentCategories.forEach(parent => {
+      const childCategories = categories.filter(cat => cat.parentName === parent.name);
+      if (childCategories.some(child => child.name === selectedCategory)) {
+        console.log(`Auto-expanding parent with selected child: ${parent.name}`);
+        setExpandedParents(prev => {
+          const newState = { ...prev };
+          newState[parent.name] = true;
+          return newState;
+        });
+      }
+    });
+  }, [isAuthenticated, selectedCategory, categories]);
 
   return (
     <ClientLayout>
@@ -560,11 +725,19 @@ export default function ActionItemsPage() {
                         const childCategories = categories.filter(cat => cat.parentName === category.name);
                         const isActive = selectedCategory === category.name || 
                                        childCategories.some(child => child.name === selectedCategory);
+                        // Check if this parent should be expanded
+                        const isExpanded = expandedParents[category.name] || isActive;
                         
                         return (
                           <div key={category.name} className={`space-y-1 ${isActive ? 'bg-blue-50 bg-opacity-50 p-1 rounded-md' : ''}`}>
                             <button
-                              onClick={() => selectCategory(category.name)}
+                              onClick={() => {
+                                // Toggle expansion first, then select if not already selected
+                                toggleParentExpanded(category.name);
+                                if (selectedCategory !== category.name) {
+                                  selectCategory(category.name);
+                                }
+                              }}
                               className={`w-full flex items-center justify-between p-2 rounded-md text-left ${
                                 selectedCategory === category.name 
                                   ? 'bg-blue-50 text-blue-700 font-medium border-l-4 border-blue-500 pl-1' 
@@ -576,6 +749,19 @@ export default function ActionItemsPage() {
                               <span className="flex items-center gap-2">
                                 <Folder size={16} />
                                 {category.name}
+                                {/* Add dropdown indicator */}
+                                {childCategories.length > 0 && (
+                                  <button 
+                                    onClick={(e) => {
+                                      e.stopPropagation(); // Don't select the category
+                                      toggleParentExpanded(category.name);
+                                    }}
+                                    className={`ml-1 p-1 rounded-full hover:bg-blue-100 transition-transform text-blue-500 ${isExpanded ? 'rotate-90' : ''}`}
+                                    title={isExpanded ? "Collapse" : "Expand"}
+                                  >
+                                    <ChevronRight size={14} />
+                                  </button>
+                                )}
                               </span>
                               <span className={`text-xs px-2 py-0.5 rounded-full ${
                                 category.completedCount === category.count && category.count > 0
@@ -586,32 +772,34 @@ export default function ActionItemsPage() {
                               </span>
                             </button>
                             
-                            {/* Child categories for this parent */}
-                            <div className={`pl-4 border-l-2 ml-2 space-y-1 ${isActive ? 'border-blue-300' : 'border-gray-100'}`}>
-                              {childCategories.map(childCategory => (
-                                <button
-                                  key={childCategory.name}
-                                  onClick={() => selectCategory(childCategory.name)}
-                                  className={`w-full flex items-center justify-between p-2 rounded-md text-left ${
-                                    selectedCategory === childCategory.name 
-                                      ? 'bg-blue-50 text-blue-700 font-medium border-l-4 border-blue-500 pl-1' 
-                                      : 'text-gray-700 hover:bg-gray-50'
-                                  }`}
-                                >
-                                  <span className="flex items-center gap-2 text-sm">
-                                    <TagIcon size={14} />
-                                    {childCategory.name}
-                                  </span>
-                                  <span className={`text-xs px-2 py-0.5 rounded-full ${
-                                    childCategory.completedCount === childCategory.count && childCategory.count > 0
-                                      ? 'bg-green-100 text-green-700'
-                                      : 'bg-gray-100 text-gray-700'
-                                  }`}>
-                                    {childCategory.completedCount}/{childCategory.count}
-                                  </span>
-                                </button>
-                              ))}
-                            </div>
+                            {/* Child categories for this parent - only show if expanded */}
+                            {isExpanded && childCategories.length > 0 && (
+                              <div className={`pl-4 border-l-2 ml-2 space-y-1 ${isActive ? 'border-blue-300' : 'border-gray-100'}`}>
+                                {childCategories.map(childCategory => (
+                                  <button
+                                    key={childCategory.name}
+                                    onClick={() => selectCategory(childCategory.name)}
+                                    className={`w-full flex items-center justify-between p-2 rounded-md text-left ${
+                                      selectedCategory === childCategory.name 
+                                        ? 'bg-blue-50 text-blue-700 font-medium border-l-4 border-blue-500 pl-1' 
+                                        : 'text-gray-700 hover:bg-gray-50'
+                                    }`}
+                                  >
+                                    <span className="flex items-center gap-2 text-sm">
+                                      <TagIcon size={14} />
+                                      {childCategory.name}
+                                    </span>
+                                    <span className={`text-xs px-2 py-0.5 rounded-full ${
+                                      childCategory.completedCount === childCategory.count && childCategory.count > 0
+                                        ? 'bg-green-100 text-green-700'
+                                        : 'bg-gray-100 text-gray-700'
+                                    }`}>
+                                      {childCategory.completedCount}/{childCategory.count}
+                                    </span>
+                                  </button>
+                                ))}
+                              </div>
+                            )}
                           </div>
                         )
                       })}

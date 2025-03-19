@@ -91,16 +91,32 @@ export async function GET(request: Request) {
             // Include items from all child lists as well as the parent list
             const childListIds = childLists.map(child => child.id);
             console.log(`Including items from ${childLists.length} child lists: ${childListIds.join(', ')}`)
+            console.log(`Child list names: ${childLists.map(l => l.title).join(', ')}`)
+            
+            // Get individual items for debugging
+            const parentItems = await prisma.actionItem.findMany({
+              where: { listId }
+            });
+            console.log(`Found ${parentItems.length} items in parent list ${list.title}`);
+            
+            const childItems = await prisma.actionItem.findMany({
+              where: { 
+                listId: { in: childListIds }
+              }
+            });
+            console.log(`Found ${childItems.length} total items in child lists`);
             
             whereClause.listId = {
               in: [listId, ...childListIds]
             };
           } else {
             // Only include items from this specific list if no children found
+            console.log(`No child lists found for ${list.title}, only showing parent list items`);
             whereClause.listId = listId;
           }
         } else {
           // Only include items from this specific list
+          console.log(`showChildren=false, only showing items from list: ${list.title}`);
           whereClause.listId = listId;
         }
       } else {

@@ -186,29 +186,33 @@ export default function ActionItemsList({
       const filtered = actionItems.filter(item => {
         // If we have a listId and the item has a matching listId, include it
         if (listId && item.listId === listId) {
-          console.log(`Found listId match for item: ${item.content.substring(0, 50)}...`)
+          console.log(`Found listId match for item with id ${item.id}, content: ${item.content.substring(0, 30)}...`)
           return true;
         }
         
-        // First look for category in bracketed prefix
+        // Check if this item belongs to the selected category by bracket prefix
         const bracketMatch = item.content.match(/^\s*[\[\{](.*?)[\]\}]/);
         
         if (bracketMatch) {
           const itemCategory = bracketMatch[1].trim();
           
-          // For debugging
-          if (itemCategory === categoryFilter) {
-            console.log(`Found direct match for item: ${item.content.substring(0, 50)}...`)
-          }
-          
           // Include exact category match
-          if (itemCategory === categoryFilter) return true;
+          if (itemCategory === categoryFilter) {
+            console.log(`Found direct category match for item with id ${item.id}: ${item.content.substring(0, 30)}...`)
+            return true;
+          }
           
           // If showing child categories, include those too
           if (showChildCategories && childCategories.includes(itemCategory)) {
-            console.log(`Found child category match (${itemCategory}) for item: ${item.content.substring(0, 50)}...`)
+            console.log(`Found child category match (${itemCategory}) for item with id ${item.id}: ${item.content.substring(0, 30)}...`)
             return true;
           }
+        }
+        
+        // Additional check: If item has no bracketed prefix but has a listId that matches the name
+        if (item.listId && listNames[item.listId] === categoryFilter) {
+          console.log(`Found listId match by name for item with id ${item.id}: ${item.content.substring(0, 30)}...`)
+          return true;
         }
         
         return false;
@@ -217,7 +221,7 @@ export default function ActionItemsList({
       console.log(`Filtered to ${filtered.length} items`)
       setFilteredItems(filtered);
     }
-  }, [actionItems, categoryFilter, showChildCategories, childCategories, listId]);
+  }, [actionItems, categoryFilter, showChildCategories, childCategories, listId, listNames]);
 
   /**
    * Toggles the completion status of an action item
