@@ -743,7 +743,29 @@ export default function ActionItemsPage() {
                     
                     {/* Parent categories */}
                     {categories
-                      .filter(cat => cat.isParent) // Only show parent categories in the main list
+                      .filter(cat => {
+                        // Always show "All Items" (it's rendered separately above)
+                        if (cat.name === "All Items") return false;
+                        
+                        // If no category is selected, show all parent categories
+                        if (!selectedCategory) return cat.isParent;
+                        
+                        // If a category is selected, only show:
+                        // 1. The selected parent
+                        // 2. The parent of the selected child
+                        if (cat.isParent) {
+                          // This is the selected parent
+                          if (cat.name === selectedCategory) return true;
+                          
+                          // This is the parent of a selected child
+                          const hasSelectedChild = categories
+                            .some(child => child.parentName === cat.name && child.name === selectedCategory);
+                            
+                          return hasSelectedChild;
+                        }
+                        
+                        return false;
+                      })
                       .map(category => {
                         // Find child categories for this parent
                         const childCategories = categories.filter(cat => cat.parentName === category.name);

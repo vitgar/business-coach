@@ -592,14 +592,6 @@ export default function ActionItemsList({
                   {item.notes}
                 </p>
               )}
-              
-              {/* Show metadata for debugging/development */}
-              {process.env.NODE_ENV === 'development' && (
-                <div className="mt-2 text-xs text-gray-400">
-                  <p>ID: {item.id}</p>
-                  <p>Created: {new Date(item.createdAt).toLocaleString()}</p>
-                </div>
-              )}
             </div>
             
             {/* Action buttons */}
