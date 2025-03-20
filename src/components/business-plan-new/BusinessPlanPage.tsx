@@ -2,12 +2,13 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, LayoutDashboard } from 'lucide-react'
 import Link from 'next/link'
 import BusinessPlanHeader from './BusinessPlanHeader'
 import BusinessPlanEditor from './BusinessPlanEditor'
 import BusinessPlanControls from './BusinessPlanControls'
 import BusinessPlanAIAssistant from '../business-plan-ai/BusinessPlanAIAssistant'
+import HeaderBar from '../layout/HeaderBar'
 
 /**
  * BusinessPlanPage Component
@@ -123,8 +124,13 @@ export default function BusinessPlanPage({ businessPlanId }: { businessPlanId: s
 
   return (
     <div className="h-screen bg-gray-50 flex flex-col overflow-hidden">
+      {/* Add HeaderBar with dashboard button */}
+      <HeaderBar 
+        isOnDashboard={false}
+      />
+      
       {/* Compact header with combined elements */}
-      <header className="bg-white border-b shadow-sm sticky top-0 z-10">
+      <header className="bg-white border-b shadow-sm z-10">
         <div className="max-w-7xl mx-auto px-3 py-2 w-full flex justify-between items-center">
           <div className="flex items-center">
             <Link 

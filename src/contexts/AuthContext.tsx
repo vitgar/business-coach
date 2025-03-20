@@ -46,6 +46,44 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [userId])
 
+  // Load and auto-select the last business when component mounts
+  useEffect(() => {
+    const loadLastBusiness = async () => {
+      if (!userId) return;
+      
+      try {
+        // Fetch user's businesses
+        const response = await fetch(`/api/users/${userId}/businesses`);
+        
+        if (!response.ok) {
+          console.error('Failed to fetch businesses for auto-selection');
+          return;
+        }
+        
+        const businesses = await response.json();
+        
+        // If there are businesses, select the last one (most recently updated)
+        if (businesses && businesses.length > 0) {
+          // Sort by updatedAt in descending order
+          const sortedBusinesses = [...businesses].sort((a, b) => {
+            return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+          });
+          
+          // Select the first business (most recently updated)
+          setCurrentBusinessId(sortedBusinesses[0].id);
+          console.log('Auto-selected business:', sortedBusinesses[0].title || sortedBusinesses[0].businessName);
+        }
+      } catch (error) {
+        console.error('Error auto-selecting last business:', error);
+      }
+    };
+    
+    // Only run this when userId changes to a non-null value
+    if (userId) {
+      loadLastBusiness();
+    }
+  }, [userId]);
+
   // In development mode, authentication is always true if userId exists
   const isAuthenticated = !!userId
 

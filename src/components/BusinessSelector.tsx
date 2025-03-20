@@ -51,7 +51,18 @@ export default function BusinessSelector() {
       }
       
       const data = await response.json()
-      setBusinesses(data)
+      
+      // Sort businesses by updatedAt in descending order (most recently updated first)
+      const sortedBusinesses = [...data].sort((a, b) => {
+        return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+      });
+      
+      setBusinesses(sortedBusinesses)
+      
+      // If we don't have a currentBusinessId but we have businesses, select the most recent one
+      if (!currentBusinessId && sortedBusinesses.length > 0) {
+        setCurrentBusinessId(sortedBusinesses[0].id)
+      }
     } catch (error) {
       console.error('Error fetching businesses:', error)
       setError('Could not load your businesses. Please try again.')

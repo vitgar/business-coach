@@ -44,29 +44,19 @@ export default function Navigation() {
                 href="/dashboard"
                 className="px-3 py-2 rounded-md text-gray-700 hover:bg-gray-50"
               >
-                <Grid className="h-5 w-5 inline-block mr-1" />
                 Dashboard
               </Link>
               <Link
                 href="/action-items"
                 className="px-3 py-2 rounded-md text-gray-700 hover:bg-gray-50"
               >
-                <ListTodo className="h-5 w-5 inline-block mr-1" />
                 Action Items
               </Link>
               <Link
                 href="/summaries"
                 className="px-3 py-2 rounded-md text-gray-700 hover:bg-gray-50"
               >
-                <BookOpen className="h-5 w-5 inline-block mr-1" />
                 Summaries
-              </Link>
-              <Link
-                href="/resources"
-                className="px-3 py-2 rounded-md text-gray-700 hover:bg-gray-50"
-              >
-                <FileText className="h-5 w-5 inline-block mr-1" />
-                Resources
               </Link>
             </div>
           </div>
@@ -156,13 +146,6 @@ export default function Navigation() {
               onClick={() => setIsMobileMenuOpen(false)}
             >
               Summaries
-            </Link>
-            <Link
-              href="/resources"
-              className="block px-3 py-2 rounded-md text-gray-700 hover:bg-gray-50"
-              onClick={() => setIsMobileMenuOpen(false)}
-            >
-              Resources
             </Link>
             
             {/* Mobile business selector */}

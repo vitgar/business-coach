@@ -6,10 +6,11 @@ import Link from 'next/link'
 import { 
   FileText, Target, Settings, 
   ChevronRight, BarChart2, Users, DollarSign,
-  MessageSquare, PlusCircle, ListTodo, HelpCircle
+  MessageSquare, PlusCircle, ListTodo, HelpCircle, BookOpen
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import BusinessSelector from '@/components/BusinessSelector'
+import ClientLayout from '@/components/ClientLayout'
 
 /**
  * Dashboard Page
@@ -103,104 +104,99 @@ export default function Dashboard() {
   ]
   
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="grid grid-cols-12 gap-8">
-          {/* Sidebar */}
-          <div className="col-span-3">
-            <div className="bg-white rounded-lg shadow p-4 mb-6">
-              <h2 className="font-semibold text-gray-800 mb-3">Your Businesses</h2>
-              <BusinessSelector />
-            </div>
-            
-            <div className="bg-white rounded-lg shadow p-4">
-              <h2 className="font-semibold text-gray-800 mb-3">Quick Access</h2>
-              <nav className="space-y-1">
-                <Link 
-                  href="/resources" 
-                  className="flex items-center px-3 py-2 text-gray-700 rounded-md hover:bg-gray-100"
-                >
-                  <FileText className="h-5 w-5 mr-3 text-gray-500" />
-                  Resources
-                </Link>
-                <Link 
-                  href="/templates" 
-                  className="flex items-center px-3 py-2 text-gray-700 rounded-md hover:bg-gray-100"
-                >
-                  <FileText className="h-5 w-5 mr-3 text-gray-500" />
-                  Templates
-                </Link>
-                <Link 
-                  href="/account" 
-                  className="flex items-center px-3 py-2 text-gray-700 rounded-md hover:bg-gray-100"
-                >
-                  <Settings className="h-5 w-5 mr-3 text-gray-500" />
-                  Account Settings
-                </Link>
-              </nav>
-            </div>
-          </div>
-          
-          {/* Main content */}
-          <div className="col-span-9">
-            <div className="bg-white rounded-lg shadow mb-8">
-              <div className="p-6">
-                <h1 className="text-2xl font-bold text-gray-900 mb-2">Dashboard</h1>
-                {currentBusinessId ? (
-                  <p className="text-gray-600">
-                    Manage your business and access key tools and resources.
-                  </p>
-                ) : (
-                  <p className="text-gray-600">
-                    Select a business or create a new one to get started.
-                  </p>
-                )}
+    <ClientLayout>
+      <div className="bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 py-8">
+          <div className="grid grid-cols-12 gap-8">
+            {/* Sidebar */}
+            <div className="col-span-3">
+              <div className="bg-white rounded-lg shadow p-4 mb-6">
+                <h2 className="font-semibold text-gray-800 mb-3">Your Businesses</h2>
+                <BusinessSelector />
               </div>
-            </div>
-            
-            {currentBusinessId ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {businessLinks.map((link, index) => (
+              
+              <div className="bg-white rounded-lg shadow p-4">
+                <h2 className="font-semibold text-gray-800 mb-3">Quick Access</h2>
+                <nav className="space-y-1">
                   <Link 
-                    key={index} 
-                    href={link.href}
-                    className="block bg-white rounded-lg shadow hover:shadow-md transition-shadow"
+                    href="/templates" 
+                    className="flex items-center px-3 py-2 text-gray-700 rounded-md hover:bg-gray-100"
                   >
-                    <div className="p-6">
-                      <div className="flex items-start">
-                        <div className={`rounded-full p-3 ${link.color}`}>
-                          <link.icon className="h-6 w-6" />
-                        </div>
-                        <div className="ml-4 flex-1">
-                          <h3 className="font-semibold text-lg text-gray-900">{link.title}</h3>
-                          <p className="text-gray-600 mt-1">{link.description}</p>
-                        </div>
-                        <ChevronRight className="h-5 w-5 text-gray-400" />
-                      </div>
-                    </div>
+                    <FileText className="h-5 w-5 mr-3 text-gray-500" />
+                    Templates
                   </Link>
-                ))}
-              </div>
-            ) : (
-              <div className="bg-white rounded-lg shadow p-8">
-                <div className="text-center">
-                  <h2 className="text-lg font-semibold mb-2">No Business Selected</h2>
-                  <p className="text-gray-600 mb-6">
-                    Select an existing business from the sidebar dropdown or add a new one to get started.
-                  </p>
-                  <button
-                    onClick={() => document.querySelector<HTMLButtonElement>('.business-selector-create')?.click()}
-                    className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                  <Link 
+                    href="/account" 
+                    className="flex items-center px-3 py-2 text-gray-700 rounded-md hover:bg-gray-100"
                   >
-                    <PlusCircle className="h-5 w-5 mr-2" />
-                    Add New Business
-                  </button>
+                    <Settings className="h-5 w-5 mr-3 text-gray-500" />
+                    Account Settings
+                  </Link>
+                </nav>
+              </div>
+            </div>
+            
+            {/* Main content */}
+            <div className="col-span-9">
+              <div className="bg-white rounded-lg shadow mb-8">
+                <div className="p-6">
+                  <h1 className="text-2xl font-bold text-gray-900 mb-2">Your Business Tools</h1>
+                  {currentBusinessId ? (
+                    <p className="text-gray-600">
+                      Access tools and resources for your business.
+                    </p>
+                  ) : (
+                    <p className="text-gray-600">
+                      Select a business or create a new one to get started.
+                    </p>
+                  )}
                 </div>
               </div>
-            )}
+              
+              {currentBusinessId ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {businessLinks.map((link, index) => (
+                    <Link 
+                      key={index} 
+                      href={link.href}
+                      className="block bg-white rounded-lg shadow hover:shadow-md transition-shadow"
+                    >
+                      <div className="p-6">
+                        <div className="flex items-start">
+                          <div className={`rounded-full p-3 ${link.color}`}>
+                            <link.icon className="h-6 w-6" />
+                          </div>
+                          <div className="ml-4 flex-1">
+                            <h3 className="font-semibold text-lg text-gray-900">{link.title}</h3>
+                            <p className="text-gray-600 mt-1">{link.description}</p>
+                          </div>
+                          <ChevronRight className="h-5 w-5 text-gray-400" />
+                        </div>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              ) : (
+                <div className="bg-white rounded-lg shadow p-8">
+                  <div className="text-center">
+                    <h2 className="text-lg font-semibold mb-2">No Business Selected</h2>
+                    <p className="text-gray-600 mb-6">
+                      Select an existing business from the sidebar dropdown or add a new one to get started.
+                    </p>
+                    <button
+                      onClick={() => document.querySelector<HTMLButtonElement>('.business-selector-create')?.click()}
+                      className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                    >
+                      <PlusCircle className="h-5 w-5 mr-2" />
+                      Add New Business
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </ClientLayout>
   )
 } 

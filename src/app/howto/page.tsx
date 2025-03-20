@@ -163,71 +163,31 @@ export default function HowToPage() {
     setIsProcessing(true)
     
     try {
-      // First, create all the list structures with proper parent-child relationships
+      // Only handle top-level lists (no parent-child relationship)
+      const topLevelLists = extractedActionLists.filter(list => !list.parentId);
       const createdLists: Record<string, string> = {};
-      
-      // Step 1: Create all parent lists first
-      for (const list of extractedActionLists) {
-        if (!list.parentId) {
-          // This is a parent list (top level)
-          const response = await fetch('/api/action-item-lists', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              title: list.title,
-              color: getRandomColor() // Function to generate a random color
-            })
-          });
-          
-          if (response.ok) {
-            const newList = await response.json();
-            // Store mapping from original ID to new list ID
-            createdLists[list.id] = newList.id;
-            console.log(`Created parent list "${list.title}" with ID ${newList.id}`);
-          } else {
-            console.error(`Failed to create parent list "${list.title}"`);
-          }
-        }
-      }
-      
-      // Step 2: Create all child lists with correct parent references
-      for (const list of extractedActionLists) {
-        if (list.parentId && createdLists[list.parentId]) {
-          // This is a child list with a parent we've already created
-          const response = await fetch('/api/action-item-lists', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              title: list.title,
-              color: getRandomColor(),
-              parentId: createdLists[list.parentId] // Use the actual parent list ID
-            })
-          });
-          
-          if (response.ok) {
-            const newList = await response.json();
-            // Store mapping from original ID to new list ID
-            createdLists[list.id] = newList.id;
-            console.log(`Created child list "${list.title}" with parent ID ${createdLists[list.parentId]}`);
-          } else {
-            console.error(`Failed to create child list "${list.title}"`);
-          }
-        }
-      }
-      
-      // Step 3: Now create all the action items, properly associated with their lists
       let totalItems = 0;
       
-      for (const list of extractedActionLists) {
-        // Get the new list ID if we successfully created it
-        const listId = createdLists[list.id];
+      // Create each top-level list and its items
+      for (const list of topLevelLists) {
+        // Create the list
+        const response = await fetch('/api/action-item-lists', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            title: list.title,
+            color: getRandomColor()
+          })
+        });
         
-        if (listId) {
-          // Create each item in this list
+        if (response.ok) {
+          const newList = await response.json();
+          // Store the new list ID
+          createdLists[list.id] = newList.id;
+          
+          // Create all items for this list
           for (const item of list.items) {
             await fetch('/api/action-items', {
               method: 'POST',
@@ -235,19 +195,18 @@ export default function HowToPage() {
                 'Content-Type': 'application/json'
               },
               body: JSON.stringify({
-                content: item, // No need to add prefix, we're setting listId directly
-                listId: listId, // Associate with the proper list
+                content: item,
+                listId: newList.id,
                 conversationId: currentConversationId || null,
-                messageId: null // Set to null explicitly to avoid foreign key constraint errors
+                messageId: null // Set to null to avoid constraint errors
               })
             });
             
             totalItems++;
           }
         } else {
-          // Fallback: If list creation failed, create items with bracketed prefix
+          // If list creation failed, create items with bracketed prefix
           for (const item of list.items) {
-            // Format the content to include the list title
             const content = `[${list.title}] ${item}`;
             
             await fetch('/api/action-items', {
@@ -258,7 +217,7 @@ export default function HowToPage() {
               body: JSON.stringify({
                 content,
                 conversationId: currentConversationId || null,
-                messageId: null // Set to null explicitly to avoid foreign key constraint errors
+                messageId: null
               })
             });
             
@@ -267,7 +226,7 @@ export default function HowToPage() {
         }
       }
       
-      toast.success(`Saved ${totalItems} action items from ${extractedActionLists.length} lists`);
+      toast.success(`Saved ${totalItems} action items from ${topLevelLists.length} lists`);
     } catch (error) {
       console.error('Error saving action lists:', error)
       toast.error(error instanceof Error ? error.message : 'Failed to save action lists')
@@ -406,27 +365,6 @@ export default function HowToPage() {
       ...prev,
       { role: 'user', content }
     ]);
-  }
-
-  /**
-   * Renders an action list and its sublists recursively
-   */
-  const renderActionList = (list: ActionList, allLists: ActionList[], level: number = 0) => {
-    // Find all sublists of this list
-    const sublists = allLists.filter(sublist => sublist.parentId === list.id)
-    
-    return (
-      <div key={list.id} className="mb-3" style={{ marginLeft: `${level * 20}px` }}>
-        <div className="font-medium text-gray-800 mb-1">{list.title}</div>
-        <ul className="list-disc pl-5 mb-2">
-          {list.items.map((item, index) => (
-            <li key={`${list.id}-item-${index}`} className="text-gray-700 mb-1">{item}</li>
-          ))}
-        </ul>
-        {/* Recursively render sublists */}
-        {sublists.map(sublist => renderActionList(sublist, allLists, level + 1))}
-      </div>
-    )
   }
 
   /**
@@ -574,24 +512,28 @@ export default function HowToPage() {
                   <button
                     onClick={createActionList}
                     disabled={conversationHistory.length === 0 || isProcessing}
-                    className="flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-300 disabled:text-gray-500 transition-colors"
+                    className="flex items-center justify-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-300 disabled:text-gray-500 transition-colors group relative"
                   >
                     {isProcessing ? (
-                      <RefreshCw size={20} className="animate-spin" />
+                      <RefreshCw size={18} className="animate-spin" />
                     ) : (
-                      <ListTodo size={20} />
+                      <ListTodo size={18} />
                     )}
-                    <span className="font-medium">CREATE ACTION LIST</span>
+                    <span className="font-medium text-sm">Create Action List</span>
+                    <div className="absolute hidden group-hover:block w-64 bg-gray-800 text-white text-xs rounded py-2 px-3 bottom-full mb-2 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
+                      Create structured action lists from your conversation
+                      <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-solid border-t-gray-800 border-t-8 border-x-transparent border-x-8 border-b-0"></div>
+                    </div>
                   </button>
                   
                   <button
                     onClick={saveHighlightsSummary}
                     disabled={!currentResponse || isProcessing}
-                    className="flex items-center justify-center gap-2 px-4 py-3 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:bg-gray-300 disabled:text-gray-500 transition-colors relative group"
+                    className="flex items-center justify-center gap-2 px-3 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:bg-gray-300 disabled:text-gray-500 transition-colors relative group"
                   >
-                    <Save size={20} />
-                    <span className="font-medium">SAVE HIGHLIGHTS SUMMARY</span>
-                    <div className="absolute hidden group-hover:block w-64 bg-gray-800 text-white text-xs rounded py-2 px-3 bottom-full mb-2 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                    <Save size={18} />
+                    <span className="font-medium text-sm">Save Highlights</span>
+                    <div className="absolute hidden group-hover:block w-64 bg-gray-800 text-white text-xs rounded py-2 px-3 bottom-full mb-2 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
                       Creates a concise bullet-point summary of key information from this response
                       <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-solid border-t-gray-800 border-t-8 border-x-transparent border-x-8 border-b-0"></div>
                     </div>
@@ -648,18 +590,27 @@ export default function HowToPage() {
                         </h3>
                         <button 
                           onClick={saveActionLists}
-                          className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200 flex items-center"
+                          className="bg-blue-600 text-white px-3 py-1.5 rounded hover:bg-blue-700 flex items-center text-sm"
                         >
-                          <Save size={12} className="mr-1" />
-                          Save Lists
+                          <Save size={14} className="mr-1" />
+                          Save All Lists
                         </button>
                       </div>
                       
                       <div className="bg-gray-50 rounded-md p-3 max-h-[300px] overflow-y-auto">
-                        {/* Render top-level action lists and their sublists */}
+                        {/* Render top-level action lists only */}
                         {extractedActionLists
                           .filter(list => !list.parentId)
-                          .map(list => renderActionList(list, extractedActionLists))}
+                          .map(list => (
+                            <div key={list.id} className="mb-3">
+                              <div className="font-medium text-gray-800 mb-1">{list.title}</div>
+                              <ul className="list-disc pl-5 mb-2">
+                                {list.items.map((item, index) => (
+                                  <li key={`${list.id}-item-${index}`} className="text-gray-700 mb-1">{item}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          ))}
                       </div>
                     </div>
                   )}
@@ -668,10 +619,10 @@ export default function HowToPage() {
                     <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-2">About This Feature</h3>
                     <div className="bg-blue-50 rounded p-4 text-blue-800 text-sm">
                       <p className="mb-2">
-                        <strong>CREATE ACTION LIST</strong> - AI analyzes the conversation to extract structured action lists with hierarchical relationships.
+                        <strong>Create Action List</strong> - AI analyzes the conversation to extract structured action lists.
                       </p>
                       <p className="mb-2">
-                        <strong>SAVE HIGHLIGHTS SUMMARY</strong> - Creates a concise bullet-point summary of key information from this response. The summary focuses on the most important points, making it easier to review later.
+                        <strong>Save Highlights</strong> - Creates a concise bullet-point summary of key information from this response.
                       </p>
                       <p className="text-xs mt-3 text-blue-600">
                         Summaries are stored in the Summaries section, accessible from the navigation menu.

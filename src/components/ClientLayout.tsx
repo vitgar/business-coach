@@ -1,7 +1,11 @@
 'use client'
 
 import React from 'react'
+import Link from 'next/link'
+import { usePathname } from 'next/navigation'
+import { LayoutDashboard } from 'lucide-react'
 import Navigation from './Navigation'
+import HeaderBar from './layout/HeaderBar'
 
 /**
  * Client Layout Component
@@ -14,9 +18,15 @@ export default function ClientLayout({
 }: {
   children: React.ReactNode
 }) {
+  // Check if we're on the dashboard page
+  const pathname = usePathname();
+  const isOnDashboard = pathname === '/dashboard';
+
   return (
     <div className="flex min-h-screen flex-col">
-      <Navigation />
+      <HeaderBar 
+        isOnDashboard={isOnDashboard}
+      />
       <div className="flex-grow">
         {children}
       </div>
