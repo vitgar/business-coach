@@ -463,6 +463,17 @@ export default function BusinessPlanAIAssistant({
       normalizedMessage === 'i approve' ||
       normalizedMessage === 'apply it' ||
       normalizedMessage === 'use it' ||
+      // Adding contextual navigation responses
+      normalizedMessage === 'move on' ||
+      normalizedMessage === 'let\'s move on' ||
+      normalizedMessage === 'lets move on' ||
+      normalizedMessage === 'continue' ||
+      normalizedMessage === 'continue to next' ||
+      normalizedMessage === 'next' ||
+      normalizedMessage === 'next section' ||
+      normalizedMessage === 'move to next' ||
+      normalizedMessage === 'let\'s continue' ||
+      normalizedMessage === 'lets continue' ||
       // Common ways to say "no" to "anything else?" questions (indicating satisfaction)
       normalizedMessage === 'no' ||
       normalizedMessage === 'no thanks' ||
@@ -487,7 +498,12 @@ export default function BusinessPlanAIAssistant({
       normalizedMessage.startsWith('nope') ||
       normalizedMessage.startsWith('looks fine') ||
       normalizedMessage.startsWith('that works') ||
-      normalizedMessage.startsWith('i like')
+      normalizedMessage.startsWith('i like') ||
+      // Adding more contextual navigation phrase starts
+      normalizedMessage.startsWith('move on') ||
+      normalizedMessage.startsWith('let\'s move') ||
+      normalizedMessage.startsWith('lets move') ||
+      normalizedMessage.startsWith('continue to')
     );
   }
 
@@ -854,12 +870,113 @@ export default function BusinessPlanAIAssistant({
     
     // Store the user's message
     const userMessage = inputValue.trim();
+    const normalizedUserMessage = userMessage.toLowerCase().trim();
     
     // Check if the message contains a section reference for navigation
     const navigatedToSection = processSectionNavigation(userMessage);
     
     // If we didn't navigate to a section, process the message
     if (!navigatedToSection) {
+      // Check if this is a "move on" type of response
+      const isMoveOnResponse = 
+          normalizedUserMessage === 'move on' ||
+          normalizedUserMessage === 'let\'s move on' ||
+          normalizedUserMessage === 'lets move on' ||
+          normalizedUserMessage === 'continue' ||
+          normalizedUserMessage === 'next' ||
+          normalizedUserMessage === 'next section' ||
+          normalizedUserMessage === 'continue to next' ||
+          normalizedUserMessage === 'move to next' ||
+          normalizedUserMessage.startsWith('move on') ||
+          normalizedUserMessage.startsWith('let\'s move') ||
+          normalizedUserMessage.startsWith('lets move') ||
+          normalizedUserMessage.startsWith('continue to');
+      
+      // Check the last few messages for section suggestions if this is a "move on" type response
+      if (isMoveOnResponse && messages.length > 0) {
+        console.log('[Navigation] Processing "move on" response');
+        
+        // Check the last assistant message for section name mentions
+        for (let i = messages.length - 1; i >= Math.max(0, messages.length - 3); i--) {
+          const message = messages[i];
+          if (message.role === 'assistant') {
+            const content = message.content.toLowerCase();
+            
+            // Look for section mentions in all sections/subsections
+            for (const [sectId, sectName] of Object.entries(SECTION_NAMES)) {
+              const normalizedSectionName = sectName.toLowerCase();
+              
+              // Check if the assistant message suggested a section
+              if (
+                content.includes(`next section is ${normalizedSectionName}`) ||
+                content.includes(`next part is ${normalizedSectionName}`) ||
+                content.includes(`next section is the ${normalizedSectionName}`) ||
+                content.includes(`next part is the ${normalizedSectionName}`) ||
+                content.includes(`move on to ${normalizedSectionName}`) ||
+                content.includes(`move on to the ${normalizedSectionName}`) ||
+                content.includes(`continue to ${normalizedSectionName}`) ||
+                content.includes(`continue to the ${normalizedSectionName}`)
+              ) {
+                if (onSectionChange) {
+                  console.log(`[Navigation] Found suggestion for ${sectName} section in assistant message`);
+                  
+                  // Navigate to the section
+                  onSectionChange(sectId);
+                  
+                  // Add a message for context
+                  const assistantMessage: ChatMessage = { 
+                    role: 'assistant', 
+                    content: `I've navigated to the ${sectName} section for you. How would you like to proceed with this section?`
+                  };
+                  setMessages([...messages, { role: 'user', content: userMessage }, assistantMessage]);
+                  
+                  // Reset input and return early
+                  setInputValue('');
+                  return;
+                }
+              }
+              
+              // Also check for subsection mentions
+              const subsections = SECTION_SUBSECTIONS[sectId] || [];
+              for (const subsection of subsections) {
+                const subsectionName = SUBFIELD_NAMES[subsection]?.toLowerCase() || '';
+                if (!subsectionName) continue;
+                
+                // Check for this subsection name in the message
+                if (
+                  content.includes(`next section is ${subsectionName}`) ||
+                  content.includes(`next part is ${subsectionName}`) ||
+                  content.includes(`next section is the ${subsectionName}`) ||
+                  content.includes(`next part is the ${subsectionName}`) ||
+                  content.includes(`move on to ${subsectionName}`) ||
+                  content.includes(`move on to the ${subsectionName}`) ||
+                  content.includes(`continue to ${subsectionName}`) ||
+                  content.includes(`continue to the ${subsectionName}`)
+                ) {
+                  if (onSectionChange) {
+                    console.log(`[Navigation] Found suggestion for ${subsectionName} in ${sectName} section`);
+                    
+                    // Navigate to the section and field
+                    onSectionChange(sectId, subsection);
+                    
+                    // Add a message for context
+                    const assistantMessage: ChatMessage = { 
+                      role: 'assistant', 
+                      content: `I've navigated to the ${subsectionName} field in the ${sectName} section. How would you like to proceed?`
+                    };
+                    setMessages([...messages, { role: 'user', content: userMessage }, assistantMessage]);
+                    
+                    // Reset input and return early
+                    setInputValue('');
+                    return;
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+      
       // Check if this is an approval response and there's a last suggestion to apply
       if (fieldSuggestions.length > 0 && isApprovalResponse(userMessage)) {
         console.log('[Auto-Apply] Detected approval response, applying last suggestion');
@@ -3471,3 +3588,119 @@ export default function BusinessPlanAIAssistant({
     </div>
   );
 }
+
+/**
+ * Handles contextual navigation based on recent conversation
+ * @param userMessage The user's message
+ * @returns True if navigation was handled
+ */
+const handleContextualNavigation = (userMessage: string): boolean => {
+  // Check if the user's message indicates they want to proceed with a suggestion
+  const isNavigationIntent = (
+    userMessage.toLowerCase().trim() === 'move on' ||
+    userMessage.toLowerCase().trim() === 'let\'s move on' ||
+    userMessage.toLowerCase().trim() === 'lets move on' ||
+    userMessage.toLowerCase().trim() === 'continue' ||
+    userMessage.toLowerCase().trim() === 'next' ||
+    userMessage.toLowerCase().trim() === 'next section' ||
+    userMessage.toLowerCase().trim() === 'continue to next' ||
+    userMessage.toLowerCase().trim() === 'move to next' ||
+    userMessage.toLowerCase().trim().startsWith('move on') ||
+    userMessage.toLowerCase().trim().startsWith('let\'s move') ||
+    userMessage.toLowerCase().trim().startsWith('lets move') ||
+    userMessage.toLowerCase().trim().startsWith('continue to')
+  );
+  
+  if (!isNavigationIntent) return false;
+  
+  // Check the most recent assistant message to see if it mentions moving to a specific section
+  const recentMessages = messages.slice(-3); // Get the last 3 messages
+  
+  // Look for suggestions to move to specific sections in recent messages
+  for (const msg of recentMessages) {
+    if (msg.role === 'assistant') {
+      const content = msg.content.toLowerCase();
+      
+      // Look for section suggestions in the message
+      for (const [sectId, subsections] of Object.entries(SECTION_SUBSECTIONS)) {
+        // Skip the current section as we're looking for suggestions to move to a different section
+        if (sectId === sectionId) continue;
+        
+        const sectionName = SECTION_NAMES[sectId]?.toLowerCase();
+        if (!sectionName) continue;
+        
+        // Check if the message suggests moving to this section
+        if (content.includes(`next section is ${sectionName}`) || 
+            content.includes(`next part is ${sectionName}`) ||
+            content.includes(`next section is the ${sectionName}`) ||
+            content.includes(`next part is the ${sectionName}`) ||
+            content.includes(`move on to ${sectionName}`) ||
+            content.includes(`move on to the ${sectionName}`) ||
+            content.includes(`continue to ${sectionName}`) ||
+            content.includes(`continue to the ${sectionName}`) ||
+            content.includes(`move onto ${sectionName}`) ||
+            content.includes(`move onto the ${sectionName}`)) {
+          
+          console.log(`[Contextual Navigation] Found suggestion to move to ${sectionName} section`);
+          
+          // Navigate to the section
+          if (onSectionChange) {
+            onSectionChange(sectId);
+            
+            // Add messages to provide context
+            setMessages([
+              ...messages,
+              { role: 'user', content: userMessage },
+              { 
+                role: 'assistant', 
+                content: `I've navigated to the ${SECTION_NAMES[sectId]} section for you. How would you like to proceed with this section?` 
+              }
+            ]);
+            
+            return true;
+          }
+        }
+        
+        // Check for subsection suggestions (e.g., "Products Overview", "Mission Statement")
+        for (const subsection of subsections) {
+          const subsectionName = SUBFIELD_NAMES[subsection]?.toLowerCase();
+          if (!subsectionName) continue;
+          
+          // Check if the message suggests moving to this specific subsection
+          if (content.includes(`next section is ${subsectionName}`) || 
+              content.includes(`next part is ${subsectionName}`) ||
+              content.includes(`next section is the ${subsectionName}`) ||
+              content.includes(`next part is the ${subsectionName}`) ||
+              content.includes(`move on to ${subsectionName}`) || 
+              content.includes(`move on to the ${subsectionName}`) ||
+              content.includes(`continue to ${subsectionName}`) ||
+              content.includes(`continue to the ${subsectionName}`) ||
+              content.includes(`move onto ${subsectionName}`) ||
+              content.includes(`move onto the ${subsectionName}`)) {
+            
+            console.log(`[Contextual Navigation] Found suggestion to move to ${subsectionName} in ${SECTION_NAMES[sectId]} section`);
+            
+            // Navigate to the section and focus on the specific field
+            if (onSectionChange) {
+              onSectionChange(sectId, subsection);
+              
+              // Add messages to provide context
+              setMessages([
+                ...messages,
+                { role: 'user', content: userMessage },
+                { 
+                  role: 'assistant', 
+                  content: `I've navigated to the ${subsectionName} field in the ${SECTION_NAMES[sectId]} section. How would you like to proceed?` 
+                }
+              ]);
+              
+              return true;
+            }
+          }
+        }
+      }
+    }
+  }
+  
+  return false;
+};
