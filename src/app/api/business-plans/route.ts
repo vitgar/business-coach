@@ -3,6 +3,8 @@ import { prisma } from '@/lib/prisma'
 import { DEV_CONFIG } from '@/config/development'
 // Import API initialization to ensure development data is seeded
 import '@/app/api/_init'
+import { getServerSession } from 'next-auth/next'
+import { authOptions } from '../auth/[...nextauth]/route'
 
 /**
  * GET /api/business-plans
@@ -12,8 +14,9 @@ import '@/app/api/_init'
  */
 export async function GET(request: NextRequest) {
   try {
-    // In development mode, use the development user ID
-    const userId = DEV_CONFIG.useDevAuth ? DEV_CONFIG.userId : null
+    // Get user from session or use development user in dev mode
+    const session = await getServerSession(authOptions)
+    const userId = DEV_CONFIG.useDevAuth ? DEV_CONFIG.userId : session?.user?.id
     
     if (!userId) {
       return NextResponse.json(
@@ -55,8 +58,9 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
-    // In development mode, use the development user ID
-    const userId = DEV_CONFIG.useDevAuth ? DEV_CONFIG.userId : null
+    // Get user from session or use development user in dev mode
+    const session = await getServerSession(authOptions)
+    const userId = DEV_CONFIG.useDevAuth ? DEV_CONFIG.userId : session?.user?.id
     
     if (!userId) {
       return NextResponse.json(

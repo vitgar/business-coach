@@ -13,5 +13,6 @@ export const DEV_CONFIG = {
   isDevMode: process.env.NODE_ENV === 'development',
   
   // Flag to enable/disable development features
-  useDevAuth: process.env.NODE_ENV === 'development'
+  // Set to false to use real NextAuth authentication even in development
+  useDevAuth: false
 } 

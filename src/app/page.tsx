@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ArrowRight, BookOpen, DollarSign, LineChart, Settings, User } from 'lucide-react'
+import { ArrowRight, BookOpen, DollarSign, LineChart, Settings, User, LogIn } from 'lucide-react'
 import ClientLayout from '@/components/ClientLayout'
 import { useAuth } from '@/contexts/AuthContext'
 import { toast } from 'react-toastify'
@@ -12,6 +12,7 @@ import { toast } from 'react-toastify'
  * 
  * Landing page with options to start a business plan or access other features.
  * Uses auth context to manage business creation.
+ * Shows appropriate buttons based on authentication status.
  */
 export default function Home() {
   const router = useRouter()
@@ -51,8 +52,11 @@ export default function Home() {
   const handleGetStarted = () => {
     if (isAuthenticated && currentBusinessId) {
       router.push('/dashboard')
-    } else {
+    } else if (isAuthenticated) {
       handleStartBusinessPlan()
+    } else {
+      // Redirect to sign-in if not authenticated
+      router.push('/auth/signin')
     }
   }
 
@@ -73,9 +77,20 @@ export default function Home() {
               onClick={handleGetStarted}
               className="bg-white text-blue-600 px-6 py-3 rounded-lg font-semibold hover:bg-blue-50 transition-colors inline-flex items-center"
             >
-              {isAuthenticated ? 'Go to Dashboard' : 'Start Your Business Plan'}
+              {isAuthenticated ? (currentBusinessId ? 'Go to Dashboard' : 'Start Your Business Plan') : 'Get Started'}
               <ArrowRight className="ml-2 h-5 w-5" />
             </button>
+            
+            {!isAuthenticated && (
+              <Link
+                href="/auth/signin"
+                className="border-2 border-white text-white px-6 py-3 rounded-lg font-semibold hover:bg-white hover:text-blue-600 transition-colors inline-flex items-center"
+              >
+                <LogIn className="mr-2 h-5 w-5" />
+                Sign In
+              </Link>
+            )}
+            
             <Link
               href="/consultation"
               className="border-2 border-white text-white px-6 py-3 rounded-lg font-semibold hover:bg-white hover:text-blue-600 transition-colors"
@@ -85,6 +100,72 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* Authentication Section - Only shown for non-authenticated users */}
+      {!isAuthenticated && (
+        <section className="py-16 bg-white">
+          <div className="container mx-auto px-4">
+            <div className="max-w-5xl mx-auto">
+              <div className="text-center mb-12">
+                <h2 className="text-3xl font-bold mb-4">Join Our Business Coaching Platform</h2>
+                <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+                  Create an account to get personalized business guidance, save your progress, and access exclusive resources.
+                </p>
+              </div>
+              
+              <div className="grid md:grid-cols-2 gap-8">
+                {/* Sign In Card */}
+                <div className="bg-gray-50 rounded-xl p-8 shadow-sm hover:shadow-md transition-shadow">
+                  <h3 className="text-2xl font-bold mb-4">Already have an account?</h3>
+                  <p className="text-gray-600 mb-6">
+                    Sign in to continue working on your business plan and access your saved resources.
+                  </p>
+                  <Link 
+                    href="/auth/signin" 
+                    className="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+                  >
+                    Sign In
+                  </Link>
+                </div>
+                
+                {/* Sign Up Card */}
+                <div className="bg-blue-50 rounded-xl p-8 shadow-sm hover:shadow-md transition-shadow border border-blue-100">
+                  <h3 className="text-2xl font-bold mb-4">New to Business Coach?</h3>
+                  <p className="text-gray-600 mb-6">
+                    Create a free account to start your business journey with personalized guidance.
+                  </p>
+                  <ul className="mb-6 space-y-2">
+                    <li className="flex items-center text-gray-700">
+                      <svg className="h-5 w-5 text-green-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      Create and save business plans
+                    </li>
+                    <li className="flex items-center text-gray-700">
+                      <svg className="h-5 w-5 text-green-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      Get personalized recommendations
+                    </li>
+                    <li className="flex items-center text-gray-700">
+                      <svg className="h-5 w-5 text-green-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      Access business templates and resources
+                    </li>
+                  </ul>
+                  <Link 
+                    href="/auth/signup" 
+                    className="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+                  >
+                    Create Free Account
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Quick Overview Section */}
       <section className="py-20 bg-gray-50">

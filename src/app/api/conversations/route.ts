@@ -1,13 +1,28 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { PrismaClient, Prisma } from '@prisma/client'
 // Import API initialization to ensure development data is seeded
 import '@/app/api/_init'
+import { getServerSession } from 'next-auth/next'
+import { authOptions } from '../auth/[...nextauth]/route'
+import { DEV_CONFIG } from '@/config/development'
 
-// Get all conversations
+// Get all conversations for the current user
 export async function GET() {
   try {
+    // Get user from session or use development user in dev mode
+    const session = await getServerSession(authOptions)
+    const userId = DEV_CONFIG.useDevAuth ? DEV_CONFIG.userId : session?.user?.id
+    
+    if (!userId) {
+      return NextResponse.json(
+        { error: 'Unauthorized: Please sign in to view conversations' },
+        { status: 401 }
+      )
+    }
+
     const conversations = await prisma.conversation.findMany({
+      where: { userId },
       orderBy: {
         updatedAt: 'desc'
       },
@@ -26,8 +41,19 @@ export async function GET() {
 }
 
 // Create a new conversation
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
+    // Get user from session or use development user in dev mode
+    const session = await getServerSession(authOptions)
+    const userId = DEV_CONFIG.useDevAuth ? DEV_CONFIG.userId : session?.user?.id
+    
+    if (!userId) {
+      return NextResponse.json(
+        { error: 'Unauthorized: Please sign in to create a conversation' },
+        { status: 401 }
+      )
+    }
+
     const { title, messages } = await request.json()
     
     if (!title || !messages || !Array.isArray(messages)) {
@@ -36,37 +62,12 @@ export async function POST(request: Request) {
         { status: 400 }
       )
     }
-
-    // Get or create temporary user
-    let tempUser = await prisma.user.findFirst({
-      where: {
-        email: 'temp@example.com'
-      }
-    })
-
-    if (!tempUser) {
-      try {
-        tempUser = await prisma.user.create({
-          data: {
-            email: 'temp@example.com',
-            name: 'Temporary User',
-            password: 'temp-password', // In production, this should be properly hashed
-          }
-        })
-      } catch (userError) {
-        console.error('Error creating temporary user:', userError)
-        return NextResponse.json(
-          { error: 'Failed to create temporary user', details: userError instanceof Error ? userError.message : String(userError) },
-          { status: 500 }
-        )
-      }
-    }
     
     try {
       const conversation = await prisma.conversation.create({
         data: {
           title,
-          userId: tempUser.id,
+          userId,
           messages: {
             create: messages.map((msg: { content: string; role: string }) => ({
               content: msg.content,

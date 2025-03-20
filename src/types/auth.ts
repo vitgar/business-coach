@@ -4,14 +4,19 @@
  * Defines types for authentication system and business selection
  */
 
+import { DefaultSession, DefaultUser } from "next-auth";
+
 /**
  * Basic user information
+ * Extends NextAuth DefaultUser with app-specific fields
  */
-export interface User {
+export interface User extends DefaultUser {
   id: string;
-  name?: string;
+  name?: string | null;
   email: string;
   role: string;
+  emailVerified?: Date | null;
+  image?: string | null;
 }
 
 /**
@@ -43,4 +48,19 @@ export interface AuthContextType extends AuthState {
   setCurrentBusinessId: (id: string) => void;
   login: (email: string, password: string) => Promise<boolean>;
   logout: () => Promise<void>;
+}
+
+/**
+ * Extends NextAuth Session with additional user properties
+ */
+declare module "next-auth" {
+  interface Session {
+    user: {
+      id: string;
+      email: string;
+      name?: string | null;
+      image?: string | null;
+      role: string;
+    } & DefaultSession["user"];
+  }
 } 
