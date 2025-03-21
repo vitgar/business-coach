@@ -95,15 +95,11 @@ export const authOptions: NextAuthOptions = {
     LinkedInProvider({
       clientId: process.env.LINKEDIN_CLIENT_ID ?? "",
       clientSecret: process.env.LINKEDIN_CLIENT_SECRET ?? "",
-      profile(profile) {
-        return {
-          id: profile.sub,
-          name: profile.name,
-          email: profile.email,
-          image: profile.picture,
-          role: "user" // Default role for OAuth users
-        };
-      }
+      authorization: {
+        params: { scope: "r_emailaddress r_liteprofile" }
+      },
+      // Use standard Next-Auth JWT approach without custom profile function
+      // This lets NextAuth use its built-in handlers which are more reliable
     })
   ],
   
@@ -124,7 +120,12 @@ export const authOptions: NextAuthOptions = {
   // Configure callbacks
   callbacks: {
     // Add user role to token
-    async jwt({ token, user }) {
+    async jwt({ token, user, account }) {
+      // Log token and account data for debugging
+      if (account?.provider === 'linkedin') {
+        console.log('LinkedIn account data:', JSON.stringify(account, null, 2));
+      }
+      
       if (user) {
         token.role = (user as CustomUser).role;
       }
@@ -138,11 +139,23 @@ export const authOptions: NextAuthOptions = {
         session.user.id = token.sub as string;
       }
       return session;
+    },
+    
+    // Handle sign-in callback
+    async signIn({ account, profile }) {
+      // Log sign-in data for LinkedIn
+      if (account?.provider === 'linkedin') {
+        console.log('LinkedIn sign-in account:', JSON.stringify(account, null, 2));
+        console.log('LinkedIn sign-in profile:', JSON.stringify(profile, null, 2));
+      }
+      
+      // Always return true to allow sign-in
+      return true;
     }
   },
   
-  // Disable debug mode to prevent webpack errors
-  debug: false
+  // Enable debug mode to get detailed error logs
+  debug: process.env.NODE_ENV === 'development'
 };
 
 // Create handler with the auth options

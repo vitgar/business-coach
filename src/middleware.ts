@@ -20,6 +20,10 @@ const publicRoutes = [
   '/auth/verify-email',
   '/api/auth/verify-email',
   '/api/auth/reset-password',
+  '/auth/test-oauth',
+  '/auth/linkedin-test',
+  '/api/auth/test-linkedin',
+  '/api/auth/linkedin-callback',
 ];
 
 // Routes that start with these paths don't require authentication
