@@ -38,6 +38,7 @@ interface ActionItemsListProps {
   onItemChanged?: () => void // Callback when item is changed
   onItemDeleted?: () => void // Callback when item is deleted
   ignoreParentItems?: boolean; // Whether to hide items from parent categories
+  hasAnyItems?: boolean; // Whether to show any items at all (used to hide items for parent lists)
 }
 
 // Declare a global interface to add the custom cache property to Window
@@ -70,7 +71,8 @@ export default function ActionItemsList({
   onItemAdded,
   onItemChanged,
   onItemDeleted,
-  ignoreParentItems = false
+  ignoreParentItems = false,
+  hasAnyItems = true
 }: ActionItemsListProps) {
   const { userId } = useAuth()
   const [actionItems, setActionItems] = useState<ActionItem[]>([])
@@ -183,6 +185,10 @@ export default function ActionItemsList({
    * Filters action items based on the category filter
    */
   useEffect(() => {
+    // Log parameters to help debug inconsistent filtering
+    console.log(`Filtering with params: categoryFilter=${categoryFilter}, listId=${listId}, ignoreParentItems=${ignoreParentItems}, showChildCategories=${showChildCategories}`);
+    console.log(`Child categories: ${childCategories.join(', ')}`);
+    
     if (categoryFilter === null) {
       // If no category filter, use all items sorted by ordinal
       console.log(`No category filter, showing all ${actionItems.length} items`);
@@ -199,64 +205,102 @@ export default function ActionItemsList({
       
       setFilteredItems(sortedItems);
     } else {
-      console.log(`Filtering by category: "${categoryFilter}", showChildCategories: ${showChildCategories}`);
-      console.log(`Child categories: ${childCategories.join(', ')}`);
+      console.log(`Filtering by category: "${categoryFilter}", showChildCategories=${showChildCategories}`);
       
       // Check if the current category is a parent category
       const isParentCategory = childCategories.length > 0;
       
-      // Filter items that match the specified category
-      const filtered = actionItems.filter(item => {
-        // Extract the category from the item content
-        let itemCategory = '';
-        const categoryMatch = item.content.match(/^\s*\[(.*?)\]|\s*\{(.*?)\}/);
+      // We need a consistent approach for filtering items
+      // 1. If listId is provided, prioritize showing items from that list
+      if (listId) {
+        console.log(`Using listId=${listId} for filtering`);
         
-        if (categoryMatch) {
-          // Use the captured group that matched (either [] or {})
-          itemCategory = (categoryMatch[1] || categoryMatch[2]).trim();
+        // First prioritize items that explicitly belong to this list
+        const listItems = actionItems.filter(item => item.listId === listId);
+        console.log(`Found ${listItems.length} items matching listId ${listId}`);
+        
+        // If we also need to show child categories, find those items too
+        let childCategoryItems: ActionItem[] = [];
+        if (showChildCategories && childCategories.length > 0) {
+          childCategoryItems = actionItems.filter(item => {
+            // Extract category from item
+            const categoryMatch = item.content.match(/^\s*\[(.*?)\]|\s*\{(.*?)\}/);
+            if (!categoryMatch) return false;
+            
+            const itemCategory = (categoryMatch[1] || categoryMatch[2]).trim();
+            return childCategories.includes(itemCategory);
+          });
+          console.log(`Found ${childCategoryItems.length} items from child categories`);
         }
         
-        // If this is a parent category and we don't want to show parent items, skip
-        if (isParentCategory && ignoreParentItems && itemCategory === categoryFilter) {
+        // Combine and deduplicate
+        const combinedItems = [...listItems];
+        childCategoryItems.forEach(item => {
+          if (!combinedItems.some(existingItem => existingItem.id === item.id)) {
+            combinedItems.push(item);
+          }
+        });
+        
+        // Sort the filtered items
+        const sortedFiltered = [...combinedItems].sort((a, b) => {
+          // First sort by ordinal (ascending)
+          if (a.ordinal !== b.ordinal) {
+            return a.ordinal - b.ordinal;
+          }
+          // If ordinals are the same, sort by createdAt (newest first)
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        });
+        
+        console.log(`Showing ${sortedFiltered.length} total items after filtering and sorting`);
+        setFilteredItems(sortedFiltered);
+      }
+      // 2. If no listId but we have a categoryFilter, filter by category content
+      else {
+        // Filter items that match the specified category
+        const filtered = actionItems.filter(item => {
+          // Extract the category from the item content
+          let itemCategory = '';
+          const categoryMatch = item.content.match(/^\s*\[(.*?)\]|\s*\{(.*?)\}/);
+          
+          if (categoryMatch) {
+            // Use the captured group that matched (either [] or {})
+            itemCategory = (categoryMatch[1] || categoryMatch[2]).trim();
+          }
+          
+          // If this is a parent category and we don't want to show parent items, skip
+          // But we still want to show the actual parent item itself, just not other items in the parent category
+          if (isParentCategory && ignoreParentItems && itemCategory === categoryFilter) {
+            return false;
+          }
+          
+          // Direct match for the category
+          if (itemCategory === categoryFilter) {
+            return true;
+          }
+          
+          // If showing child categories and this is one of them
+          if (showChildCategories && childCategories.includes(itemCategory)) {
+            return true;
+          }
+          
           return false;
-        }
+        });
         
-        // Direct match for the category
-        if (itemCategory === categoryFilter) {
-          return true;
-        }
+        // Sort the filtered items
+        const sortedFiltered = [...filtered].sort((a, b) => {
+          // First sort by ordinal (ascending)
+          if (a.ordinal !== b.ordinal) {
+            return a.ordinal - b.ordinal;
+          }
+          // If ordinals are the same, sort by createdAt (newest first)
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        });
         
-        // If showing child categories and this is one of them
-        if (showChildCategories && childCategories.includes(itemCategory)) {
-          return true;
-        }
-        
-        // If list ID filter is active, use that instead of content-based categories
-        if (listId && item.listId === listId) {
-          return true;
-        }
-        
-        // When no explicit category but using list filtering
-        if (!categoryMatch && listId && item.listId === listId) {
-          return true;
-        }
-        
-        return false;
-      });
-      
-      // Sort the filtered items
-      const sortedFiltered = [...filtered].sort((a, b) => {
-        // First sort by ordinal (ascending)
-        if (a.ordinal !== b.ordinal) {
-          return a.ordinal - b.ordinal;
-        }
-        // If ordinals are the same, sort by createdAt (newest first)
-        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-      });
-      
-      setFilteredItems(sortedFiltered);
+        console.log(`Showing ${sortedFiltered.length} total items after category filtering and sorting`);
+        setFilteredItems(sortedFiltered);
+      }
     }
-  }, [actionItems, categoryFilter, showChildCategories, childCategories, listId, listNames, ignoreParentItems]);
+  }, [actionItems, categoryFilter, showChildCategories, childCategories, listId, ignoreParentItems]);
 
   /**
    * Toggles the completion status of an action item
@@ -423,11 +467,132 @@ export default function ActionItemsList({
     return content.replace(prefixPattern, '').trim();
   }
 
-  // Fetch action items on component mount
+  // Fetch action items on component mount and when filters change
   useEffect(() => {
-    fetchActionItems()
-  }, [conversationId, messageId, parentId, rootItemsOnly, showChildCategories, listId])
-
+    // Skip loading if we're displaying a parent category with no items
+    if (categoryFilter && !hasAnyItems) {
+      console.log('Skipping action items fetch for parent category view');
+      setIsLoading(false);
+      return;
+    }
+    
+    console.log('ActionItemsList: Fetching items due to filter change')
+    
+    // Add the listId to the logging for debugging
+    console.log(`Fetching with: conversationId=${conversationId}, messageId=${messageId}, parentId=${parentId}, rootItemsOnly=${rootItemsOnly}, listId=${listId}`);
+    
+    // Track the most recent API call to prevent race conditions
+    const fetchId = Date.now().toString();
+    const controller = new AbortController();
+    const signal = controller.signal;
+    
+    // This variable helps us track if this fetch is still relevant when it completes
+    let isMounted = true;
+    
+    // Function to fetch with abort signal and track state
+    const fetchWithSignal = async () => {
+      setIsLoading(true);
+      setError(null);
+      
+      try {
+        // Construct query parameters
+        const params = new URLSearchParams();
+        if (conversationId) params.append('conversationId', conversationId);
+        if (messageId) params.append('messageId', messageId);
+        if (parentId) params.append('parentId', parentId);
+        if (rootItemsOnly) params.append('rootItemsOnly', 'true');
+        if (listId) params.append('listId', listId);
+        
+        // Add a larger limit to ensure we get all items
+        params.append('limit', '1000');
+        
+        console.log(`Fetching action items with params: ${params.toString()}, fetchId: ${fetchId}`);
+        
+        // Fetch action items from API with abort signal
+        const response = await fetch(`/api/action-items?${params.toString()}`, { signal });
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to fetch action items');
+        }
+        
+        const data = await response.json();
+        console.log(`Received ${data.length} action items from API for fetchId: ${fetchId}`);
+        
+        // Only update state if this component is still mounted and relevant
+        if (isMounted) {
+          setActionItems(data);
+          
+          // Process child categories if needed
+          if (showChildCategories && categoryFilter) {
+            // Extract all categories from items
+            const categories = new Set<string>();
+            data.forEach((item: ActionItem) => {
+              const bracketMatch = item.content.match(/^\s*[\[\{](.*?)[\]\}]/);
+              if (bracketMatch) {
+                categories.add(bracketMatch[1].trim());
+              }
+            });
+            
+            // Use a simplified approach to identify potential child categories
+            const potentialChildren = Array.from(categories).filter(cat => {
+              if (cat === categoryFilter) return false;
+              
+              if (cat.includes(categoryFilter)) return true;
+              
+              if (categoryFilter.includes("Business Plan") && 
+                  ["Executive Summary", "Market Analysis", "Company Description", 
+                  "Organization", "Products", "Marketing", "Financials"].some(term => 
+                  cat.includes(term))) {
+                return true;
+              }
+              
+              const parentWords = categoryFilter.toLowerCase().split(/\s+/);
+              const childWords = cat.toLowerCase().split(/\s+/);
+              let commonWords = 0;
+              
+              childWords.forEach(word => {
+                if (word.length > 3 && parentWords.includes(word)) {
+                  commonWords++;
+                }
+              });
+              
+              return commonWords >= 1;
+            });
+            
+            setChildCategories(potentialChildren);
+            console.log(`Found ${potentialChildren.length} potential child categories for ${categoryFilter}:`, potentialChildren);
+          } else {
+            setChildCategories([]);
+          }
+        }
+      } catch (err) {
+        if (err instanceof Error && err.name === 'AbortError') {
+          console.log(`Fetch aborted for fetchId: ${fetchId}`);
+          return;
+        }
+        
+        if (isMounted) {
+          setError(err instanceof Error ? err.message : 'Something went wrong');
+          console.error(`Error fetching action items (fetchId: ${fetchId}):`, err);
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    };
+    
+    fetchWithSignal();
+    
+    // Cleanup function to abort fetch and track mount state
+    return () => {
+      isMounted = false;
+      controller.abort();
+      console.log(`Cleaning up fetch with fetchId: ${fetchId}`);
+    };
+  }, [conversationId, messageId, parentId, rootItemsOnly, listId, categoryFilter, showChildCategories]);
+  
   // Fetch list names for any listIds we have
   useEffect(() => {
     // First collect all unique list IDs from our items
@@ -523,6 +688,37 @@ export default function ActionItemsList({
       <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-lg">
         <p className="font-semibold">Error loading action items</p>
         <p>{error}</p>
+      </div>
+    )
+  }
+
+  // If we're viewing a parent list and hasAnyItems is false, show a special message
+  if (categoryFilter && !hasAnyItems) {
+    return (
+      <div className="text-center p-8 border border-dashed border-gray-300 rounded-lg bg-gray-50">
+        <p className="text-gray-700 font-medium mb-4">Parent Category View</p>
+        <div className="mb-4">
+          <svg 
+            className="w-16 h-16 mx-auto text-gray-400" 
+            fill="none" 
+            stroke="currentColor" 
+            viewBox="0 0 24 24"
+          >
+            <path 
+              strokeLinecap="round" 
+              strokeLinejoin="round" 
+              strokeWidth={1.5} 
+              d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" 
+            />
+          </svg>
+        </div>
+        <p className="text-gray-500 mb-2">This is a parent category that contains sub-lists</p>
+        <p className="text-sm text-gray-500 mb-4">
+          Click the expand arrow <span className="inline-block mx-1">▼</span> next to the category name in the sidebar to view its sub-lists.
+        </p>
+        <p className="text-sm text-gray-400">
+          Action items are organized within the sub-lists, not directly in the parent category.
+        </p>
       </div>
     )
   }

@@ -24,6 +24,7 @@ interface ActionList {
   title: string;
   items: string[];
   parentId?: string;
+  ordinal?: number;
 }
 
 /**
@@ -334,9 +335,19 @@ export default function HowToPage() {
         }
       });
       
-      // Sort child lists within each parent group for proper ordering
+      // Sort child lists within each parent group based on their ordinal values
       Object.keys(childListsByParent).forEach(parentId => {
-        childListsByParent[parentId].sort((a, b) => a.title.localeCompare(b.title));
+        childListsByParent[parentId].sort((a, b) => {
+          // Sort by ordinal if both have ordinals
+          if (typeof a.ordinal === 'number' && typeof b.ordinal === 'number') {
+            return a.ordinal - b.ordinal;
+          }
+          // If only one has ordinal, prioritize it
+          if (typeof a.ordinal === 'number') return -1;
+          if (typeof b.ordinal === 'number') return 1;
+          // Fall back to title sorting if no ordinals
+          return a.title.localeCompare(b.title);
+        });
       });
       
       await processInBatches(childLists, async (list) => {
@@ -345,10 +356,12 @@ export default function HowToPage() {
           const parentId = createdLists[list.parentId];
           
           try {
-            // Determine ordinal position for this child list
-            const ordinal = childListsByParent[list.parentId]
-              ? childListsByParent[list.parentId].indexOf(list)
-              : 0;
+            // Use the ordinal from the extracted list if available, otherwise calculate based on position
+            const ordinal = typeof list.ordinal === 'number' 
+              ? list.ordinal 
+              : childListsByParent[list.parentId]
+                ? childListsByParent[list.parentId].indexOf(list)
+                : 0;
             
             const newList = await makeApiCall('/api/action-item-lists', 'POST', {
               title: list.title,

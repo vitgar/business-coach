@@ -10,6 +10,7 @@ interface ActionList {
   title: string;
   items: string[];
   parentId?: string;
+  ordinal?: number;
 }
 
 /**
@@ -53,6 +54,7 @@ export async function POST(request: Request) {
       6. IMPORTANT: Break down high-level steps into specific, actionable subtasks that can be individually checked off.
       7. Extract ALL relevant action items, not just a high-level summary. Be comprehensive.
       8. Each action item should be self-contained and describe a single, concrete task.
+      9. Assign an ordinal number to each list to indicate its position in the sequence, especially for sublists under the same parent.
       
       Response format should be JSON with this structure:
       {
@@ -61,13 +63,22 @@ export async function POST(request: Request) {
             "id": "unique-id-1",
             "title": "Main Action List Title",
             "items": ["Specific action item 1", "Specific action item 2", ...],
-            "parentId": null
+            "parentId": null,
+            "ordinal": 0
           },
           {
             "id": "unique-id-2",
             "title": "Sublist Title",
             "items": ["Detailed sub-action item 1", "Detailed sub-action item 2", ...],
-            "parentId": "unique-id-1"
+            "parentId": "unique-id-1",
+            "ordinal": 0
+          },
+          {
+            "id": "unique-id-3",
+            "title": "Another Sublist Title",
+            "items": ["Detailed sub-action item 1", "Detailed sub-action item 2", ...],
+            "parentId": "unique-id-1",
+            "ordinal": 1
           }
         ]
       }
@@ -88,6 +99,8 @@ export async function POST(request: Request) {
       - For complex topics with multiple subtopics, create a separate list for each subtopic.
       - When examples are provided, convert them to relevant actionable items if they imply tasks to be done.
       - When the conversation discusses step 1, step 2, step 3, etc., ensure EACH step and substep appears as a separate action item.
+      - IMPORTANT: Assign ordinal numbers (0, 1, 2, etc.) to indicate the position of each list, especially for sublists with the same parent.
+      - For sublists under the same parent, the ordinal should reflect their logical sequence or chronological order.
     `
 
     // Call OpenAI to analyze the content
@@ -126,7 +139,9 @@ export async function POST(request: Request) {
           ...list,
           id: newId,
           // Don't set parentId yet - we'll update it in the second pass
-          parentId: list.parentId || undefined
+          parentId: list.parentId || undefined,
+          // Ensure ordinal is a number, default to 0 if not provided
+          ordinal: typeof list.ordinal === 'number' ? list.ordinal : 0
         };
       });
       
@@ -156,6 +171,33 @@ export async function POST(request: Request) {
         }))
         // Remove lists that ended up with empty items after filtering
         .filter(list => list.items.length > 0);
+
+      // Add post-processing to ensure ordinals are correctly set for siblings
+      // Group lists by parentId
+      const listsByParent: Record<string, ActionList[]> = {};
+      actionLists.forEach(list => {
+        const parentId = list.parentId || 'root';
+        if (!listsByParent[parentId]) {
+          listsByParent[parentId] = [];
+        }
+        listsByParent[parentId].push(list);
+      });
+
+      // Sort and reassign ordinals within each parent group
+      Object.keys(listsByParent).forEach(parentId => {
+        const siblings = listsByParent[parentId];
+        
+        // First sort by existing ordinal
+        siblings.sort((a, b) => (a.ordinal || 0) - (b.ordinal || 0));
+        
+        // Then reassign ordinals to ensure they're sequential
+        siblings.forEach((list, index) => {
+          list.ordinal = index;
+        });
+      });
+
+      // Flatten back to array
+      actionLists = Object.values(listsByParent).flat();
     } catch (error) {
       console.error('Error parsing AI response:', error)
       return NextResponse.json({ 

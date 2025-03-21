@@ -53,6 +53,7 @@ export async function GET(
       color: metadata.color || 'light-blue',
       topicId: metadata.topicId,
       parentId: metadata.parentId,
+      // Include ordinal for proper ordering of sublists (especially important for related items)
       ordinal: enhancedList.ordinal,
       items: enhancedList.items
     })

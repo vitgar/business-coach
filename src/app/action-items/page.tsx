@@ -359,42 +359,107 @@ export default function ActionItemsPage() {
     }
   }
 
-  // Create stable callbacks for functions passed to child components or used in effects
-  
-  /**
-   * Selects a category and updates URL parameters
-   */
-  const selectCategory = useCallback((categoryName: string | null, skipUrlUpdate: boolean = false) => {
-    console.log(`Selecting category: ${categoryName || 'All'}`);
-    setSelectedCategory(categoryName);
+  // Handle URL parameters
+  useEffect(() => {
+    if (!isAuthenticated || typeof window === 'undefined') return;
     
-    if (!skipUrlUpdate && typeof window !== 'undefined') {
-      // Get matching action list for this category name (if any)
-      const matchingList = actionLists.find(list => list.name === categoryName);
+    // Avoid re-running this effect if the category was already selected programmatically
+    if (selectedCategory !== null) return;
+    
+    // Extract params from URL
+    const params = new URLSearchParams(window.location.search);
+    const listId = params.get('listId');
+    const showChildren = params.get('showChildren') === 'true';
+    
+    if (listId) {
+      console.log(`URL contains listId=${listId}, showChildren=${showChildren}`);
       
+      // If showing a specific list, find the matching category
+      const matchingList = actionLists.find(list => list.id === listId);
       if (matchingList) {
-        console.log(`Found matching list with ID: ${matchingList.id}`);
-        
-        // Update URL with listId
-        const url = new URL(window.location.href);
-        url.searchParams.set('listId', matchingList.id);
-        url.searchParams.set('showChildren', 'true');
-        window.history.pushState({}, '', url.toString());
-        
-        // Remember we're showing this parent list
-        localStorage.setItem('showingParentList', matchingList.id);
-      } else if (categoryName === null) {
-        // Remove URL parameters if selecting "All"
-        const url = new URL(window.location.href);
-        url.searchParams.delete('listId');
-        url.searchParams.delete('showChildren');
-        window.history.pushState({}, '', url.toString());
-        
-        // Clear the remembered parent list
-        localStorage.removeItem('showingParentList');
+        console.log(`Found matching list for ID ${listId}: ${matchingList.name}`);
+        // Use a local flag to avoid re-triggering the URL update in selectCategory
+        const skipUrlUpdate = true;
+        selectCategory(matchingList.name);
+      } else {
+        console.log(`No matching list found for ID: ${listId}, will fetch details`);
+        // Fetch the list details to get the name
+        fetchListDetails(listId);
       }
     }
-  }, [actionLists]);
+  }, [isAuthenticated, actionLists]);
+
+  /**
+   * Selects a category to filter the action items list
+   * @param name Category name to filter by
+   */
+  const selectCategory = (name: string | null) => {
+    console.log(`Selecting category: ${name || 'All'}`);
+    
+    // Only update if the category is actually changing to prevent unnecessary renders
+    if (selectedCategory === name) return;
+    
+    setSelectedCategory(name);
+    
+    // Special handling for child categories
+    if (name !== null) {
+      // Check if this is a child category
+      const category = categories.find(cat => cat.name === name);
+      if (category && category.parentName) {
+        // This is a child category, make sure the parent is expanded
+        setExpandedParents(prev => ({
+          ...prev,
+          [category.parentName as string]: true
+        }));
+        
+        // Set flag to show child categories under the parent
+        localStorage.setItem('showingParentList', 'true');
+      }
+    } else {
+      // When selecting "All Items", clear the showingParentList flag
+      localStorage.removeItem('showingParentList');
+      
+      // Also clear the listId from URL to avoid confusion when selecting "All Items"
+      if (typeof window !== 'undefined') {
+        setTimeout(() => {
+          const url = new URL(window.location.href);
+          url.searchParams.delete('listId');
+          url.searchParams.delete('category');
+          window.history.pushState({}, '', url);
+        }, 0);
+      }
+    }
+    
+    // Update URLSearchParams without reloading the page
+    // Use setTimeout to break the update cycle by deferring the URL update
+    if (typeof window !== 'undefined' && name !== null) {
+      setTimeout(() => {
+        const url = new URL(window.location.href);
+        
+        // Only update the category param if:
+        // 1. We're NOT in a list view (no listId in URL)
+        // 2. This is a parent category
+        const isParentCategory = categories.find(cat => cat.name === name && cat.isParent);
+        const hasListId = url.searchParams.has('listId');
+        
+        if (isParentCategory || !hasListId) {
+          // For parent categories, use category param
+          if (name) {
+            url.searchParams.set('category', encodeURIComponent(name));
+          } else {
+            url.searchParams.delete('category');
+          }
+          
+          // For parent categories, we should also clear any listId to avoid confusion
+          if (isParentCategory) {
+            url.searchParams.delete('listId');
+          }
+          
+          window.history.pushState({}, '', url);
+        }
+      }, 0);
+    }
+  };
   
   // Toggle dropdown visibility
   const toggleDropdown = useCallback(() => {
@@ -410,37 +475,41 @@ export default function ActionItemsPage() {
   /**
    * Toggle expansion of parent categories
    */
-  const toggleParentExpanded = useCallback((categoryName: string) => {
-    console.log(`Toggling expansion for parent category: ${categoryName}`);
-    
-    // Get current expanded state for this category
+  const toggleParentExpansion = (categoryName: string) => {
     const isCurrentlyExpanded = expandedParents[categoryName] || false;
-    
-    // Update expanded state to toggle it
+
+    // Set expanded state for this parent
     setExpandedParents(prev => {
-      const newState = {...prev};
-      // Toggle this specific category's expanded state
-      newState[categoryName] = !isCurrentlyExpanded;
+      const newState = { 
+        ...prev, 
+        [categoryName]: !isCurrentlyExpanded 
+      };
       return newState;
     });
-    
-    // Remember the expanded state in localStorage (browser-only)
-    if (typeof window !== 'undefined') {
-      if (!isCurrentlyExpanded) {
-        // Remember this expanded parent
-        const expandedParentsList = JSON.parse(localStorage.getItem('expandedParents') || '[]');
-        if (!expandedParentsList.includes(categoryName)) {
-          expandedParentsList.push(categoryName);
-          localStorage.setItem('expandedParents', JSON.stringify(expandedParentsList));
-        }
-      } else {
-        // Remove from expanded parents
-        const expandedParentsList = JSON.parse(localStorage.getItem('expandedParents') || '[]');
-        const updatedList = expandedParentsList.filter((name: string) => name !== categoryName);
-        localStorage.setItem('expandedParents', JSON.stringify(updatedList));
+
+    // Also update localStorage
+    if (!isCurrentlyExpanded) {
+      // When expanding, add to list
+      const expandedParentsList = JSON.parse(localStorage.getItem('expandedParents') || '[]');
+      if (!expandedParentsList.includes(categoryName)) {
+        expandedParentsList.push(categoryName);
+        localStorage.setItem('expandedParents', JSON.stringify(expandedParentsList));
+      }
+      
+      // When expanding a parent, also set a flag to show child categories
+      localStorage.setItem('showingParentList', 'true');
+    } else {
+      // When collapsing, remove from list
+      const expandedParentsList = JSON.parse(localStorage.getItem('expandedParents') || '[]');
+      const updatedList = expandedParentsList.filter((name: string) => name !== categoryName);
+      localStorage.setItem('expandedParents', JSON.stringify(updatedList));
+      
+      // If no parents are expanded, remove the child category flag
+      if (updatedList.length === 0) {
+        localStorage.removeItem('showingParentList');
       }
     }
-  }, [expandedParents]);
+  };
 
   // Fetch categories when component mounts
   useEffect(() => {
@@ -453,79 +522,11 @@ export default function ActionItemsPage() {
     }
   }, [isAuthenticated]);
   
-  // Handle URL parameters
-  useEffect(() => {
-    if (!isAuthenticated || typeof window === 'undefined') return;
-    
-    // Extract params from URL
-    const params = new URLSearchParams(window.location.search);
-    const listId = params.get('listId');
-    const showChildren = params.get('showChildren') === 'true';
-    
-    if (listId) {
-      console.log(`URL contains listId=${listId}, showChildren=${showChildren}`);
-      
-      // If showing a specific list, find the matching category
-      const matchingList = actionLists.find(list => list.id === listId);
-      if (matchingList) {
-        console.log(`Found matching list for ID ${listId}: ${matchingList.name}`);
-        selectCategory(matchingList.name);
-      } else {
-        console.log(`No matching list found for ID: ${listId}, will fetch details`);
-        // Fetch the list details to get the name
-        fetchListDetails(listId);
-      }
-    } else {
-      // Clear selection if no listId in URL
-      console.log('No listId in URL, clearing selection');
-      selectCategory(null);
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem('showingParentList');
-      }
-    }
-  }, [isAuthenticated, actionLists, selectCategory]);
-
-  // Initialize expanded state based on URL parameters when component mounts
-  useEffect(() => {
-    if (!isAuthenticated || categories.length === 0 || typeof window === 'undefined') return;
-    
-    // Load previously expanded parents from localStorage
-    try {
-      const savedExpandedParents = JSON.parse(localStorage.getItem('expandedParents') || '[]');
-      
-      // Start with a fresh state
-      const newExpandedState: Record<string, boolean> = {};
-      
-      // Initialize expanded state for parents that were previously expanded
-      savedExpandedParents.forEach((parentName: string) => {
-        newExpandedState[parentName] = true;
-      });
-      
-      // If a category is selected, also expand its parent
-      if (selectedCategory) {
-        const selectedCat = categories.find(cat => cat.name === selectedCategory);
-        // If this is a child category, make sure its parent is expanded
-        if (selectedCat && selectedCat.parentName) {
-          newExpandedState[selectedCat.parentName] = true;
-        }
-      }
-      
-      // Update the expanded state
-      setExpandedParents(newExpandedState);
-      
-    } catch (error) {
-      console.error('Error loading expanded parents from localStorage:', error);
-    }
-  }, [isAuthenticated, selectedCategory, categories]);
-
-  // Hook for parent-dependent memoization
-  const useDeepMemo = (factory: () => any, deps: any[]) => useMemo(factory, [JSON.stringify(deps)]);
-
   /**
    * Fetch details for a specific list by ID
    * @param listId The ID of the list to fetch
    */
-  const fetchListDetails = async (listId: string) => {
+  const fetchListDetails = useCallback(async (listId: string) => {
     try {
       // Check if we already have this list in our actionLists state
       const cachedList = actionLists.find(list => list.id === listId);
@@ -554,7 +555,65 @@ export default function ActionItemsPage() {
       console.error('Error fetching list details:', error);
       toast.error('Failed to load the requested list');
     }
-  };
+  }, [actionLists]); // Only depend on actionLists
+  
+  // Initialize expanded state based on URL parameters when component mounts
+  useEffect(() => {
+    if (!isAuthenticated || categories.length === 0 || typeof window === 'undefined') return;
+    
+    // Only run this once when categories are first loaded
+    const expandedStateKey = 'expandedStateInitialized';
+    if (sessionStorage.getItem(expandedStateKey)) {
+      return;
+    }
+    sessionStorage.setItem(expandedStateKey, 'true');
+    
+    // Load previously expanded parents from localStorage
+    try {
+      const savedExpandedParents = JSON.parse(localStorage.getItem('expandedParents') || '[]');
+      
+      // Track explicitly collapsed parents (where user has clicked to collapse)
+      const explicitlyCollapsed = JSON.parse(localStorage.getItem('collapsedParents') || '[]');
+      
+      // Start with a fresh state
+      const newExpandedState: Record<string, boolean> = {};
+      
+      // First, get all parent categories
+      const parentCategories = categories.filter(cat => cat.isParent).map(cat => cat.name);
+      
+      // By default, expand ALL parent categories unless they're explicitly collapsed
+      parentCategories.forEach(parentName => {
+        newExpandedState[parentName] = !explicitlyCollapsed.includes(parentName);
+      });
+      
+      // Then, apply user preferences from localStorage
+      savedExpandedParents.forEach((parentName: string) => {
+        newExpandedState[parentName] = true;
+      });
+      
+      // If a category is selected, also expand its parent
+      if (selectedCategory) {
+        const selectedCat = categories.find(cat => cat.name === selectedCategory);
+        // If this is a child category, make sure its parent is expanded
+        if (selectedCat && selectedCat.parentName) {
+          newExpandedState[selectedCat.parentName] = true;
+        }
+      }
+      
+      // Update the expanded state
+      setExpandedParents(prevState => ({
+        ...prevState,
+        ...newExpandedState
+      }));
+      
+    } catch (error) {
+      console.error('Error initializing expanded state:', error);
+    }
+  // This effect only needs to run when authentication changes or categories load initially
+  }, [isAuthenticated, categories.length]);
+
+  // Hook for parent-dependent memoization
+  const useDeepMemo = (factory: () => any, deps: any[]) => useMemo(factory, [JSON.stringify(deps)]);
 
   return (
     <ClientLayout>
@@ -830,7 +889,7 @@ export default function ActionItemsPage() {
                                     <button 
                                       onClick={(e) => {
                                         e.stopPropagation();
-                                        toggleParentExpanded(category.name);
+                                        toggleParentExpansion(category.name);
                                       }}
                                       className="text-gray-500 hover:text-blue-600 hover:bg-blue-50 transition-all rounded-full p-1"
                                       title={isExpanded ? "Collapse" : "Expand"}
@@ -855,7 +914,43 @@ export default function ActionItemsPage() {
                                 {childCategories.map(childCategory => (
                                   <button
                                     key={childCategory.name}
-                                    onClick={() => selectCategory(childCategory.name)}
+                                    onClick={() => {
+                                      // When selecting a child category, we need to:
+                                      // 1. Set the selected category to the child
+                                      // 2. Set the showingParentList flag in localStorage
+                                      // 3. Update the URL with the listId and category
+
+                                      // Store the childCategory ID before any state updates to ensure consistency
+                                      const childCategoryId = childCategory.id;
+                                      
+                                      // Update localStorage first to signal we're showing parent-child relationship
+                                      localStorage.setItem('showingParentList', 'true');
+                                      
+                                      // Set the category first
+                                      selectCategory(childCategory.name);
+                                      
+                                      // Update URL with listId and ensure it's consistent with our selection
+                                      // Use setTimeout to break the update cycle
+                                      setTimeout(() => {
+                                        const url = new URL(window.location.href);
+                                        
+                                        // Clear any existing parameters to avoid conflicting filters
+                                        url.searchParams.delete('category');
+                                        
+                                        // Set the consistent listId
+                                        url.searchParams.set('listId', childCategoryId);
+                                        
+                                        // Add a timestamp to force refresh and avoid caching issues
+                                        url.searchParams.set('t', Date.now().toString());
+                                        
+                                        window.history.pushState({}, '', url);
+                                        
+                                        // Force refresh the component after URL update
+                                        setKey(prev => prev + 1);
+                                        
+                                        console.log(`Navigated to child category: ${childCategory.name} with listId: ${childCategoryId}`);
+                                      }, 0);
+                                    }}
                                     className={`w-full flex items-center justify-between py-1.5 px-3 text-left rounded-md my-1 ${
                                       selectedCategory === childCategory.name 
                                         ? 'bg-blue-50 text-blue-700 font-medium border-l-4 border-blue-500 pl-2' 
@@ -966,7 +1061,47 @@ export default function ActionItemsPage() {
                     onItemAdded={refreshList}
                     onItemChanged={refreshList}
                     onItemDeleted={refreshList}
-                    listId={typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('listId') : null}
+                    listId={(() => {
+                      // Check for listId in URL first for explicit navigation
+                      if (typeof window !== 'undefined') {
+                        const urlParams = new URLSearchParams(window.location.search);
+                        const explicitListId = urlParams.get('listId');
+                        if (explicitListId) {
+                          console.log(`Using explicit listId from URL: ${explicitListId}`);
+                          return explicitListId;
+                        }
+                      }
+                      
+                      // If no explicit listId but we have a selected category, try to find its list ID
+                      if (selectedCategory) {
+                        // Check if this is a child category
+                        const category = categories.find(cat => 
+                          cat.name === selectedCategory && cat.parentName
+                        );
+                        
+                        if (category) {
+                          console.log(`Found list ID for child category: ${category.id}`);
+                          return category.id;
+                        }
+                        
+                        // Check if this is a parent category with its own list ID
+                        const parentCategory = categories.find(cat => 
+                          cat.name === selectedCategory && cat.isParent
+                        );
+                        
+                        if (parentCategory) {
+                          console.log(`Found list ID for parent category: ${parentCategory.id}`);
+                          return parentCategory.id;
+                        }
+                      }
+                      
+                      // No matching list ID found
+                      return null;
+                    })()}
+                    // If the selected category is a parent category, hide all action items
+                    hasAnyItems={!selectedCategory || !categories.find(cat => 
+                      cat.name === selectedCategory && cat.isParent && !cat.parentName
+                    )}
                     hasCategories={categories.length > 0}
                     sidebarVisible={true}
                   />
@@ -1001,7 +1136,7 @@ function useFetchLists() {
    * @param listId The ID of the list to fetch
    * @returns Promise with the list data
    */
-  const fetchList = async (listId: string, forceFresh = false) => {
+  const fetchList = useCallback(async (listId: string, forceFresh = false) => {
     // Don't do anything if we don't have a listId
     if (!listId) return null;
     
@@ -1039,9 +1174,9 @@ function useFetchLists() {
         window.actionListsCache[listId] = data;
       }
       
-      // Update our state without causing a render cycle
+      // Only update state if needed to prevent unnecessary re-renders
       setListsCache(prev => {
-        // Only update if value is different to avoid unnecessary re-renders
+        // Deep compare the objects to avoid unnecessary state updates
         if (JSON.stringify(prev[listId]) !== JSON.stringify(data)) {
           return { ...prev, [listId]: data };
         }
@@ -1056,14 +1191,14 @@ function useFetchLists() {
       setIsFetching(false);
       apiCallsInProgress.current.delete(cacheKey);
     }
-  };
+  }, []); // Empty dependency array as we use refs for mutable state
   
   /**
    * Fetch multiple lists by their IDs
    * @param listIds Array of list IDs to fetch
    * @returns Promise that resolves when all lists are fetched
    */
-  const fetchMultipleLists = async (listIds: string[], forceFresh = false) => {
+  const fetchMultipleLists = useCallback(async (listIds: string[], forceFresh = false) => {
     if (!listIds || listIds.length === 0) return {};
     
     // Create a unique key for this batch request
@@ -1143,14 +1278,14 @@ function useFetchLists() {
       setIsFetching(false);
       apiCallsInProgress.current.delete(batchKey);
     }
-  };
+  }, [fetchList]); // Only depend on fetchList
   
   /**
    * Fetch all lists at once with detailed parentId information
    * @param forceFresh Whether to bypass cache 
    * @returns Promise with all lists including parentId information
    */
-  const fetchAllLists = async (forceFresh = false) => {
+  const fetchAllLists = useCallback(async (forceFresh = false) => {
     const cacheKey = `all-lists${forceFresh ? '-fresh' : ''}`;
     
     // Prevent duplicate calls for the same request
@@ -1189,7 +1324,7 @@ function useFetchLists() {
       setIsFetching(false);
       apiCallsInProgress.current.delete(cacheKey);
     }
-  };
+  }, []);
   
   return {
     listsCache,
