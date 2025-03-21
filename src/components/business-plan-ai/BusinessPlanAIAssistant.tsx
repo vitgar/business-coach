@@ -155,6 +155,107 @@ export default function BusinessPlanAIAssistant({
   // Track the last suggestion shown to the user
   const [lastShownSuggestion, setLastShownSuggestion] = useState<ExtendedFieldSuggestion | null>(null);
   
+  /**
+   * Handles printing the business plan with only populated fields
+   * Creates a new window with formatted content and triggers print dialog
+   */
+  const handlePrintBusinessPlan = () => {
+    if (!businessPlan || !businessPlan.content) {
+      console.error('No business plan data available to print');
+      return;
+    }
+
+    // Create a new window for printing
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      alert('Please allow popups to print your business plan');
+      return;
+    }
+
+    // Helper function to check if a section has any values
+    const sectionHasValues = (section) => {
+      if (!section) return false;
+      return Object.values(section).some(value => 
+        value && typeof value === 'string' && value.trim() !== ''
+      );
+    };
+
+    // Build the HTML content for printing
+    let htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>${businessPlan.title || 'Business Plan'}</title>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 800px; margin: 0 auto; padding: 20px; }
+          h1 { font-size: 24px; color: #2563eb; margin-top: 30px; border-bottom: 1px solid #e5e7eb; padding-bottom: 8px; }
+          h2 { font-size: 18px; color: #4b5563; margin-top: 25px; }
+          p { margin-bottom: 16px; }
+          .section { margin-bottom: 30px; }
+          @media print {
+            body { padding: 0; }
+            h1 { break-after: avoid; }
+            h2 { break-after: avoid; }
+            .section { break-inside: avoid-page; }
+          }
+        </style>
+      </head>
+      <body>
+        <h1 style="font-size: 28px; text-align: center; border-bottom: 2px solid #2563eb; padding-bottom: 15px; margin-bottom: 30px;">
+          ${businessPlan.content.coverPage?.businessName || businessPlan.title || 'Business Plan'}
+        </h1>
+    `;
+
+    // Define all sections in display order
+    const sections = [
+      { id: 'executiveSummary', title: 'Executive Summary' },
+      { id: 'companyDescription', title: 'Company Description' },
+      { id: 'productsAndServices', title: 'Products & Services' },
+      { id: 'marketAnalysis', title: 'Market Analysis' },
+      { id: 'marketingStrategy', title: 'Marketing Strategy' },
+      { id: 'operationsPlan', title: 'Operations Plan' },
+      { id: 'organizationAndManagement', title: 'Organization & Management' },
+      { id: 'financialPlan', title: 'Financial Plan' }
+    ];
+
+    // Add each section that has content
+    sections.forEach(section => {
+      const sectionData = businessPlan.content[section.id];
+      
+      if (sectionHasValues(sectionData)) {
+        htmlContent += `<div class="section"><h1>${section.title}</h1>`;
+        
+        // Add each field that has content
+        Object.entries(sectionData).forEach(([fieldId, value]) => {
+          if (value && typeof value === 'string' && value.trim() !== '') {
+            // Convert field ID to a readable title
+            const fieldTitle = fieldId
+              .replace(/([A-Z])/g, ' $1') // Add space before capital letters
+              .replace(/^./, str => str.toUpperCase()); // Capitalize first letter
+            
+            htmlContent += `<h2>${fieldTitle}</h2><p>${value.replace(/\n/g, '<br>')}</p>`;
+          }
+        });
+        
+        htmlContent += `</div>`;
+      }
+    });
+
+    // Close the HTML document
+    htmlContent += `
+        <script>
+          window.onload = function() { window.print(); }
+        </script>
+      </body>
+      </html>
+    `;
+
+    // Write to the new window and trigger print
+    printWindow.document.open();
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
+  };
+  
   // Add resize listener for responsive behavior
   useEffect(() => {
     const handleResize = () => {
@@ -928,7 +1029,7 @@ export default function BusinessPlanAIAssistant({
                     role: 'assistant', 
                     content: `I've navigated to the ${sectName} section for you. How would you like to proceed with this section?`
                   };
-                  setMessages([...messages, { role: 'user', content: userMessage }, assistantMessage]);
+                  setMessages([...messages, { role: 'user', content: message }, assistantMessage]);
                   
                   // Reset input and return early
                   setInputValue('');
@@ -964,7 +1065,7 @@ export default function BusinessPlanAIAssistant({
                       role: 'assistant', 
                       content: `I've navigated to the ${subsectionName} field in the ${sectName} section. How would you like to proceed?`
                     };
-                    setMessages([...messages, { role: 'user', content: userMessage }, assistantMessage]);
+                    setMessages([...messages, { role: 'user', content: message }, assistantMessage]);
                     
                     // Reset input and return early
                     setInputValue('');
@@ -3440,32 +3541,30 @@ export default function BusinessPlanAIAssistant({
   
   // Modify the render function to include the compact mode class
   return (
-    <div className={`flex flex-col bg-white border rounded-lg shadow-sm ${isCompactMode ? 'compact-assistant' : ''} ${className}`}>
-      {/* Add custom styles for the empty state */}
-      <style jsx>{`
-        .empty-state-container {
-          display: flex;
-          flex-direction: column;
-          justify-content: flex-start;
-        }
-      `}</style>
-      
-      {/* Simplified header */}
-      <div className={`flex items-center justify-between border-b ${isCompactMode ? 'p-2' : 'p-3'}`}>
+    <div className={`flex flex-col bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden h-full ${className}`}>
+      {/* Header with collapsible control */}
+      <div className="flex items-center justify-between border-b border-gray-200 p-3 bg-gray-50">
         <div className="flex items-center">
-          <MessageSquare className={`text-blue-500 ${isCompactMode ? 'h-4 w-4 mr-1' : 'h-5 w-5 mr-2'}`} />
-          <h3 className={`font-medium ${isCompactMode ? 'text-sm' : 'text-base'}`}>
-            AI Assistant
+          <BookOpen className="h-4 w-4 text-blue-600 mr-2" />
+          <h3 className="font-medium text-gray-800">
+            {isOpen ? 'AI Assistant' : ''}
           </h3>
+          {!isOpen && (
+            <span className="text-sm text-gray-500 ml-2">
+              Get help with your business plan
+            </span>
+          )}
         </div>
-        
-        {/* Just close button */}
+        <div className="flex items-center">
+          {/* Close button */}
           <button
             onClick={() => setIsOpen(!isOpen)}
             className="text-gray-500 hover:text-gray-700 p-1"
+            aria-label={isOpen ? 'Collapse AI Assistant' : 'Expand AI Assistant'}
           >
             {isOpen ? <X className="h-4 w-4" /> : <MessageSquare className="h-4 w-4" />}
           </button>
+        </div>
       </div>
       
       {/* Adjust the message container to take full height */}
@@ -3474,7 +3573,7 @@ export default function BusinessPlanAIAssistant({
           <div 
             ref={messagesContainerRef}
             className={`flex-grow overflow-y-auto pt-0 px-3 pb-3 ${
-              isCompactMode ? 'max-h-[350px]' : 'max-h-[450px]'
+              isCompactMode ? 'max-h-[calc(100vh-340px)]' : 'max-h-[calc(100vh-280px)]'
             } ${
               messages.length === 0 ? 'min-h-[200px] empty-state-container' : ''
             }`}

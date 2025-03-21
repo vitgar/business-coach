@@ -44,6 +44,14 @@ IMPORTANT INSTRUCTIONS:
 4. Keep your responses focused on the specific topic at hand
 5. Don't overwhelm the user with too much information at once
 
+FORMATTING:
+1. Use proper Markdown formatting - your responses will be rendered as Markdown
+2. For headings, use # and ## with a space after (e.g., "# Heading")
+3. For bold text, use **text** with no spaces between the asterisks and text
+4. For bullet points, use proper spacing: "- Item" (with a space after the dash)
+5. For numbered lists, use: "1. Step" (with a space after the number and period)
+6. Ensure all formatting syntax has proper spacing to render correctly
+
 SUBTOPIC HANDLING:
 - If the user asks about a subtopic related to the main topic, track this as a subtopic
 - When in a subtopic (depth > 0), occasionally ask if the user wants to return to the main topic
@@ -199,4 +207,4 @@ An action item should be a specific, actionable task the user needs to accomplis
       { status: 500 }
     )
   }
-} 
+}

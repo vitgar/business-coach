@@ -1,7 +1,11 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { HelpCircle, ChevronDown, ChevronRight, Save } from 'lucide-react'
+import { HelpCircle, ChevronDown, ChevronRight, Save, Printer, Download } from 'lucide-react'
+import { jsPDF } from 'jspdf'
+import html2canvas from 'html2canvas'
+import { Document, Packer, Paragraph, HeadingLevel, TextRun, BorderStyle, AlignmentType } from 'docx'
+import { saveAs } from 'file-saver'
 
 /**
  * Business Plan Editor Component Props
@@ -1876,6 +1880,108 @@ export default function BusinessPlanEditor({
     }
   };
 
+  // Handle print business plan
+  /**
+   * Handles printing the business plan with only populated fields
+   * Creates a new window with formatted content and triggers print dialog
+   */
+  const handlePrintBusinessPlan = () => {
+    if (!businessPlan?.content) {
+      console.error('No business plan data available to print');
+      return;
+    }
+
+    // Create a new window for printing
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      alert('Please allow popups to print your business plan');
+      return;
+    }
+
+    // Helper function to check if a section has any values
+    const sectionHasValues = (section: any) => {
+      if (!section) return false;
+      return Object.values(section).some(value => 
+        value && typeof value === 'string' && value.trim() !== ''
+      );
+    };
+
+    // Build the HTML content for printing
+    let htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>${businessPlan.title || 'Business Plan'}</title>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 800px; margin: 0 auto; padding: 20px; }
+          h1 { font-size: 24px; color: #2563eb; margin-top: 30px; border-bottom: 1px solid #e5e7eb; padding-bottom: 8px; }
+          h2 { font-size: 18px; color: #4b5563; margin-top: 25px; }
+          p { margin-bottom: 16px; }
+          .section { margin-bottom: 30px; }
+          @media print {
+            body { padding: 0; }
+            h1 { break-after: avoid; }
+            h2 { break-after: avoid; }
+            .section { break-inside: avoid-page; }
+          }
+        </style>
+      </head>
+      <body>
+        <h1 style="font-size: 28px; text-align: center; border-bottom: 2px solid #2563eb; padding-bottom: 15px; margin-bottom: 30px;">
+          ${businessPlan.content.coverPage?.businessName || businessPlan.title || 'Business Plan'}
+        </h1>
+    `;
+
+    // Define all sections in display order
+    const sections = [
+      { id: 'executiveSummary', title: 'Executive Summary' },
+      { id: 'companyDescription', title: 'Company Description' },
+      { id: 'productsAndServices', title: 'Products & Services' },
+      { id: 'marketAnalysis', title: 'Market Analysis' },
+      { id: 'marketingStrategy', title: 'Marketing Strategy' },
+      { id: 'operationsPlan', title: 'Operations Plan' },
+      { id: 'organizationAndManagement', title: 'Organization & Management' },
+      { id: 'financialPlan', title: 'Financial Plan' }
+    ];
+
+    // Add each section that has content
+    sections.forEach(section => {
+      const sectionData = businessPlan.content[section.id];
+      
+      if (sectionHasValues(sectionData)) {
+        htmlContent += `<div class="section"><h1>${section.title}</h1>`;
+        
+        // Add each field that has content
+        Object.entries(sectionData).forEach(([fieldId, value]) => {
+          if (value && typeof value === 'string' && value.trim() !== '') {
+            // Convert field ID to a readable title
+            const fieldTitle = fieldId
+              .replace(/([A-Z])/g, ' $1') // Add space before capital letters
+              .replace(/^./, str => str.toUpperCase()); // Capitalize first letter
+            
+            htmlContent += `<h2>${fieldTitle}</h2><p>${value.replace(/\n/g, '<br>')}</p>`;
+          }
+        });
+        
+        htmlContent += `</div>`;
+      }
+    });
+
+    // Close the HTML document
+    htmlContent += `
+        <script>
+          window.onload = function() { window.print(); }
+        </script>
+      </body>
+      </html>
+    `;
+
+    // Write to the new window and trigger print
+    printWindow.document.open();
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
+  };
+
   // Render form fields based on definitions
   const renderFields = () => {
     const fields = getFieldDefinitions()
@@ -1970,26 +2076,414 @@ export default function BusinessPlanEditor({
     }, 0);
   }, [formData]);
 
+  // State for controlling download options dropdown
+  const [showDownloadOptions, setShowDownloadOptions] = useState(false)
+  const downloadOptionsRef = useRef<HTMLDivElement>(null)
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (downloadOptionsRef.current && !downloadOptionsRef.current.contains(event.target as Node)) {
+        setShowDownloadOptions(false)
+      }
+    }
+    
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [])
+
+  // Handle export to PDF
+  /**
+   * Exports the business plan as a PDF document
+   * Generates a formatted PDF with only populated fields and downloads it
+   */
+  const handleExportPDF = async () => {
+    if (!businessPlan?.content) {
+      console.error('No business plan data available to export');
+      return;
+    }
+    
+    // Close dropdown
+    setShowDownloadOptions(false);
+    
+    try {
+      // Helper function to check if a section has any values
+      const sectionHasValues = (section: any) => {
+        if (!section) return false;
+        return Object.values(section).some(value => 
+          value && typeof value === 'string' && value.trim() !== ''
+        );
+      };
+      
+      // Create a temporary container for HTML content - using same approach as print function
+      const tempDiv = document.createElement('div');
+      tempDiv.className = 'pdf-export-container';
+      tempDiv.style.width = '800px';
+      tempDiv.style.padding = '20px';
+      tempDiv.style.fontFamily = 'Arial, sans-serif';
+      tempDiv.style.position = 'absolute';
+      tempDiv.style.left = '-9999px';
+      document.body.appendChild(tempDiv);
+      
+      // Build HTML content similar to print function for consistent results
+      let htmlContent = `
+        <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 800px; margin: 0 auto; padding: 20px;">
+          <h1 style="font-size: 28px; text-align: center; border-bottom: 2px solid #2563eb; padding-bottom: 15px; margin-bottom: 30px; color: #2563eb;">
+            ${businessPlan.content.coverPage?.businessName || businessPlan.title || 'Business Plan'}
+          </h1>
+      `;
+      
+      // Define all sections in display order
+      const sections = [
+        { id: 'executiveSummary', title: 'Executive Summary' },
+        { id: 'companyDescription', title: 'Company Description' },
+        { id: 'productsAndServices', title: 'Products & Services' },
+        { id: 'marketAnalysis', title: 'Market Analysis' },
+        { id: 'marketingStrategy', title: 'Marketing Strategy' },
+        { id: 'operationsPlan', title: 'Operations Plan' },
+        { id: 'organizationAndManagement', title: 'Organization & Management' },
+        { id: 'financialPlan', title: 'Financial Plan' }
+      ];
+      
+      // Add each section that has content
+      sections.forEach(section => {
+        const sectionData = businessPlan.content[section.id];
+        
+        if (sectionHasValues(sectionData)) {
+          htmlContent += `<div style="margin-bottom: 30px;">
+            <h1 style="font-size: 24px; color: #2563eb; margin-top: 30px; border-bottom: 1px solid #e5e7eb; padding-bottom: 8px;">
+              ${section.title}
+            </h1>`;
+          
+          // Add each field that has content
+          Object.entries(sectionData).forEach(([fieldId, value]) => {
+            if (value && typeof value === 'string' && value.trim() !== '') {
+              // Convert field ID to a readable title
+              const fieldTitle = fieldId
+                .replace(/([A-Z])/g, ' $1') // Add space before capital letters
+                .replace(/^./, str => str.toUpperCase()); // Capitalize first letter
+              
+              htmlContent += `
+                <h2 style="font-size: 18px; color: #4b5563; margin-top: 25px;">${fieldTitle}</h2>
+                <p style="margin-bottom: 16px;">${value.replace(/\n/g, '<br>')}</p>
+              `;
+            }
+          });
+          
+          htmlContent += `</div>`;
+        }
+      });
+      
+      // Close the HTML content
+      htmlContent += `</div>`;
+      
+      // Set the HTML content in the temporary div
+      tempDiv.innerHTML = htmlContent;
+      
+      // Create PDF document with a better page size and higher resolution
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'pt',
+        format: 'a4',
+        compress: true
+      });
+      
+      // Set PDF properties
+      pdf.setProperties({
+        title: businessPlan.title || 'Business Plan',
+        subject: 'Business Plan',
+        creator: 'Business Coach App',
+        author: businessPlan.content.coverPage?.businessName || 'Business Plan Owner'
+      });
+      
+      // PDF document dimensions
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      const margin = 40; // Slightly larger margins for better readability
+      const contentWidth = pdfWidth - (margin * 2);
+      
+      // Use html2canvas with better settings for quality
+      const canvas = await html2canvas(tempDiv, {
+        scale: 3, // Higher scale for better quality
+        useCORS: true,
+        logging: false,
+        allowTaint: true,
+        backgroundColor: '#ffffff'
+      });
+      
+      // Calculate the number of pages needed
+      const totalHeight = canvas.height;
+      const pageHeight = pdfHeight - (margin * 2);
+      const pageCount = Math.ceil(totalHeight / pageHeight);
+      
+      // Add each canvas section to a new PDF page
+      for (let i = 0; i < pageCount; i++) {
+        // Add a new page after the first page
+        if (i > 0) {
+          pdf.addPage();
+        }
+        
+        // Calculate the portion of the canvas to use for this page
+        const sourceY = i * pageHeight * (canvas.width / contentWidth);
+        const sourceHeight = Math.min(pageHeight * (canvas.width / contentWidth), totalHeight - sourceY);
+        
+        // Add the canvas image to the PDF with better positioning
+        pdf.addImage(
+          canvas,
+          'PNG',
+          margin,
+          margin,
+          contentWidth,
+          sourceHeight * (contentWidth / canvas.width)
+        );
+      }
+      
+      // Download the PDF with a better filename
+      const sanitizedTitle = (businessPlan.title || 'Business_Plan').replace(/[^a-z0-9]/gi, '_');
+      pdf.save(`${sanitizedTitle}.pdf`);
+      
+      // Clean up - remove the temporary div
+      document.body.removeChild(tempDiv);
+      
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      alert('There was an error generating the PDF. Please try again.');
+    }
+  };
+  
+  // Handle export to Word
+  /**
+   * Exports the business plan as a Word document (.docx)
+   * Generates a formatted document with only populated fields and downloads it
+   */
+  const handleExportWord = () => {
+    if (!businessPlan?.content) {
+      console.error('No business plan data available to export');
+      return;
+    }
+    
+    // Close dropdown
+    setShowDownloadOptions(false);
+    
+    try {
+      // Helper function to check if a section has any values
+      const sectionHasValues = (section: any) => {
+        if (!section) return false;
+        return Object.values(section).some(value => 
+          value && typeof value === 'string' && value.trim() !== ''
+        );
+      };
+      
+      // Prepare document content
+      const children: Paragraph[] = [];
+      
+      // Add title
+      children.push(
+        new Paragraph({
+          text: businessPlan.content.coverPage?.businessName || businessPlan.title || 'Business Plan',
+          heading: HeadingLevel.TITLE,
+          alignment: AlignmentType.CENTER,
+          spacing: {
+            after: 400,
+          },
+          border: {
+            bottom: {
+              color: '2563EB',
+              space: 8,
+              style: BorderStyle.SINGLE,
+              size: 8,
+            },
+          },
+        })
+      );
+      
+      // Define all sections in display order
+      const sections = [
+        { id: 'executiveSummary', title: 'Executive Summary' },
+        { id: 'companyDescription', title: 'Company Description' },
+        { id: 'productsAndServices', title: 'Products & Services' },
+        { id: 'marketAnalysis', title: 'Market Analysis' },
+        { id: 'marketingStrategy', title: 'Marketing Strategy' },
+        { id: 'operationsPlan', title: 'Operations Plan' },
+        { id: 'organizationAndManagement', title: 'Organization & Management' },
+        { id: 'financialPlan', title: 'Financial Plan' }
+      ];
+      
+      // Add each section with content
+      sections.forEach(section => {
+        const sectionData = businessPlan.content[section.id];
+        
+        if (sectionHasValues(sectionData)) {
+          // Add section header
+          children.push(
+            new Paragraph({
+              text: section.title,
+              heading: HeadingLevel.HEADING_1,
+              spacing: {
+                before: 360,
+                after: 120,
+              },
+              border: {
+                bottom: {
+                  color: 'E5E7EB',
+                  space: 4,
+                  style: BorderStyle.SINGLE,
+                  size: 4,
+                },
+              },
+            })
+          );
+          
+          // Add each field that has content
+          Object.entries(sectionData).forEach(([fieldId, value]) => {
+            if (value && typeof value === 'string' && value.trim() !== '') {
+              // Convert field ID to a readable title
+              const fieldTitle = fieldId
+                .replace(/([A-Z])/g, ' $1') // Add space before capital letters
+                .replace(/^./, str => str.toUpperCase()); // Capitalize first letter
+              
+              // Add field title
+              children.push(
+                new Paragraph({
+                  text: fieldTitle,
+                  heading: HeadingLevel.HEADING_3,
+                  spacing: {
+                    before: 200,
+                    after: 80,
+                  },
+                })
+              );
+              
+              // Add field content - handle paragraphs
+              const paragraphs = value.split('\n').filter(p => p.trim() !== '');
+              
+              paragraphs.forEach(paragraph => {
+                children.push(
+                  new Paragraph({
+                    children: [
+                      new TextRun({
+                        text: paragraph,
+                        size: 22, // 11pt
+                      }),
+                    ],
+                    spacing: {
+                      after: 160,
+                    },
+                  })
+                );
+              });
+            }
+          });
+        }
+      });
+      
+      // Create document with a single section containing all content
+      const doc = new Document({
+        sections: [
+          {
+            properties: {
+              page: {
+                margin: {
+                  top: 1440, // 1 inch in twips
+                  right: 1440,
+                  bottom: 1440,
+                  left: 1440,
+                },
+              },
+            },
+            children: children,
+          },
+        ],
+      });
+      
+      // Generate and save the Word document
+      Packer.toBlob(doc).then((blob: Blob) => {
+        // Create a more clean filename
+        const sanitizedTitle = (businessPlan.title || 'Business_Plan').replace(/[^a-z0-9]/gi, '_');
+        saveAs(blob, `${sanitizedTitle}.docx`);
+      });
+      
+    } catch (error) {
+      console.error('Error generating Word document:', error);
+      alert('There was an error generating the Word document. Please try again.');
+    }
+  };
+
   return (
     <div className="flex flex-col h-full overflow-hidden">
       <div className="p-4 border-b flex justify-between items-center">
         <h2 className="text-lg font-medium text-gray-800">{getSectionTitle()}</h2>
-        <div className="relative group">
-          <button
-            type="button"
-            onClick={handleSubmit}
-            disabled={!isDirty}
-            aria-label="Save Changes"
-            className={`p-2 rounded-md ${
-              isDirty
-                ? 'bg-blue-600 text-white hover:bg-blue-700'
-                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-            }`}
-          >
-            <Save className="h-5 w-5" />
-          </button>
-          <div className="absolute right-0 top-full mt-1 w-28 bg-white p-2 rounded shadow-lg text-xs border border-gray-200 hidden group-hover:block z-10 text-center">
-            Save Changes
+        <div className="flex items-center space-x-2">
+          {/* Download button with dropdown */}
+          <div className="relative group" ref={downloadOptionsRef}>
+            <button
+              type="button"
+              onClick={() => setShowDownloadOptions(!showDownloadOptions)}
+              aria-label="Download Business Plan"
+              className="p-2 rounded-md bg-white border border-gray-300 text-gray-600 hover:bg-gray-50"
+            >
+              <Download className="h-5 w-5" />
+            </button>
+            <div className="absolute right-0 top-full mt-1 w-32 bg-white p-2 rounded shadow-lg text-xs border border-gray-200 hidden group-hover:block z-10 text-center">
+              Download
+            </div>
+            
+            {/* Dropdown menu for download options */}
+            {showDownloadOptions && (
+              <div className="absolute right-0 top-full mt-1 w-40 bg-white rounded shadow-lg border border-gray-200 z-20">
+                <button
+                  onClick={handleExportPDF}
+                  className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  PDF
+                </button>
+                <button
+                  onClick={handleExportWord}
+                  className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  Word
+                </button>
+              </div>
+            )}
+          </div>
+          
+          {/* Print button */}
+          <div className="relative group">
+            <button
+              type="button"
+              onClick={handlePrintBusinessPlan}
+              aria-label="Print Business Plan"
+              className="p-2 rounded-md bg-white border border-gray-300 text-gray-600 hover:bg-gray-50"
+            >
+              <Printer className="h-5 w-5" />
+            </button>
+            <div className="absolute right-0 top-full mt-1 w-32 bg-white p-2 rounded shadow-lg text-xs border border-gray-200 hidden group-hover:block z-10 text-center">
+              Print Business Plan
+            </div>
+          </div>
+          
+          {/* Save button */}
+          <div className="relative group">
+            <button
+              type="button"
+              onClick={handleSubmit}
+              disabled={!isDirty}
+              aria-label="Save Changes"
+              className={`p-2 rounded-md ${
+                isDirty
+                  ? 'bg-blue-600 text-white hover:bg-blue-700'
+                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              }`}
+            >
+              <Save className="h-5 w-5" />
+            </button>
+            <div className="absolute right-0 top-full mt-1 w-28 bg-white p-2 rounded shadow-lg text-xs border border-gray-200 hidden group-hover:block z-10 text-center">
+              Save Changes
+            </div>
           </div>
         </div>
       </div>

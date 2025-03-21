@@ -16,6 +16,7 @@ type EnhancedActionItemList = {
   items: any;
   itemNotes?: any;
   userId: string;
+  ordinal: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -51,9 +52,14 @@ export async function GET(request: Request) {
       where: {
         userId: tempUser.id
       },
-      orderBy: {
-        createdAt: 'asc'
-      }
+      orderBy: [
+        // First sort by parentId to group all children of the same parent together
+        { parentId: 'asc' },
+        // Then sort by ordinal to maintain the correct order within each group
+        { ordinal: 'asc' },
+        // Finally sort by creation date as a fallback
+        { createdAt: 'asc' }
+      ] as any
     })
 
     // Transform the results to match the expected format in the frontend
@@ -62,9 +68,9 @@ export async function GET(request: Request) {
       const enhancedList = list as unknown as EnhancedActionItemList;
       const metadata = enhancedList.itemNotes || {};
       
-      // Log the parentId for debugging
+      // Log the parentId and ordinal for debugging
       if (metadata.parentId) {
-        console.log(`List "${enhancedList.title}" has parentId: ${metadata.parentId}`);
+        console.log(`List "${enhancedList.title}" has parentId: ${metadata.parentId} and ordinal: ${enhancedList.ordinal}`);
       }
       
       return {
@@ -72,7 +78,8 @@ export async function GET(request: Request) {
         name: enhancedList.title,
         color: metadata.color || 'light-blue',
         topicId: metadata.topicId,
-        parentId: metadata.parentId
+        parentId: metadata.parentId,
+        ordinal: enhancedList.ordinal
       };
     })
 
@@ -112,6 +119,8 @@ export async function POST(request: Request) {
       )
     }
 
+    console.log(`Creating action item list: "${body.title}"${body.parentId ? ` with parent ID: ${body.parentId}` : ''}`);
+
     // In a production app, we would get the user from the session
     // For demo purposes, we'll use a temporary user ID
     let tempUser = await prisma.user.findFirst({
@@ -130,6 +139,38 @@ export async function POST(request: Request) {
       })
     }
 
+    let ordinal = body.ordinal ?? 0; // Default ordinal to 0 or use provided value
+
+    // If parentId is provided, verify it exists and determine ordinal position
+    if (body.parentId) {
+      const parentList = await prisma.actionItemList.findUnique({
+        where: { id: body.parentId }
+      });
+      
+      if (!parentList) {
+        console.warn(`Parent list with ID ${body.parentId} not found. Creating list without parent reference.`);
+        // Continue without failing, but don't use the invalid parentId
+        body.parentId = undefined;
+      } else {
+        console.log(`Found parent list: "${parentList.title}" (${parentList.id})`);
+        
+        // If no explicit ordinal was provided, determine next ordinal value
+        if (typeof body.ordinal !== 'number') {
+          // Count existing sub-lists with the same parent to determine next ordinal
+          const childListsCount = await prisma.actionItemList.count({
+            where: {
+              parentId: body.parentId,
+              userId: tempUser.id
+            }
+          });
+          
+          // Set ordinal to be the next position for child lists
+          ordinal = childListsCount;
+          console.log(`Auto-assigning ordinal ${ordinal} for sub-list (found ${childListsCount} existing sub-lists)`);
+        }
+      }
+    }
+
     // Create the metadata object that will be stored as JSON
     const metadata = {
       color: body.color || 'light-blue',
@@ -137,30 +178,44 @@ export async function POST(request: Request) {
       parentId: body.parentId
     };
 
-    // Create a new action item list
-    const actionItemList = await prisma.actionItemList.create({
-      data: {
-        title: body.title,
-        items: [], // Initialize with empty items array
-        userId: tempUser.id,
-        // Store metadata in the itemNotes field as a workaround
-        // In a production app, you would add proper schema migrations
-        itemNotes: metadata
-      }
-    })
+    // Log the metadata for debugging
+    console.log('List metadata:', JSON.stringify(metadata));
 
-    // Cast the result to access our custom fields
-    const enhancedList = actionItemList as unknown as EnhancedActionItemList;
-    // Metadata is stored in itemNotes
-    const storedMetadata = enhancedList.itemNotes || {};
+    try {
+      // Create a new action item list
+      const actionItemList = await prisma.actionItemList.create({
+        data: {
+          title: body.title,
+          items: [], // Initialize with empty items array
+          userId: tempUser.id,
+          // Store metadata in the itemNotes field as a workaround
+          // In a production app, you would add proper schema migrations
+          itemNotes: metadata,
+          // Add ordinal using a type assertion to bypass TypeScript error
+          // until Prisma client is regenerated
+          ...(typeof ordinal === 'number' ? { ordinal } : {})
+        } as any
+      })
 
-    return NextResponse.json({
-      id: enhancedList.id,
-      title: enhancedList.title,
-      color: storedMetadata.color || 'light-blue',
-      topicId: storedMetadata.topicId,
-      parentId: storedMetadata.parentId
-    }, { status: 201 })
+      // Cast the result to access our custom fields
+      const enhancedList = actionItemList as unknown as EnhancedActionItemList;
+      // Metadata is stored in itemNotes
+      const storedMetadata = enhancedList.itemNotes || {};
+
+      console.log(`Successfully created list "${enhancedList.title}" with ID ${enhancedList.id} and ordinal ${enhancedList.ordinal}`);
+      
+      return NextResponse.json({
+        id: enhancedList.id,
+        title: enhancedList.title,
+        ordinal: enhancedList.ordinal,
+        color: storedMetadata.color || 'light-blue',
+        topicId: storedMetadata.topicId,
+        parentId: storedMetadata.parentId
+      }, { status: 201 })
+    } catch (createError) {
+      console.error('Error creating action list in database:', createError);
+      throw createError; // Re-throw to be handled by outer catch
+    }
   } catch (error) {
     console.error('Error creating action item list:', error)
     return NextResponse.json(

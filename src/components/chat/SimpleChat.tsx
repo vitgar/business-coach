@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { Send, User, Bot, PlusCircle, Loader2, List } from 'lucide-react'
 import { toast } from 'react-toastify'
+import ReactMarkdown from 'react-markdown'
 
 /**
  * Message interface for typing chat messages
@@ -553,7 +554,13 @@ export default function SimpleChat({
                 </span>
               </div>
               <div className={`whitespace-pre-wrap ${message.role === 'assistant' ? 'text-gray-800' : ''}`}>
-                {message.content}
+                {message.role === 'assistant' ? (
+                  <div className="prose prose-sm max-w-none">
+                    <ReactMarkdown>{message.content}</ReactMarkdown>
+                  </div>
+                ) : (
+                  message.content
+                )}
               </div>
               
               {/* Action item creation button for assistant messages */}

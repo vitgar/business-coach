@@ -128,7 +128,7 @@ export function prepareActionItems(
     content,
     messageId,
     conversationId,
-    ordinal: index
+    ordinal: index // Set ordinal based on the item's position in the sequence
   }))
 }
 

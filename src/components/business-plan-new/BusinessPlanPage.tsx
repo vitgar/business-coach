@@ -209,7 +209,7 @@ export default function BusinessPlanPage({ businessPlanId }: { businessPlanId: s
               </div>
 
               {/* AI Assistant */}
-              <div className="lg:col-span-5 h-[calc(100vh-100px)] overflow-hidden">
+              <div className="lg:col-span-5 h-[calc(100vh-140px)] overflow-hidden pb-4">
                 <BusinessPlanAIAssistant
                   businessPlanId={businessPlan.id}
                   sectionId={currentSection}

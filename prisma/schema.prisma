@@ -1,8 +1,5 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
   previewFeatures = []
 }
 
@@ -11,49 +8,42 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// User model for authentication and profile management
 model User {
-  id              String          @id @default(cuid())
+  id              String           @id @default(cuid())
   name            String?
-  email           String          @unique
-  emailVerified   DateTime?       // Added for NextAuth.js
-  password        String?         // Changed to optional for OAuth users
+  email           String           @unique
+  password        String?
   image           String?
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
-  role            String          @default("user") // user, admin
-  businessPlans   BusinessPlan[]
-  conversations   Conversation[]
-  strategicPlans  StrategicPlan[]
-  marketingPlans  MarketingPlan[]
-  progress        Progress[]
-  
-  // New relations for business coach features
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  role            String           @default("user")
+  emailVerified   DateTime?
+  accounts        Account[]
+  actionItemTasks ActionItem[]
   actionItems     ActionItemList[]
   businessNotes   BusinessNote[]
-  actionItemTasks ActionItem[]    // New relation for action item tasks
-  
-  // NextAuth.js relations
-  accounts        Account[]
+  businessPlans   BusinessPlan[]
+  conversations   Conversation[]
+  marketingPlans  MarketingPlan[]
+  progress        Progress[]
   sessions        Session[]
+  strategicPlans  StrategicPlan[]
 }
 
-// NextAuth.js models
 model Account {
-  id                 String  @id @default(cuid())
-  userId             String
-  type               String
-  provider           String
-  providerAccountId  String
-  refresh_token      String?  @db.Text
-  access_token       String?  @db.Text
-  expires_at         Int?
-  token_type         String?
-  scope              String?
-  id_token           String?  @db.Text
-  session_state      String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
 }
@@ -74,155 +64,131 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
-// Business Plan model with comprehensive JSON content structure
 model BusinessPlan {
-  id          String   @id @default(cuid())
-  title       String
-  status      String   @default("draft") // draft, completed
-  content     Json     @default("{}")    // Stores the entire business plan structure
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id        String   @id @default(cuid())
+  title     String
+  content   Json     @default("{}")
+  status    String   @default("draft")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
-// Conversation model for storing chat history
 model Conversation {
-  id          String    @id @default(cuid())
+  id          String       @id @default(cuid())
   title       String
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
   userId      String
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  actionItems ActionItem[]
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   messages    Message[]
-  actionItems ActionItem[] // Relation to action items created from this conversation
 }
 
-// Message model for storing individual messages
 model Message {
   id             String       @id @default(cuid())
   content        String
-  role           String      // user, assistant
+  role           String
   conversationId String
+  createdAt      DateTime     @default(now())
+  actionItems    ActionItem[]
   conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  createdAt      DateTime    @default(now())
-  actionItems    ActionItem[] // Relation to action items created from this message
 }
 
-// Strategic Plan model
 model StrategicPlan {
   id          String   @id @default(cuid())
   title       String
   description String?
-  content     Json     // Stores the strategic plan structure
-  status      String   @default("draft") // draft, completed
+  content     Json
+  status      String   @default("draft")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   userId      String
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
-// Marketing Plan model
 model MarketingPlan {
   id          String   @id @default(cuid())
   title       String
   description String?
-  content     Json     // Stores the marketing plan structure
-  status      String   @default("draft") // draft, completed
+  content     Json
+  status      String   @default("draft")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   userId      String
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
-// Resource model for learning materials and templates
 model Resource {
   id          String   @id @default(cuid())
   title       String
   description String
-  type        String   // article, template, guide, video
-  content     String   // Could be URL or content depending on type
-  category    String   // business-planning, marketing, operations, etc.
+  type        String
+  content     String
+  category    String
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
 
-// Progress Tracking model
 model Progress {
   id          String   @id @default(cuid())
   userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  type        String   // "businessPlan", "marketingPlan", etc.
-  entityId    String   // ID of the entity the progress is for
-  percentage  Int
-  lastUpdated DateTime @default(now())
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  entityId    String
+  lastUpdated DateTime @default(now())
+  percentage  Int
+  type        String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
-// New models for business coach features
 model ActionItemList {
-  id        String   @id @default(cuid())
-  title     String
-  color     String?  // Color for the list (e.g., "light-blue", "light-green", etc.)
-  topicId   String?  // ID or name of the current topic this list is associated with
-  items     Json     // Stores the array of action items with structure: {id, title, description, priority, estimatedTimeInMinutes}
-  itemNotes Json?    // Stores user notes for each item with structure: {itemId, note, dateAdded, completed}
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  actionItems ActionItem[] // Relation to action items in this list
-  
-  // Parent-child relationship for sublists
-  parentId  String?
-  parent    ActionItemList? @relation("ListHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
-  sublists  ActionItemList[] @relation("ListHierarchy")
+  id          String           @id @default(cuid())
+  title       String
+  items       Json
+  userId      String
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  itemNotes   Json?
+  color       String?
+  parentId    String?
+  topicId     String?
+  ordinal     Int              @default(0)
+  actionItems ActionItem[]
+  parent      ActionItemList?  @relation("ListHierarchy", fields: [parentId], references: [id])
+  sublists    ActionItemList[] @relation("ListHierarchy")
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model BusinessNote {
   id        String   @id @default(cuid())
   title     String
-  content   String   @db.Text
+  content   String
   category  String   @default("general")
   userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
-// New ActionItem model for tracking individual action items from conversations
 model ActionItem {
-  id             String       @id @default(cuid())
-  content        String       @db.Text  // The actual action item text
-  isCompleted    Boolean      @default(false)
-  notes          String?      @db.Text  // User notes about this action item
-  
-  // Hierarchical structure
-  parentId       String?      // ID of parent action item (for nesting)
-  parent         ActionItem?  @relation("ActionItemHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
-  children       ActionItem[] @relation("ActionItemHierarchy")
-  
-  // Conversation context
+  id             String          @id @default(cuid())
+  content        String
+  isCompleted    Boolean         @default(false)
+  notes          String?
+  parentId       String?
   conversationId String?
-  conversation   Conversation? @relation(fields: [conversationId], references: [id], onDelete: SetNull)
-  
-  // Message source
   messageId      String?
-  message        Message?      @relation(fields: [messageId], references: [id], onDelete: SetNull)
-  
-  // List membership
-  listId         String?       // ID of the list this action item belongs to
-  list           ActionItemList? @relation(fields: [listId], references: [id], onDelete: SetNull)
-  
-  // Metadata
-  ordinal        Int           @default(0)  // Position in list
-  
-  // User ownership
+  listId         String?
+  ordinal        Int             @default(0)
   userId         String
-  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  // Timestamps
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
-} 
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  conversation   Conversation?   @relation(fields: [conversationId], references: [id])
+  list           ActionItemList? @relation(fields: [listId], references: [id])
+  message        Message?        @relation(fields: [messageId], references: [id])
+  parent         ActionItem?     @relation("ActionItemHierarchy", fields: [parentId], references: [id])
+  children       ActionItem[]    @relation("ActionItemHierarchy")
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+}

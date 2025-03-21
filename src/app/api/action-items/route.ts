@@ -207,19 +207,66 @@ export async function POST(request: Request) {
         )
       }
 
-      // Add user ID to each item and safely handle listId
-      const itemsWithUserId = body.map((item, index) => {
-        // Create a clean copy of the item without fields not in schema
-        const { listId, businessId, ...cleanItem } = item;
-        return {
-          ...cleanItem,
-          userId: tempUser.id,
-          ordinal: typeof item.ordinal === 'number' ? item.ordinal : index // Prioritize provided ordinal or use index as fallback
+      // Group items by listId to assign ordinals correctly within each list
+      const itemsByList: { [key: string]: any[] } = {};
+      
+      // First pass: group items by listId
+      body.forEach(item => {
+        const listId = item.listId || 'no-list';
+        if (!itemsByList[listId]) {
+          itemsByList[listId] = [];
         }
+        itemsByList[listId].push(item);
       });
+      
+      // Second pass: prepare all items with appropriate ordinals per list
+      const itemsWithUserId: any[] = [];
+      
+      // Process each list group
+      for (const [listId, items] of Object.entries(itemsByList)) {
+        // If this is a real list (not our temporary 'no-list' grouping), get the current count
+        let startingOrdinal = 0;
+        
+        if (listId !== 'no-list') {
+          try {
+            // Count existing items in this list
+            const existingItemsCount = await prisma.actionItem.count({
+              where: { 
+                listId,
+                userId: tempUser.id
+              }
+            });
+            startingOrdinal = existingItemsCount;
+            console.log(`List ${listId} has ${existingItemsCount} existing items, starting ordinals from ${startingOrdinal}`);
+          } catch (error) {
+            console.warn(`Error counting items for list ${listId}, using default ordinal 0:`, error);
+          }
+        }
+        
+        // Add items with incremented ordinals
+        items.forEach((item, index) => {
+          const { listId: providedListId, businessId, ...cleanItem } = item;
+          
+          // Use provided ordinal or calculate based on position in the list
+          const ordinal = typeof item.ordinal === 'number' 
+            ? item.ordinal 
+            : startingOrdinal + index;
+          
+          itemsWithUserId.push({
+            ...cleanItem,
+            userId: tempUser.id,
+            ordinal,
+            listId: providedListId || undefined
+          });
+        });
+      }
 
       // Log the ordinals for debugging
-      console.log('Creating action items with ordinals:', itemsWithUserId.map(item => item.ordinal));
+      console.log('Creating action items with ordinals:', itemsWithUserId.map(item => ({
+        content: item.content.substring(0, 20) + '...',
+        listId: item.listId || 'none',
+        ordinal: item.ordinal
+      })));
 
       // Create all items
       const createdItems = await prisma.actionItem.createMany({
@@ -243,69 +290,188 @@ export async function POST(request: Request) {
       // Remove fields that don't exist in the schema
       const { listId: providedListId, businessId, ...cleanData } = body;
       
-      // Ensure ordinal is a number
-      const ordinal = typeof body.ordinal === 'number' ? body.ordinal : 0;
+      // Default ordinal - will be updated if needed based on list position
+      let ordinal = typeof body.ordinal === 'number' ? body.ordinal : 0;
       
-      // Check if the content has a list prefix like [List Name]
-      let listId = providedListId;
-      const bracketMatch = body.content.match(/^\s*[\[\{](.*?)[\]\}]/);
-      
-      if (bracketMatch && bracketMatch[1]) {
-        const listTitle = bracketMatch[1].trim();
+      // Log creation attempt for debugging
+      console.log(`Attempting to create action item: "${body.content.substring(0, 30)}...", listId: ${providedListId || 'none'}`);
+
+      try {
+        // If a listId is provided or will be determined, set the ordinal based on list position
+        if (providedListId) {
+          // Check if list exists
+          const list = await prisma.actionItemList.findUnique({
+            where: { id: providedListId }
+          });
+          
+          if (list) {
+            console.log(`List found: "${list.title}" (${providedListId}), creating item with this listId`);
+            
+            // If no explicit ordinal was provided, determine it based on existing items in the list
+            if (typeof body.ordinal !== 'number') {
+              // Count existing items in this list to determine the next ordinal value
+              const existingItemsCount = await prisma.actionItem.count({
+                where: { 
+                  listId: providedListId,
+                  userId: tempUser.id
+                }
+              });
+              
+              // Set ordinal to be the next position in the list
+              ordinal = existingItemsCount;
+              console.log(`Auto-assigning ordinal ${ordinal} based on list position (${existingItemsCount} existing items)`);
+            }
+            
+            // Create common data object for any creation path
+            const baseItemData = {
+              ...cleanData,
+              userId: tempUser.id,
+              ordinal,
+              listId: providedListId
+            };
+            
+            // Create the action item
+            const actionItem = await prisma.actionItem.create({
+              data: baseItemData
+            });
+            
+            console.log(`Successfully created action item with ID: ${actionItem.id} and ordinal: ${ordinal}`);
+            
+            // Return the created item
+            return NextResponse.json(actionItem, { status: 201 });
+          } else {
+            console.warn(`List with ID ${providedListId} not found, creating item without listId`);
+            // Continue without listId - don't fail the request
+          }
+        }
         
-        if (listTitle) {
-          // Look for existing list with matching name
+        // Continue with existing logic for items without a listId
+        // Check if content has a list prefix like [List Name]
+        const bracketMatch = body.content.match(/^\s*[\[\{](.*?)[\]\}]/);
+        
+        if (bracketMatch) {
+          const listName = bracketMatch[1].trim();
+          console.log(`Content has list prefix: [${listName}]`);
+          
+          // Look for existing list with this name
           const existingList = await prisma.actionItemList.findFirst({
             where: {
-              title: listTitle,
-              userId: tempUser.id
+              userId: tempUser.id,
+              title: listName
             }
           });
           
           if (existingList) {
-            // Use the existing list's ID
-            console.log(`Found existing list "${listTitle}" with ID ${existingList.id}`);
-            listId = existingList.id;
-          } else {
-            // Create a new list with a proper UUID for this title
-            const newList = await prisma.actionItemList.create({
-              data: {
-                title: listTitle,
-                items: [], // Initialize with empty items array
-                userId: tempUser.id,
-                // Store metadata in the itemNotes field
-                itemNotes: {
-                  color: 'light-blue', // Default color
+            console.log(`Found existing list matching prefix: "${existingList.title}" (${existingList.id})`);
+            
+            // If no explicit ordinal was provided, determine it based on existing items in the list
+            if (typeof body.ordinal !== 'number') {
+              // Count existing items in this list to determine the next ordinal value
+              const existingItemsCount = await prisma.actionItem.count({
+                where: { 
+                  listId: existingList.id,
+                  userId: tempUser.id
                 }
-              }
+              });
+              
+              // Set ordinal to be the next position in the list
+              ordinal = existingItemsCount;
+              console.log(`Auto-assigning ordinal ${ordinal} based on list position (${existingItemsCount} existing items)`);
+            }
+            
+            // Create action item with existing list ID
+            const baseItemData = {
+              ...cleanData,
+              userId: tempUser.id,
+              ordinal,
+              listId: existingList.id
+            };
+            
+            // Create the action item
+            const actionItem = await prisma.actionItem.create({
+              data: baseItemData
             });
             
-            console.log(`Created new list "${listTitle}" with ID ${newList.id}`);
-            listId = newList.id;
+            console.log(`Successfully created action item with ID: ${actionItem.id} and ordinal: ${ordinal}`);
+            
+            // Return the created item
+            return NextResponse.json(actionItem, { status: 201 });
+          } else {
+            // Create a new list with this name
+            try {
+              console.log(`Creating new list from bracket prefix: "${listName}"`);
+              const newList = await prisma.actionItemList.create({
+                data: {
+                  title: listName,
+                  items: [],
+                  userId: tempUser.id,
+                  itemNotes: { color: 'light-blue' }
+                }
+              });
+              
+              // For a new list, the first item should have ordinal 0
+              ordinal = 0;
+              console.log(`Auto-assigning ordinal ${ordinal} for first item in new list`);
+              
+              // Create action item with new list ID
+              const baseItemData = {
+                ...cleanData,
+                userId: tempUser.id,
+                ordinal,
+                listId: newList.id
+              };
+              
+              // Create the action item
+              const actionItem = await prisma.actionItem.create({
+                data: baseItemData
+              });
+              
+              console.log(`Successfully created action item with ID: ${actionItem.id} and ordinal: ${ordinal} in new list: ${newList.id}`);
+              
+              // Return the created item
+              return NextResponse.json(actionItem, { status: 201 });
+            } catch (listError) {
+              console.error('Failed to create list from bracket prefix:', listError);
+              // Continue without listId - don't fail the request
+            }
           }
         }
-      }
-      
-      console.log('Creating action item with data:', { 
-        ...cleanData, 
-        ordinal,
-        listId: listId || null 
-      });
-      
-      // Create a single action item
-      const actionItem = await prisma.actionItem.create({
-        data: {
+        
+        // If we get here, create an item without a listId
+        const baseItemData = {
           ...cleanData,
           userId: tempUser.id,
-          ordinal, // Use the validated ordinal value
-          // Include the listId in the data if it exists now
-          listId: listId || null,
-          conversationId: body.conversationId ?? null,
-          messageId: null // Always set to null to avoid foreign key constraint errors
+          ordinal
+        };
+        
+        // Create the action item
+        const actionItem = await prisma.actionItem.create({
+          data: baseItemData
+        });
+        
+        console.log(`Successfully created action item with ID: ${actionItem.id}`);
+        
+        // Return the created item
+        return NextResponse.json(actionItem, { status: 201 });
+      } catch (itemError) {
+        console.error('Error creating action item:', itemError);
+        
+        // Attempt to log request body for debugging
+        try {
+          const originalBody = await requestClone.json();
+          console.error('Original request body:', JSON.stringify(originalBody).substring(0, 200));
+        } catch (logError) {
+          console.error('Could not log original request body');
         }
-      })
-
-      return NextResponse.json(actionItem, { status: 201 })
+        
+        return NextResponse.json(
+          { 
+            error: 'Failed to create action item', 
+            details: itemError instanceof Error ? itemError.message : String(itemError)
+          },
+          { status: 500 }
+        );
+      }
     }
   } catch (error) {
     console.error('Error creating action item(s):', error)

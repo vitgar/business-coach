@@ -72,13 +72,17 @@ export async function POST(request: Request) {
     
     // Add user ID to each item - NOTE: businessId is NOT included as it's not in the schema
     // Also, remove messageId to avoid foreign key constraint errors
-    const itemsWithUserData = itemsToCreate.map(item => ({
+    const itemsWithUserData = itemsToCreate.map((item, index) => ({
       ...item,
       userId: tempUser.id,
-      messageId: null // Set to null to avoid foreign key constraint errors
+      messageId: null, // Set to null to avoid foreign key constraint errors
+      ordinal: index // Set ordinal based on the item's position in the list
       // businessId is intentionally not included here
     }))
     
+    // Log the ordinals for debugging
+    console.log(`Setting ordinals for ${itemsWithUserData.length} bulk-created items`);
+
     // Create the action items in the database
     const createdItems = await prisma.$transaction(
       itemsWithUserData.map(item => 

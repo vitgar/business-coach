@@ -6,6 +6,7 @@ import ClientLayout from '@/components/ClientLayout'
 import ActionItemsList from '@/components/action-items/ActionItemsList'
 import { useAuth } from '@/contexts/AuthContext'
 import { toast } from 'react-toastify'
+import Link from 'next/link'
 
 /**
  * Interface for categorized action items
@@ -17,6 +18,7 @@ interface Category {
   isParent: boolean;
   parentName?: string;
   id: string;
+  ordinal?: number;
 }
 
 /**
@@ -246,7 +248,8 @@ export default function ActionItemsPage() {
           count,
           completedCount,
           isParent,
-          parentName
+          parentName,
+          ordinal: list.ordinal || 0 // Include ordinal value
         });
       });
       
@@ -556,36 +559,39 @@ export default function ActionItemsPage() {
   return (
     <ClientLayout>
       <div className="container mx-auto px-4 py-8 max-w-5xl">
-        {/* Page header */}
-        <header className="mb-8">
-          <div className="flex items-center justify-between mb-2">
-            <h1 className="text-3xl font-bold flex items-center text-gray-800">
-              <ListTodo className="mr-3 text-blue-600" size={28} />
+        {/* Page header and list type tabs */}
+        <div className="md:flex md:items-start md:justify-between mb-6">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-gray-900 flex items-center">
+              <ListTodo className="mr-2 text-blue-600" />
               Action Items
             </h1>
-            <div className="flex gap-2">
-              {isAuthenticated && (
-                <button
-                  onClick={openNewItemForm}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-blue-600 text-white hover:bg-blue-700"
-                >
-                  <Plus size={16} />
-                  New Item
-                </button>
-              )}
-              <button
-                onClick={refreshList}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-blue-50 text-blue-700 hover:bg-blue-100"
-              >
-                <RefreshCw size={16} />
-                Refresh
-              </button>
-            </div>
+            <p className="mt-1 text-sm text-gray-500">
+              Manage your action items and tasks. Items are automatically categorized by conversation topics.
+              <Link href="/action-items/all-items" className="ml-2 text-blue-600 hover:text-blue-800 underline">
+                View All Lists & Items
+              </Link>
+            </p>
           </div>
-          <p className="text-gray-600">
-            Track and manage tasks extracted from your business coach conversations.
-          </p>
-        </header>
+          <div className="flex gap-2">
+            {isAuthenticated && (
+              <button
+                onClick={openNewItemForm}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-blue-600 text-white hover:bg-blue-700"
+              >
+                <Plus size={16} />
+                New Item
+              </button>
+            )}
+            <button
+              onClick={refreshList}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-blue-50 text-blue-700 hover:bg-blue-100"
+            >
+              <RefreshCw size={16} />
+              Refresh
+            </button>
+          </div>
+        </div>
 
         {/* New action item form - only show when authenticated */}
         {isAuthenticated && isAddingItem && (
@@ -768,7 +774,20 @@ export default function ActionItemsPage() {
                       })
                       .map(category => {
                         // Find child categories for this parent
-                        const childCategories = categories.filter(cat => cat.parentName === category.name);
+                        const childCategories = categories
+                          .filter(cat => cat.parentName === category.name)
+                          // Sort child categories by ordinal if available
+                          .sort((a, b) => {
+                            // If both have ordinals, sort by ordinal
+                            if (typeof a.ordinal === 'number' && typeof b.ordinal === 'number') {
+                              return a.ordinal - b.ordinal;
+                            }
+                            // If only one has ordinal, prioritize it
+                            if (typeof a.ordinal === 'number') return -1;
+                            if (typeof b.ordinal === 'number') return 1;
+                            // Fall back to name sorting if no ordinals
+                            return a.name.localeCompare(b.name);
+                          });
                         const hasChildren = childCategories.length > 0;
                         
                         // Check if this category or any of its children is selected
@@ -845,6 +864,11 @@ export default function ActionItemsPage() {
                                   >
                                     <span className="flex items-center gap-2 text-sm">
                                       <TagIcon size={14} />
+                                      {typeof childCategory.ordinal === 'number' ? (
+                                        <span className="text-xs bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded-full mr-1">
+                                          {childCategory.ordinal + 1}
+                                        </span>
+                                      ) : null}
                                       {childCategory.name}
                                     </span>
                                     <span className={`text-xs px-2 py-0.5 rounded-full ${
@@ -935,8 +959,10 @@ export default function ActionItemsPage() {
                   
                   <ActionItemsList 
                     key={key} 
-                    categoryFilter={selectedCategory} 
+                    categoryFilter={selectedCategory}
+                    rootItemsOnly={true}
                     showChildCategories={typeof window !== 'undefined' && localStorage.getItem('showingParentList') !== null}
+                    ignoreParentItems={true}
                     onItemAdded={refreshList}
                     onItemChanged={refreshList}
                     onItemDeleted={refreshList}

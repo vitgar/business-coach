@@ -37,6 +37,7 @@ interface ActionItemsListProps {
   onItemAdded?: () => void // Callback when item is added
   onItemChanged?: () => void // Callback when item is changed
   onItemDeleted?: () => void // Callback when item is deleted
+  ignoreParentItems?: boolean; // Whether to hide items from parent categories
 }
 
 // Declare a global interface to add the custom cache property to Window
@@ -68,7 +69,8 @@ export default function ActionItemsList({
   onItemStatusChange,
   onItemAdded,
   onItemChanged,
-  onItemDeleted
+  onItemDeleted,
+  ignoreParentItems = false
 }: ActionItemsListProps) {
   const { userId } = useAuth()
   const [actionItems, setActionItems] = useState<ActionItem[]>([])
@@ -182,53 +184,79 @@ export default function ActionItemsList({
    */
   useEffect(() => {
     if (categoryFilter === null) {
-      // If no category filter, use all items
-      console.log(`No category filter, showing all ${actionItems.length} items`)
-      setFilteredItems(actionItems)
+      // If no category filter, use all items sorted by ordinal
+      console.log(`No category filter, showing all ${actionItems.length} items`);
+      
+      // Sort items by ordinal first and then creation date
+      const sortedItems = [...actionItems].sort((a, b) => {
+        // First sort by ordinal (ascending)
+        if (a.ordinal !== b.ordinal) {
+          return a.ordinal - b.ordinal;
+        }
+        // If ordinals are the same, sort by createdAt (newest first)
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      });
+      
+      setFilteredItems(sortedItems);
     } else {
-      console.log(`Filtering by category: "${categoryFilter}", showChildCategories: ${showChildCategories}`)
-      console.log(`Child categories: ${childCategories.join(', ')}`)
+      console.log(`Filtering by category: "${categoryFilter}", showChildCategories: ${showChildCategories}`);
+      console.log(`Child categories: ${childCategories.join(', ')}`);
+      
+      // Check if the current category is a parent category
+      const isParentCategory = childCategories.length > 0;
       
       // Filter items that match the specified category
       const filtered = actionItems.filter(item => {
-        // If we have a listId and the item has a matching listId, include it
-        if (listId && item.listId === listId) {
-          console.log(`Found listId match for item with id ${item.id}, content: ${item.content.substring(0, 30)}...`)
+        // Extract the category from the item content
+        let itemCategory = '';
+        const categoryMatch = item.content.match(/^\s*\[(.*?)\]|\s*\{(.*?)\}/);
+        
+        if (categoryMatch) {
+          // Use the captured group that matched (either [] or {})
+          itemCategory = (categoryMatch[1] || categoryMatch[2]).trim();
+        }
+        
+        // If this is a parent category and we don't want to show parent items, skip
+        if (isParentCategory && ignoreParentItems && itemCategory === categoryFilter) {
+          return false;
+        }
+        
+        // Direct match for the category
+        if (itemCategory === categoryFilter) {
           return true;
         }
         
-        // Check if this item belongs to the selected category by bracket prefix
-        const bracketMatch = item.content.match(/^\s*[\[\{](.*?)[\]\}]/);
-        
-        if (bracketMatch) {
-          const itemCategory = bracketMatch[1].trim();
-          
-          // Include exact category match
-          if (itemCategory === categoryFilter) {
-            console.log(`Found direct category match for item with id ${item.id}: ${item.content.substring(0, 30)}...`)
-            return true;
-          }
-          
-          // If showing child categories, include those too
-          if (showChildCategories && childCategories.includes(itemCategory)) {
-            console.log(`Found child category match (${itemCategory}) for item with id ${item.id}: ${item.content.substring(0, 30)}...`)
-            return true;
-          }
+        // If showing child categories and this is one of them
+        if (showChildCategories && childCategories.includes(itemCategory)) {
+          return true;
         }
         
-        // Additional check: If item has no bracketed prefix but has a listId that matches the name
-        if (item.listId && listNames[item.listId] === categoryFilter) {
-          console.log(`Found listId match by name for item with id ${item.id}: ${item.content.substring(0, 30)}...`)
+        // If list ID filter is active, use that instead of content-based categories
+        if (listId && item.listId === listId) {
+          return true;
+        }
+        
+        // When no explicit category but using list filtering
+        if (!categoryMatch && listId && item.listId === listId) {
           return true;
         }
         
         return false;
       });
       
-      console.log(`Filtered to ${filtered.length} items`)
-      setFilteredItems(filtered);
+      // Sort the filtered items
+      const sortedFiltered = [...filtered].sort((a, b) => {
+        // First sort by ordinal (ascending)
+        if (a.ordinal !== b.ordinal) {
+          return a.ordinal - b.ordinal;
+        }
+        // If ordinals are the same, sort by createdAt (newest first)
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      });
+      
+      setFilteredItems(sortedFiltered);
     }
-  }, [actionItems, categoryFilter, showChildCategories, childCategories, listId, listNames]);
+  }, [actionItems, categoryFilter, showChildCategories, childCategories, listId, listNames, ignoreParentItems]);
 
   /**
    * Toggles the completion status of an action item

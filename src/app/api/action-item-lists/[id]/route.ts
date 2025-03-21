@@ -13,6 +13,7 @@ type EnhancedActionItemList = {
   items: any;
   itemNotes?: any;
   userId: string;
+  ordinal: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -52,6 +53,7 @@ export async function GET(
       color: metadata.color || 'light-blue',
       topicId: metadata.topicId,
       parentId: metadata.parentId,
+      ordinal: enhancedList.ordinal,
       items: enhancedList.items
     })
   } catch (error) {
@@ -103,6 +105,11 @@ export async function PATCH(
       updateData.title = body.title;
     }
     
+    // Update ordinal if provided
+    if (typeof body.ordinal === 'number') {
+      updateData.ordinal = body.ordinal;
+    }
+    
     // Update metadata fields
     const newMetadata = {
       ...existingMetadata,
@@ -132,7 +139,8 @@ export async function PATCH(
       name: enhancedUpdatedList.title,
       color: updatedMetadata.color || 'light-blue',
       topicId: updatedMetadata.topicId,
-      parentId: updatedMetadata.parentId
+      parentId: updatedMetadata.parentId,
+      ordinal: enhancedUpdatedList.ordinal
     })
   } catch (error) {
     console.error('Error updating action item list:', error)

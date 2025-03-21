@@ -119,8 +119,37 @@ export default function HowToPage() {
       const data = await response.json()
       
       if (data.actionLists && data.actionLists.length > 0) {
-        setExtractedActionLists(data.actionLists)
-        toast.success(`Extracted ${data.actionLists.length} action lists`)
+        // Process the extracted action lists to ensure they're detailed and well-structured
+        let lists = data.actionLists;
+        
+        // Sort lists to ensure parent lists come before their children
+        lists.sort((a: ActionList, b: ActionList) => {
+          // Put lists without parents (top-level) first
+          if (!a.parentId && b.parentId) return -1;
+          if (a.parentId && !b.parentId) return 1;
+          
+          // Then sort by parentId (to group children of the same parent)
+          if (a.parentId && b.parentId) {
+            if (a.parentId < b.parentId) return -1;
+            if (a.parentId > b.parentId) return 1;
+          }
+          
+          // Finally sort by title if needed
+          return a.title.localeCompare(b.title);
+        });
+        
+        // Set the action lists and show success message with counts
+        setExtractedActionLists(lists);
+        
+        // Count total action items across all lists
+        const totalItems = lists.reduce((sum: number, list: ActionList) => sum + list.items.length, 0);
+        const topLevelLists = lists.filter((list: ActionList) => !list.parentId).length;
+        const subLists = lists.filter((list: ActionList) => !!list.parentId).length;
+        
+        toast.success(
+          `Extracted ${totalItems} action items in ${lists.length} lists ` +
+          `(${topLevelLists} main categories, ${subLists} subcategories)`
+        );
       } else {
         // If AI couldn't extract structured lists, fall back to basic extraction
         const basicResponse = await fetch('/api/action-items/bulk-create', {
@@ -163,70 +192,244 @@ export default function HowToPage() {
     setIsProcessing(true)
     
     try {
-      // Only handle top-level lists (no parent-child relationship)
-      const topLevelLists = extractedActionLists.filter(list => !list.parentId);
+      // Start with a toast notification to show progress
+      const progressToast = toast.info('Starting to save action lists...', {
+        autoClose: false,
+        closeButton: false
+      });
+      
+      // Create a map to store created list IDs by original ID
       const createdLists: Record<string, string> = {};
       let totalItems = 0;
+      let successCount = 0;
+      let errorCount = 0;
       
-      // Create each top-level list and its items
-      for (const list of topLevelLists) {
-        // Create the list
-        const response = await fetch('/api/action-item-lists', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
+      // Helper function to make API calls with timeout and retry logic
+      const makeApiCall = async (url: string, method: string, data: any) => {
+        const maxRetries = 2;
+        const timeout = 15000; // 15 seconds timeout
+        
+        for (let attempt = 0; attempt <= maxRetries; attempt++) {
+          try {
+            // Create abort controller for timeout
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), timeout);
+            
+            const response = await fetch(url, {
+              method,
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify(data),
+              signal: controller.signal
+            });
+            
+            // Clear timeout
+            clearTimeout(timeoutId);
+            
+            if (!response.ok) {
+              const errorData = await response.json();
+              console.error(`API error (${url}):`, errorData);
+              throw new Error(errorData.error || `Failed with status ${response.status}`);
+            }
+            
+            return await response.json();
+          } catch (error) {
+            console.error(`API call failed (attempt ${attempt + 1}/${maxRetries + 1}):`, error);
+            
+            // If we've reached max retries, throw the error
+            if (attempt === maxRetries) {
+              throw error;
+            }
+            
+            // Wait before retrying (exponential backoff)
+            await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, attempt)));
+          }
+        }
+      };
+      
+      // First create all top-level lists (no parent)
+      const topLevelLists = extractedActionLists.filter(list => !list.parentId);
+      
+      // Update progress toast
+      toast.update(progressToast, { 
+        render: `Creating ${topLevelLists.length} top-level lists...`
+      });
+      
+      // Process lists in batches to prevent overwhelming the server
+      const processInBatches = async (items: any[], processFn: (item: any) => Promise<void>, batchSize = 3) => {
+        for (let i = 0; i < items.length; i += batchSize) {
+          const batch = items.slice(i, i + batchSize);
+          await Promise.all(batch.map(processFn));
+        }
+      };
+      
+      // Process top-level lists
+      await processInBatches(topLevelLists, async (list) => {
+        try {
+          // Create the list
+          const newList = await makeApiCall('/api/action-item-lists', 'POST', {
             title: list.title,
             color: getRandomColor()
-          })
-        });
-        
-        if (response.ok) {
-          const newList = await response.json();
+          });
+          
           // Store the new list ID
           createdLists[list.id] = newList.id;
           
           // Create all items for this list
-          for (const item of list.items) {
-            await fetch('/api/action-items', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify({
+          await processInBatches(list.items, async (item) => {
+            try {
+              await makeApiCall('/api/action-items', 'POST', {
                 content: item,
                 listId: newList.id,
                 conversationId: currentConversationId || null,
                 messageId: null // Set to null to avoid constraint errors
-              })
-            });
-            
-            totalItems++;
-          }
-        } else {
-          // If list creation failed, create items with bracketed prefix
-          for (const item of list.items) {
-            const content = `[${list.title}] ${item}`;
-            
-            await fetch('/api/action-items', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify({
-                content,
+              });
+              
+              totalItems++;
+              successCount++;
+            } catch (error) {
+              console.error(`Failed to create item "${item.substring(0, 30)}..."`, error);
+              errorCount++;
+            }
+          }, 5);
+        } catch (error) {
+          console.error(`Failed to create list "${list.title}"`, error);
+          
+          // Create items with bracketed prefix as fallback
+          await processInBatches(list.items, async (item) => {
+            try {
+              await makeApiCall('/api/action-items', 'POST', {
+                content: `[${list.title}] ${item}`,
                 conversationId: currentConversationId || null,
                 messageId: null
-              })
+              });
+              
+              totalItems++;
+              successCount++;
+            } catch (error) {
+              console.error(`Failed to create fallback item "${item.substring(0, 30)}..."`, error);
+              errorCount++;
+            }
+          }, 5);
+        }
+      });
+      
+      // Update progress toast for child lists
+      toast.update(progressToast, { 
+        render: `Creating child lists and items...`
+      });
+      
+      // Process child lists after all parent lists are created
+      const childLists = extractedActionLists.filter(list => !!list.parentId);
+      
+      // Group child lists by parent ID for ordinal assignment
+      const childListsByParent: Record<string, ActionList[]> = {};
+      childLists.forEach(list => {
+        if (list.parentId) {
+          if (!childListsByParent[list.parentId]) {
+            childListsByParent[list.parentId] = [];
+          }
+          childListsByParent[list.parentId].push(list);
+        }
+      });
+      
+      // Sort child lists within each parent group for proper ordering
+      Object.keys(childListsByParent).forEach(parentId => {
+        childListsByParent[parentId].sort((a, b) => a.title.localeCompare(b.title));
+      });
+      
+      await processInBatches(childLists, async (list) => {
+        // If we have the parent ID in our map, create the list with parent reference
+        if (list.parentId && createdLists[list.parentId]) {
+          const parentId = createdLists[list.parentId];
+          
+          try {
+            // Determine ordinal position for this child list
+            const ordinal = childListsByParent[list.parentId]
+              ? childListsByParent[list.parentId].indexOf(list)
+              : 0;
+            
+            const newList = await makeApiCall('/api/action-item-lists', 'POST', {
+              title: list.title,
+              color: getRandomColor(),
+              parentId: parentId, // Set the parent ID reference
+              ordinal: ordinal // Set the ordinal position within parent
             });
             
-            totalItems++;
+            // Store the new list ID
+            createdLists[list.id] = newList.id;
+            
+            // Create all items for this list
+            await processInBatches(list.items, async (item) => {
+              try {
+                await makeApiCall('/api/action-items', 'POST', {
+                  content: item,
+                  listId: newList.id,
+                  conversationId: currentConversationId || null,
+                  messageId: null
+                });
+                
+                totalItems++;
+                successCount++;
+              } catch (error) {
+                console.error(`Failed to create child item "${item.substring(0, 30)}..."`, error);
+                errorCount++;
+              }
+            }, 5);
+          } catch (error) {
+            console.error(`Failed to create child list "${list.title}"`, error);
+            
+            // Fallback: create items with bracketed prefix showing hierarchy
+            await processInBatches(list.items, async (item) => {
+              try {
+                // Include parent name to show hierarchy
+                const parentName = extractedActionLists.find(l => l.id === list.parentId)?.title || '';
+                await makeApiCall('/api/action-items', 'POST', {
+                  content: `[${parentName} > ${list.title}] ${item}`,
+                  conversationId: currentConversationId || null,
+                  messageId: null
+                });
+                
+                totalItems++;
+                successCount++;
+              } catch (error) {
+                console.error(`Failed to create fallback child item "${item.substring(0, 30)}..."`, error);
+                errorCount++;
+              }
+            }, 5);
           }
+        } else {
+          // If parent wasn't created successfully, create as standalone items with bracketed prefix
+          await processInBatches(list.items, async (item) => {
+            try {
+              await makeApiCall('/api/action-items', 'POST', {
+                content: `[${list.title}] ${item}`,
+                conversationId: currentConversationId || null,
+                messageId: null
+              });
+              
+              totalItems++;
+              successCount++;
+            } catch (error) {
+              console.error(`Failed to create standalone item "${item.substring(0, 30)}..."`, error);
+              errorCount++;
+            }
+          }, 5);
         }
-      }
+      });
       
-      toast.success(`Saved ${totalItems} action items from ${topLevelLists.length} lists`);
+      // Close the progress toast
+      toast.dismiss(progressToast);
+      
+      // Show summary toast based on results
+      if (errorCount === 0) {
+        toast.success(`Successfully saved ${totalItems} action items from ${extractedActionLists.length} lists`);
+      } else if (successCount > 0) {
+        toast.info(`Saved ${successCount} action items, but ${errorCount} items failed to save`);
+      } else {
+        toast.error(`Failed to save action items. Please try again.`);
+      }
     } catch (error) {
       console.error('Error saving action lists:', error)
       toast.error(error instanceof Error ? error.message : 'Failed to save action lists')

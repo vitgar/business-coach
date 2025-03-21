@@ -42,14 +42,17 @@ export async function POST(request: Request) {
 
     // Define the prompt for extracting action lists with hierarchy
     const systemPrompt = `
-      You are an AI assistant specialized in analyzing business conversations and extracting structured action lists.
+      You are an AI assistant specialized in analyzing business conversations and extracting DETAILED and COMPREHENSIVE structured action lists.
       
       INSTRUCTIONS:
-      1. Analyze the provided conversation text to identify action items, tasks, and steps that need to be completed.
-      2. Focus on extracting ACTIONABLE items - things that can be completed or checked off.
-      3. Organize these items into logical action lists with meaningful titles based on categories or themes.
-      4. Identify if any lists are sublists of others (parent-child relationships).
-      5. For complex topics, create hierarchical organization with main lists and sublists.
+      1. Analyze the provided conversation text to identify action items, tasks, steps, and processes that need to be completed.
+      2. Create DETAILED and SPECIFIC action items from the conversation - be granular and thorough, not high-level.
+      3. When the conversation contains step-by-step guides, convert each substep and action into individual actionable items.
+      4. Organize these items into logical action lists with meaningful titles based on categories, phases or themes.
+      5. Identify hierarchical relationships between lists (parent-child). Create main categories and subcategories.
+      6. IMPORTANT: Break down high-level steps into specific, actionable subtasks that can be individually checked off.
+      7. Extract ALL relevant action items, not just a high-level summary. Be comprehensive.
+      8. Each action item should be self-contained and describe a single, concrete task.
       
       Response format should be JSON with this structure:
       {
@@ -57,29 +60,34 @@ export async function POST(request: Request) {
           {
             "id": "unique-id-1",
             "title": "Main Action List Title",
-            "items": ["Action item 1", "Action item 2", ...],
+            "items": ["Specific action item 1", "Specific action item 2", ...],
             "parentId": null
           },
           {
             "id": "unique-id-2",
             "title": "Sublist Title",
-            "items": ["Sub-action item 1", "Sub-action item 2", ...],
+            "items": ["Detailed sub-action item 1", "Detailed sub-action item 2", ...],
             "parentId": "unique-id-1"
           }
         ]
       }
       
-      Rules:
-      - Create meaningful group titles based on the context.
-      - Identify parent-child relationships between lists.
+      Rules and Guidelines:
+      - Create meaningful and specific group titles that clearly describe the category of tasks.
+      - Identify parent-child relationships between lists to create a hierarchical structure.
       - For top-level lists, omit the parentId property or set it to null.
       - For sublists, include the parentId property with the ID of the parent list.
-      - Ensure each action item is clear, specific, and actionable.
-      - Convert information into action-oriented tasks that a person can complete.
-      - Start with a top-level list for the main topic, then create sublists as needed.
+      - CRITICAL: Make each action item specific, detailed, and actionable - avoid vague or general statements.
+      - When there's a detailed process explained, extract EACH STEP as a separate action item.
+      - Convert ALL instructions and guidance into concrete, actionable tasks.
+      - When a step has sub-steps, create a separate list for those sub-steps with a parent-child relationship.
+      - If the conversation includes numeric steps or bullet points, preserve this structure in your action items.
+      - Start each action item with a verb to make it action-oriented.
       - Make sure to return a proper JSON object with the "actionLists" key.
       - Always use unique IDs for each list.
-      - Keep action items concise but complete - each should be a single task.
+      - For complex topics with multiple subtopics, create a separate list for each subtopic.
+      - When examples are provided, convert them to relevant actionable items if they imply tasks to be done.
+      - When the conversation discusses step 1, step 2, step 3, etc., ensure EACH step and substep appears as a separate action item.
     `
 
     // Call OpenAI to analyze the content
@@ -87,10 +95,11 @@ export async function POST(request: Request) {
       model: 'gpt-4o',
       messages: [
         { role: 'system', content: systemPrompt },
-        { role: 'user', content: `Please analyze the following conversation and extract structured action lists. Focus on creating actionable items that can be completed or checked off:\n\n${content}` }
+        { role: 'user', content: `Please analyze the following conversation and extract DETAILED, SPECIFIC, and COMPREHENSIVE structured action lists. Focus on creating actionable items that can be completed or checked off. Be thorough and include ALL relevant steps mentioned in the conversation, not just high-level summaries:\n\n${content}` }
       ],
       response_format: { type: 'json_object' },
       temperature: 0.2, // Lower temperature for more consistent results
+      max_tokens: 4096 // Increase token limit to allow for more detailed response
     })
 
     // Extract the response content
